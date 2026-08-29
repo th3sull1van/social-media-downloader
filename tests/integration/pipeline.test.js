@@ -47,7 +47,7 @@ export async function runPipelineTests() {
   assert.strictEqual(igItems[1].metadata.slideIndex, 2);
 
   const igFilename = InstagramPlugin.getFilename(igItems[0], { targetName: 'test_influencer' });
-  assert.strictEqual(igFilename, 'SMD/Instagram/test_influencer/posts/111_n.jpg');
+  assert.strictEqual(igFilename, 'SMD/Instagram/@test_influencer/posts/111_n.jpg');
 
   // 2. Facebook Pipeline
   const fbRawPhoto = {

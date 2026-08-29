@@ -121,7 +121,7 @@ export class InstagramNaming {
    */
   static resolveRelativePath(item, username, includeRoot = true) {
     const safeUser = FilenameService.sanitize(username || 'Instagram_Profile', 60, 'Instagram_Profile');
-    const rootDir = includeRoot ? `SMD/Instagram/${safeUser}` : '';
+    const rootDir = includeRoot ? `SMD/Instagram/@${safeUser}` : `@${safeUser}`;
     const filename = InstagramNaming.getOriginalFilename(item);
 
     let subDir = 'posts';
