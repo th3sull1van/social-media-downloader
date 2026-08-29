@@ -416,6 +416,25 @@
       const nextTarget = name.replace(/^slug:/i, '').trim() || 'Facebook_Media';
       state.targetName = nextTarget;
       state.username = nextTarget;
+    } else if (isReddit) {
+      // Mirror redditTargetInfo(): user → subreddit → post, keeping the raw id.
+      const m = pathname.match(/\/(?:user|u)\/([^/?#]+)/);
+      if (m && m[1]) {
+        state.username = m[1];
+        state.targetName = `u_${m[1]}`;
+      } else {
+        const r = pathname.match(/\/r\/([^/?#]+)/);
+        if (r && r[1]) {
+          state.username = r[1];
+          state.targetName = `r_${r[1]}`;
+        } else {
+          const p = pathname.match(/\/comments\/([a-z0-9]+)/i);
+          if (p && p[1]) {
+            state.username = '';
+            state.targetName = `post_${p[1]}`;
+          }
+        }
+      }
     }
   }
 
@@ -715,6 +734,19 @@
     } else if (isFacebook) {
       const fbAvatar = document.querySelector('svg[aria-label] image, div[role="main"] image')?.getAttribute('xlink:href');
       if (fbAvatar) return fbAvatar;
+    } else if (isReddit) {
+      // shreddit avatar (verified against live DOM 2026-08-29): the profile
+      // header renders <img alt="Avatar de <name> ..." src="styles.redditmedia
+      // .com/t5_xxx/styles/profileIcon_*.png?width=58...">. The bare URL (no
+      // query) serves the max-resolution render; adding params 403s (signed).
+      // Subreddit pages expose the same shape with communityIcon_*.
+      const redditAvatar = document.querySelector(
+        'img[alt*="vatar" i][src*="profileIcon"],' +
+        'img[alt*="vatar" i][src*="communityIcon"],' +
+        'img[alt*="vatar" i][src*="redd.it"]'
+      );
+      const redditSrc = redditAvatar ? (redditAvatar.src || '').split('?')[0] : '';
+      if (redditSrc) return redditSrc;
     }
     return fallbackIcon;
   }
@@ -733,10 +765,37 @@
     const fallbackIcon = chrome.runtime.getURL('assets/icons/icon32.png');
     const main = document.querySelector('div[role="main"]') || document.body;
     const images = main.querySelectorAll('img[src*="fbcdn.net"], image[xlink\\:href*="fbcdn.net"], image[href*="fbcdn.net"]');
+    // The first fbcdn image on a profile page is the COVER photo (wide, often
+    // aria-hidden). The profile avatar is circular (border-radius) and its
+    // accessible name mentions "foto de perfil"/"profile picture" (user report
+    // 2026-08-29: cover thumbnail was being shown instead of the avatar).
+    let bestCircularSrc = '';
+    let bestCircularWidth = 0;
     for (const image of images) {
       const src = image.currentSrc || image.getAttribute('src') || image.getAttribute('xlink:href') || image.getAttribute('href') || '';
-      if (src && isAllowedMediaUrl(src) && !src.includes('emoji.php')) return src;
+      if (!src || !isAllowedMediaUrl(src) || src.includes('emoji.php')) continue;
+
+      // Decorative cover/banners advertise themselves as aria-hidden.
+      if (image.getAttribute('aria-hidden') === 'true') continue;
+
+      const accessibleName = (image.getAttribute('alt') || '')
+        + ' ' + (image.closest('[role="img"], [aria-label]')?.getAttribute('aria-label') || '');
+      if (/foto de perfil|profile picture|photo de profil/i.test(accessibleName)) {
+        return src;
+      }
+
+      // Circular render => profile avatar candidate (keep the widest).
+      const rect = image.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0 && rect.width / rect.height < 1.2) {
+        const radius = getComputedStyle(image).borderRadius;
+        const circular = radius === '50%' || radius === '9999px' || radius === '9999px 9999px 9999px 9999px';
+        if (circular && rect.width > bestCircularWidth) {
+          bestCircularWidth = rect.width;
+          bestCircularSrc = src;
+        }
+      }
     }
+    if (bestCircularSrc) return bestCircularSrc;
     return fallbackIcon;
   }
 
