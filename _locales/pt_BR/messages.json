@@ -125,6 +125,9 @@
   "errorDownloading": {
     "message": "Erro ao realizar download."
   },
+  "filenameOverriddenWarning": {
+    "message": "Download concluído, mas outro gerenciador de downloads (ex.: IDM) renomeou o arquivo. Desative a captura dele para manter os nomes."
+  },
   "noMediaFound": {
     "message": "Nenhuma mídia encontrada para baixar."
   },

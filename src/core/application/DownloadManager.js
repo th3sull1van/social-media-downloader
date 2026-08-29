@@ -27,6 +27,12 @@ export class DownloadManager {
 
     /** @type {Set<string>} */
     this.pendingBlobUrls = new Set();
+
+    /** @type {Map<number, string>} Download ID -> filename we want Chrome to use */
+    this.desiredFilenames = new Map();
+
+    /** @type {boolean} */
+    this.filenameGuardsRegistered = false;
   }
 
   /**
@@ -84,14 +90,29 @@ export class DownloadManager {
     return this.activeJob ? /** @type {string} */ (this.activeJob.status) : null;
   }
 
-  // NOTE: we deliberately do NOT listen on chrome.downloads.onDeterminingFilename.
-  // Every download we start already passes its final `filename:` to
-  // chrome.downloads.download(), which is authoritative without a suggest()
-  // call. A second suggest() from our listener fights other download managers
-  // (e.g. IDM Integration Module) over the same download — Chrome then rejects
-  // one side with "another extension determined a different filename".
-  // Keeping downloads named only via download() options removes that conflict
-  // surface. See user report 2026-08-29.
+  // onDeterminingFilename guard: downloads we start register their filename in
+  // desiredFilenames (downloadUrl), and this listener re-asserts it. Required
+  // because competing download managers (e.g. IDM Integration Module) register
+  // their own onDeterminingFilename and rename blob downloads to the blob URL's
+  // UUID basename (user report 2026-08-29: ZIPs landing as "<uuid>.zip").
+  // Chrome honors the FIRST suggest() call, so background.js registers this
+  // guard at SW startup — racing every competing listener for our downloads.
+  // It only suggests filenames we explicitly set, so downloads from other
+  // extensions/sources pass through untouched (suggest not called).
+  registerFilenameGuards() {
+    if (typeof chrome === 'undefined' || !chrome.downloads?.onDeterminingFilename || this.filenameGuardsRegistered) {
+      return;
+    }
+    this.filenameGuardsRegistered = true;
+    chrome.downloads.onDeterminingFilename.addListener((downloadItem, suggest) => {
+      const desired = this.desiredFilenames.get(downloadItem.id);
+      if (desired) {
+        suggest({ filename: desired, conflictAction: 'uniquify' });
+        return true;
+      }
+      return false;
+    });
+  }
 
   /**
    * Keeps active download IDs synchronized and releases blob URLs when their
@@ -100,6 +121,7 @@ export class DownloadManager {
    */
   handleDownloadChanged(delta) {
     if (delta && delta.state && (delta.state.current === 'complete' || delta.state.current === 'interrupted')) {
+      this.desiredFilenames.delete(delta.id);
       this.activeDownloadIds.delete(delta.id);
       const blobUrl = [...this.blobUrlDownloadIds.entries()].find(([, id]) => id === delta.id)?.[0];
       if (blobUrl) {
@@ -246,6 +268,7 @@ export class DownloadManager {
    * @returns {Promise<number>}
    */
   downloadUrl(url, targetFilename) {
+    this.registerFilenameGuards();
     return new Promise((resolve, reject) => {
       if (typeof chrome === 'undefined' || !chrome.downloads) {
         reject(new Error('chrome.downloads unavailable'));
@@ -260,6 +283,9 @@ export class DownloadManager {
         if (chrome.runtime.lastError || !downloadId) {
           reject(new Error(chrome.runtime.lastError?.message || 'Download failed'));
         } else {
+          // Re-asserted by our onDeterminingFilename guard in case a competing
+          // download manager (IDM) renames blob downloads to their UUID basename.
+          this.desiredFilenames.set(downloadId, targetFilename);
           this.activeDownloadIds.add(downloadId);
           resolve(downloadId);
         }
@@ -376,7 +402,7 @@ export class DownloadManager {
    */
   async processZipDownload(plugin, platform, targetName, items) {
     const timestamp = FilenameService.getTimestamp();
-    const zipFilename = `SMD/${platform}_${targetName}_${timestamp}.zip`;
+    const zipFilename = `SMD/${platform}-${targetName}-${timestamp}.zip`;
 
     this.activeJob = DownloadJobModel.create({
       platform,
@@ -523,12 +549,26 @@ export class DownloadManager {
       const zipDownloadId = await this.downloadUrl(finish.objectUrl, zipFilename);
       this.blobUrlDownloadIds.set(finish.objectUrl, zipDownloadId);
 
+      // Verify the final on-disk name. A competing download manager (IDM) can win
+      // the onDeterminingFilename race and rename the ZIP to the blob UUID. The
+      // download itself succeeds, so surface the interference instead of failing.
+      setTimeout(() => {
+        if (typeof chrome === 'undefined' || !chrome.downloads?.search) return;
+        chrome.downloads.search({ id: zipDownloadId }, (items) => {
+          const item = items?.[0];
+          if (item && !item.filename.endsWith(zipFilename.split('/').pop())) {
+            this.logger.warn(`ZIP filename overridden by another download manager: "${item.filename}" (wanted "${zipFilename}")`);
+            if (this.activeJob) {
+              this.activeJob.filenameOverridden = true;
+              this.broadcastProgress();
+            }
+          }
+        });
+      }, 1000);
+
       if (this.activeJob) {
         this.activeJob.status = 'COMPLETED';
       }
-      this.updateBadge('✓', '#4BB543');
-      setTimeout(() => this.updateBadge(''), 5000);
-      this.broadcastProgress();
     } catch (err) {
       this.logger.error('ZIP job failed:', err);
       const status = this.currentJobStatus();

@@ -24,6 +24,7 @@
  * @property {JobStatus} status
  * @property {number=} zipPercent
  * @property {string=} error
+ * @property {boolean=} filenameOverridden Set when a competing download manager renamed the output
  * @property {number} createdAt
  * @property {number} updatedAt
  */

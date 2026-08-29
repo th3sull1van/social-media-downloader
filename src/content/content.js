@@ -2130,7 +2130,7 @@
     if (btnCancel) btnCancel.style.display = isRunning ? 'inline-block' : 'none';
 
     if (isPackaging) statusText.textContent = t('packagingZip');
-    else if (job.status === 'COMPLETED') statusText.textContent = t('downloadComplete');
+    else if (job.status === 'COMPLETED') statusText.textContent = job.filenameOverridden ? t('filenameOverriddenWarning') : t('downloadComplete');
     else if (job.status === 'CANCELLED') statusText.textContent = t('downloadCancelled');
     else statusText.textContent = t('downloading');
   }

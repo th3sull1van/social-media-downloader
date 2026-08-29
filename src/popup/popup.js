@@ -497,8 +497,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (isPackaging) {
       progressStatusText.textContent = t('packagingZip');
     } else if (job.status === 'COMPLETED') {
-      progressStatusText.textContent = t('downloadComplete');
-      setTimeout(() => { progressContainer.style.display = 'none'; }, 4000);
+      progressStatusText.textContent = job.filenameOverridden ? t('filenameOverriddenWarning') : t('downloadComplete');
+      setTimeout(() => { progressContainer.style.display = 'none'; }, job.filenameOverridden ? 10000 : 4000);
     } else if (job.status === 'CANCELLED') {
       progressStatusText.textContent = t('downloadCancelled');
       setTimeout(() => { progressContainer.style.display = 'none'; }, 4000);
