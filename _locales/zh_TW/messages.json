@@ -1,0 +1,245 @@
+{
+  "extensionName": {
+    "message": "Social Media Downloader - Instagram, Facebook & Reddit"
+  },
+  "extensionDescription": {
+    "message": "從 Instagram、Facebook 和 Reddit 下載最高原始解析度的相片、影片、Reels、限時動態、DASH 影片（含音訊）、圖庫與個人檔案。"
+  },
+  "highResSubtitle": {
+    "message": "最高原畫解析度下載"
+  },
+  "noticeUnrecognized": {
+    "message": "無法辨識的頁面"
+  },
+  "noticeUnrecognizedDesc": {
+    "message": "請前往Reddit（動態、板塊或個人主頁）以開始偵測媒體。"
+  },
+  "detectedProfile": {
+    "message": "偵測到個人主頁"
+  },
+  "detectedAlbum": {
+    "message": "Detected Album"
+  },
+  "mediaCountLabel": {
+    "message": "個媒體"
+  },
+  "photosLabel": {
+    "message": "photos"
+  },
+  "scanAll": {
+    "message": "掃描全部"
+  },
+  "scanPosts": {
+    "message": "貼文"
+  },
+  "scanStories": {
+    "message": "Stories"
+  },
+  "scanHighlights": {
+    "message": "Highlights"
+  },
+  "scanAvatar": {
+    "message": "HD Profile Pic"
+  },
+  "scanning": {
+    "message": "Scanning..."
+  },
+  "stopScan": {
+    "message": "Stop Scan"
+  },
+  "selectAll": {
+    "message": "全選"
+  },
+  "deselectAll": {
+    "message": "取消全選"
+  },
+  "downloading": {
+    "message": "正在下載..."
+  },
+  "downloadStarting": {
+    "message": "Starting download..."
+  },
+  "downloadComplete": {
+    "message": "下載成功完成！"
+  },
+  "collectedMedia": {
+    "message": "Collected Media"
+  },
+  "selectedSummary": {
+    "message": "已選擇 $1 / $2"
+  },
+  "emptyStateTitle": {
+    "message": "尚未擷取到媒體檔案。"
+  },
+  "emptyStateDesc": {
+    "message": "點擊「掃描」或向下滾動頁面以偵測最高畫質媒體。"
+  },
+  "formatFolders": {
+    "message": "按資料夾儲存"
+  },
+  "formatZip": {
+    "message": "ZIP壓縮檔"
+  },
+  "downloadMediaBtn": {
+    "message": "下載 $1 個媒體"
+  },
+  "downloadMediaSingle": {
+    "message": "Download 1 Item"
+  },
+  "downloadBtnDefault": {
+    "message": "下載媒體"
+  },
+  "tabAll": {
+    "message": "全部"
+  },
+  "tabPhotos": {
+    "message": "照片"
+  },
+  "tabVideos": {
+    "message": "影片"
+  },
+  "tabStories": {
+    "message": "Stories"
+  },
+  "tabHighlights": {
+    "message": "Highlights"
+  },
+  "tabAvatar": {
+    "message": "Profile"
+  },
+  "downloadFloating": {
+    "message": "Download Media"
+  },
+  "scanFloatingBadge": {
+    "message": "Scan"
+  },
+  "previewTitle": {
+    "message": "Media preview:"
+  },
+  "highResGuaranteed": {
+    "message": "Original high resolution guaranteed"
+  },
+  "packagingZip": {
+    "message": "正在打包ZIP檔案..."
+  },
+  "errorDownloading": {
+    "message": "下載時發生錯誤。"
+  },
+  "noMediaFound": {
+    "message": "No media found to download."
+  },
+  "authError": {
+    "message": "Session token not found. Make sure you are logged in."
+  },
+  "resolvingHighRes": {
+    "message": "Resolving high resolution..."
+  },
+  "zipTooLarge": {
+    "message": "選擇的內容過大，無法建立 ZIP。請使用資料夾模式或減少選取的項目。"
+  },
+  "cancelBtn": {
+    "message": "取消"
+  },
+  "downloadCancelled": {
+    "message": "下載已取消。"
+  },
+  "downloadingProgress": {
+    "message": "正在下載媒體..."
+  },
+  "tabPhotosOf": {
+    "message": "有你的相片"
+  },
+  "tabPhotosBy": {
+    "message": "你的相片"
+  },
+  "tabAlbums": {
+    "message": "相簿"
+  },
+  "detectedSubreddit": {
+    "message": "偵測到Subreddit"
+  },
+  "detectedPost": {
+    "message": "偵測到貼文"
+  },
+  "detectedFeed": {
+    "message": "Reddit動態"
+  },
+  "scanGalleries": {
+    "message": "圖集"
+  },
+  "scanVideos": {
+    "message": "影片"
+  },
+  "scanRedgifs": {
+    "message": "RedGifs"
+  },
+  "tabGalleries": {
+    "message": "圖集"
+  },
+  "tabRedgifs": {
+    "message": "RedGifs"
+  },
+  "downloadPostMedia": {
+    "message": "貼文媒體"
+  },
+  "downloadProfileMedia": {
+    "message": "下載主頁媒體: u/$1"
+  },
+  "scanProfileApi": {
+    "message": "開始掃描個人主頁"
+  },
+  "minScoreLabel": {
+    "message": "最低分數"
+  },
+  "postLimitLabel": {
+    "message": "貼文數量上限"
+  },
+  "limitAll": {
+    "message": "全部（無限制）"
+  },
+  "unmarkAll": {
+    "message": "取消全選"
+  },
+  "downloadInFolder": {
+    "message": "下載至資料夾"
+  },
+  "downloadAsZip": {
+    "message": "打包下載為ZIP"
+  },
+  "downloadStartedToast": {
+    "message": "開始下載: $1"
+  },
+  "downloadSuccessToast": {
+    "message": "已成功下載 $1 個媒體檔案！"
+  },
+  "filterSubredditAll": {
+    "message": "所有子版塊"
+  },
+  "scanningPosts": {
+    "message": "正在掃描所有貼文..."
+  },
+  "scanningStoriesHighlights": {
+    "message": "正在掃描限時動態和精選..."
+  },
+  "scanningStories": {
+    "message": "正在掃描限時動態..."
+  },
+  "scanningHighlights": {
+    "message": "正在掃描精選..."
+  },
+  "scanningProfile": {
+    "message": "正在掃描個人檔案與高畫質頭貼..."
+  },
+  "scanningAllMedia": {
+    "message": "正在掃描所有媒體..."
+  },
+  "scanPage": {
+    "message": "掃描此頁面"
+  },
+  "scanPhotoTabs": {
+    "message": "所有照片分頁"
+  },
+  "scanFeed": {
+    "message": "Scan Feed"
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "public": [
+    {
+      "fixture": "tests/fixtures/har/facebook/example-profile.har",
+      "platform": "facebook",
+      "entries": 106,
+      "bodyBytes": 5894946,
+      "sensitiveFindings": []
+    },
+    {
+      "fixture": "tests/fixtures/har/instagram/example-profile.har",
+      "platform": "instagram",
+      "entries": 1,
+      "bodyBytes": 844036,
+      "sensitiveFindings": []
+    },
+    {
+      "fixture": "tests/fixtures/har/reddit/example-feed.har",
+      "platform": "reddit",
+      "entries": 2,
+      "bodyBytes": 2308382,
+      "sensitiveFindings": []
+    }
+  ],
+  "private": [
+    {
+      "fixture": "fixtures-private/facebook-206x206.har",
+      "platform": "unknown",
+      "entries": 462,
+      "bodyBytes": 43099408,
+      "sensitiveFindings": [
+        "private-capture-not-scanned"
+      ]
+    },
+    {
+      "fixture": "fixtures-private/facebook-profile.har",
+      "platform": "unknown",
+      "entries": 1340,
+      "bodyBytes": 64804342,
+      "sensitiveFindings": [
+        "private-capture-not-scanned"
+      ]
+    },
+    {
+      "fixture": "fixtures-private/facebook-reels.har",
+      "platform": "unknown",
+      "entries": 461,
+      "bodyBytes": 61254999,
+      "sensitiveFindings": [
+        "private-capture-not-scanned"
+      ]
+    },
+    {
+      "fixture": "fixtures-private/instagram-profile-v2.har",
+      "platform": "unknown",
+      "entries": 726,
+      "bodyBytes": 35962080,
+      "sensitiveFindings": [
+        "private-capture-not-scanned"
+      ]
+    },
+    {
+      "fixture": "fixtures-private/instagram-profile-v3.har",
+      "platform": "unknown",
+      "entries": 755,
+      "bodyBytes": 38497626,
+      "sensitiveFindings": [
+        "private-capture-not-scanned"
+      ]
+    },
+    {
+      "fixture": "fixtures-private/instagram-profile.har",
+      "platform": "unknown",
+      "entries": 2048,
+      "bodyBytes": 296779381,
+      "sensitiveFindings": [
+        "private-capture-not-scanned"
+      ]
+    },
+    {
+      "fixture": "fixtures-private/reddit-empty-profile.har",
+      "platform": "unknown",
+      "entries": 83,
+      "bodyBytes": 10019899,
+      "sensitiveFindings": [
+        "private-capture-not-scanned"
+      ]
+    },
+    {
+      "fixture": "fixtures-private/reddit-feed.har",
+      "platform": "unknown",
+      "entries": 299,
+      "bodyBytes": 19490600,
+      "sensitiveFindings": [
+        "private-capture-not-scanned"
+      ]
+    },
+    {
+      "fixture": "fixtures-private/reddit-gallery.har",
+      "platform": "unknown",
+      "entries": 1,
+      "bodyBytes": 3824,
+      "sensitiveFindings": [
+        "private-capture-not-scanned"
+      ]
+    },
+    {
+      "fixture": "fixtures-private/reddit-post.har",
+      "platform": "unknown",
+      "entries": 115,
+      "bodyBytes": 12180009,
+      "sensitiveFindings": [
+        "private-capture-not-scanned"
+      ]
+    },
+    {
+      "fixture": "fixtures-private/reddit-private-profile.har",
+      "platform": "unknown",
+      "entries": 87,
+      "bodyBytes": 10515975,
+      "sensitiveFindings": [
+        "private-capture-not-scanned"
+      ]
+    }
+  ],
+  "publicFixtureCount": 3,
+  "privateFixtureCount": 11
+}

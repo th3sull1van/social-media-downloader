@@ -1,0 +1,245 @@
+{
+  "extensionName": {
+    "message": "Social Media Downloader - Instagram, Facebook & Reddit"
+  },
+  "extensionDescription": {
+    "message": "Скачивайте фото, видео, рилс, истории, DASH-видео со звуком, галереи и профили из Instagram, Facebook и Reddit в максимальном оригинальном разрешении."
+  },
+  "highResSubtitle": {
+    "message": "Загрузка в Максимальном Разрешении"
+  },
+  "noticeUnrecognized": {
+    "message": "Страница не распознана"
+  },
+  "noticeUnrecognizedDesc": {
+    "message": "Перейдите на Reddit (ленту, сабреддит или профиль) для скачивания."
+  },
+  "detectedProfile": {
+    "message": "Обнаружен профиль"
+  },
+  "detectedAlbum": {
+    "message": "Detected Album"
+  },
+  "mediaCountLabel": {
+    "message": "медиа"
+  },
+  "photosLabel": {
+    "message": "photos"
+  },
+  "scanAll": {
+    "message": "Сканировать все"
+  },
+  "scanPosts": {
+    "message": "Посты"
+  },
+  "scanStories": {
+    "message": "Stories"
+  },
+  "scanHighlights": {
+    "message": "Highlights"
+  },
+  "scanAvatar": {
+    "message": "HD Profile Pic"
+  },
+  "scanning": {
+    "message": "Scanning..."
+  },
+  "stopScan": {
+    "message": "Stop Scan"
+  },
+  "selectAll": {
+    "message": "Выбрать все"
+  },
+  "deselectAll": {
+    "message": "Снять выбор"
+  },
+  "downloading": {
+    "message": "Загрузка..."
+  },
+  "downloadStarting": {
+    "message": "Starting download..."
+  },
+  "downloadComplete": {
+    "message": "Загрузка успешно завершена!"
+  },
+  "collectedMedia": {
+    "message": "Collected Media"
+  },
+  "selectedSummary": {
+    "message": "Выбрано $1 из $2"
+  },
+  "emptyStateTitle": {
+    "message": "Медиа пока не найдены."
+  },
+  "emptyStateDesc": {
+    "message": "Нажмите Сканировать или прокрутите ленту для обнаружения медиа."
+  },
+  "formatFolders": {
+    "message": "По папкам"
+  },
+  "formatZip": {
+    "message": "ZIP-архив"
+  },
+  "downloadMediaBtn": {
+    "message": "Скачать $1 файлов"
+  },
+  "downloadMediaSingle": {
+    "message": "Download 1 Item"
+  },
+  "downloadBtnDefault": {
+    "message": "Скачать медиа"
+  },
+  "tabAll": {
+    "message": "Все"
+  },
+  "tabPhotos": {
+    "message": "Фото"
+  },
+  "tabVideos": {
+    "message": "Видео"
+  },
+  "tabStories": {
+    "message": "Stories"
+  },
+  "tabHighlights": {
+    "message": "Highlights"
+  },
+  "tabAvatar": {
+    "message": "Profile"
+  },
+  "downloadFloating": {
+    "message": "Download Media"
+  },
+  "scanFloatingBadge": {
+    "message": "Scan"
+  },
+  "previewTitle": {
+    "message": "Media preview:"
+  },
+  "highResGuaranteed": {
+    "message": "Original high resolution guaranteed"
+  },
+  "packagingZip": {
+    "message": "Упаковка в ZIP..."
+  },
+  "errorDownloading": {
+    "message": "Ошибка при загрузке."
+  },
+  "noMediaFound": {
+    "message": "No media found to download."
+  },
+  "authError": {
+    "message": "Session token not found. Make sure you are logged in."
+  },
+  "resolvingHighRes": {
+    "message": "Resolving high resolution..."
+  },
+  "zipTooLarge": {
+    "message": "Выбор слишком велик для ZIP. Используйте режим папок или выберите меньше элементов."
+  },
+  "cancelBtn": {
+    "message": "Отмена"
+  },
+  "downloadCancelled": {
+    "message": "Загрузка отменена."
+  },
+  "downloadingProgress": {
+    "message": "Загрузка медиафайлов..."
+  },
+  "tabPhotosOf": {
+    "message": "Фото с вами"
+  },
+  "tabPhotosBy": {
+    "message": "Ваши фото"
+  },
+  "tabAlbums": {
+    "message": "Альбомы"
+  },
+  "detectedSubreddit": {
+    "message": "Обнаружен сабреддит"
+  },
+  "detectedPost": {
+    "message": "Обнаружен пост"
+  },
+  "detectedFeed": {
+    "message": "Лента Reddit"
+  },
+  "scanGalleries": {
+    "message": "Галереи"
+  },
+  "scanVideos": {
+    "message": "Видео"
+  },
+  "scanRedgifs": {
+    "message": "RedGifs"
+  },
+  "tabGalleries": {
+    "message": "Галереи"
+  },
+  "tabRedgifs": {
+    "message": "RedGifs"
+  },
+  "downloadPostMedia": {
+    "message": "Медиа поста"
+  },
+  "downloadProfileMedia": {
+    "message": "Скачать профиль: u/$1"
+  },
+  "scanProfileApi": {
+    "message": "Начать сканирование профиля"
+  },
+  "minScoreLabel": {
+    "message": "Мин. рейтинг"
+  },
+  "postLimitLabel": {
+    "message": "Лимит постов"
+  },
+  "limitAll": {
+    "message": "Все (Без лимита)"
+  },
+  "unmarkAll": {
+    "message": "Снять выбор"
+  },
+  "downloadInFolder": {
+    "message": "Скачать в папку"
+  },
+  "downloadAsZip": {
+    "message": "Скачать в ZIP"
+  },
+  "downloadStartedToast": {
+    "message": "Загрузка начата: $1"
+  },
+  "downloadSuccessToast": {
+    "message": "Успешно скачано $1 файлов!"
+  },
+  "filterSubredditAll": {
+    "message": "Все сабреддиты"
+  },
+  "scanningPosts": {
+    "message": "Сканирование всех публикаций..."
+  },
+  "scanningStoriesHighlights": {
+    "message": "Сканирование историй и актуального..."
+  },
+  "scanningStories": {
+    "message": "Сканирование историй..."
+  },
+  "scanningHighlights": {
+    "message": "Сканирование актуального..."
+  },
+  "scanningProfile": {
+    "message": "Сканирование профиля и HD-аватара..."
+  },
+  "scanningAllMedia": {
+    "message": "Сканирование всех медиафайлов..."
+  },
+  "scanPage": {
+    "message": "Сканировать эту страницу"
+  },
+  "scanPhotoTabs": {
+    "message": "Все вкладки с фото"
+  },
+  "scanFeed": {
+    "message": "Scan Feed"
+  }
+}

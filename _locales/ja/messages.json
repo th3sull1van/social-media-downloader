@@ -1,0 +1,245 @@
+{
+  "extensionName": {
+    "message": "Social Media Downloader - Instagram, Facebook & Reddit"
+  },
+  "extensionDescription": {
+    "message": "Instagram、Facebook、Redditから写真、動画、リール、ストーリー、DASH動画（音声付き）、ギャラリー、プロフィールを最高解像度でダウンロード。"
+  },
+  "highResSubtitle": {
+    "message": "最高解像度ダウンロード"
+  },
+  "noticeUnrecognized": {
+    "message": "ページが認識されません"
+  },
+  "noticeUnrecognizedDesc": {
+    "message": "Reddit（フィード、サブレディット、またはプロファイル）に移動してください。"
+  },
+  "detectedProfile": {
+    "message": "検出されたプロファイル"
+  },
+  "detectedAlbum": {
+    "message": "Detected Album"
+  },
+  "mediaCountLabel": {
+    "message": "件のメディア"
+  },
+  "photosLabel": {
+    "message": "photos"
+  },
+  "scanAll": {
+    "message": "すべてスキャン"
+  },
+  "scanPosts": {
+    "message": "投稿"
+  },
+  "scanStories": {
+    "message": "Stories"
+  },
+  "scanHighlights": {
+    "message": "Highlights"
+  },
+  "scanAvatar": {
+    "message": "HD Profile Pic"
+  },
+  "scanning": {
+    "message": "Scanning..."
+  },
+  "stopScan": {
+    "message": "Stop Scan"
+  },
+  "selectAll": {
+    "message": "すべて選択"
+  },
+  "deselectAll": {
+    "message": "選択解除"
+  },
+  "downloading": {
+    "message": "ダウンロード中..."
+  },
+  "downloadStarting": {
+    "message": "Starting download..."
+  },
+  "downloadComplete": {
+    "message": "ダウンロードが完了しました！"
+  },
+  "collectedMedia": {
+    "message": "Collected Media"
+  },
+  "selectedSummary": {
+    "message": "$1 / $2 件選択中"
+  },
+  "emptyStateTitle": {
+    "message": "メディアが見つかりません。"
+  },
+  "emptyStateDesc": {
+    "message": "スキャンをクリックするか、フィードをスクロールしてメディアを検出します。"
+  },
+  "formatFolders": {
+    "message": "フォルダ別"
+  },
+  "formatZip": {
+    "message": "ZIPアーカイブ"
+  },
+  "downloadMediaBtn": {
+    "message": "$1 件のメディアをダウンロード"
+  },
+  "downloadMediaSingle": {
+    "message": "Download 1 Item"
+  },
+  "downloadBtnDefault": {
+    "message": "メディアをダウンロード"
+  },
+  "tabAll": {
+    "message": "すべて"
+  },
+  "tabPhotos": {
+    "message": "写真"
+  },
+  "tabVideos": {
+    "message": "動画"
+  },
+  "tabStories": {
+    "message": "Stories"
+  },
+  "tabHighlights": {
+    "message": "Highlights"
+  },
+  "tabAvatar": {
+    "message": "Profile"
+  },
+  "downloadFloating": {
+    "message": "Download Media"
+  },
+  "scanFloatingBadge": {
+    "message": "Scan"
+  },
+  "previewTitle": {
+    "message": "Media preview:"
+  },
+  "highResGuaranteed": {
+    "message": "Original high resolution guaranteed"
+  },
+  "packagingZip": {
+    "message": "ZIPファイルを圧縮中..."
+  },
+  "errorDownloading": {
+    "message": "ダウンロード中にエラーが発生しました。"
+  },
+  "noMediaFound": {
+    "message": "No media found to download."
+  },
+  "authError": {
+    "message": "Session token not found. Make sure you are logged in."
+  },
+  "resolvingHighRes": {
+    "message": "Resolving high resolution..."
+  },
+  "zipTooLarge": {
+    "message": "ZIPにするには選択が大きすぎます。フォルダーモードを使用するか、選択項目を減らしてください。"
+  },
+  "cancelBtn": {
+    "message": "キャンセル"
+  },
+  "downloadCancelled": {
+    "message": "ダウンロードをキャンセルしました。"
+  },
+  "downloadingProgress": {
+    "message": "メディアをダウンロード中..."
+  },
+  "tabPhotosOf": {
+    "message": "あなたが写っている写真"
+  },
+  "tabPhotosBy": {
+    "message": "あなたの写真"
+  },
+  "tabAlbums": {
+    "message": "アルバム"
+  },
+  "detectedSubreddit": {
+    "message": "検出されたサブレディット"
+  },
+  "detectedPost": {
+    "message": "検出された投稿"
+  },
+  "detectedFeed": {
+    "message": "Redditフィード"
+  },
+  "scanGalleries": {
+    "message": "ギャラリー"
+  },
+  "scanVideos": {
+    "message": "動画"
+  },
+  "scanRedgifs": {
+    "message": "RedGifs"
+  },
+  "tabGalleries": {
+    "message": "ギャラリー"
+  },
+  "tabRedgifs": {
+    "message": "RedGifs"
+  },
+  "downloadPostMedia": {
+    "message": "投稿のメディア"
+  },
+  "downloadProfileMedia": {
+    "message": "プロファイルをダウンロード: u/$1"
+  },
+  "scanProfileApi": {
+    "message": "プロファイルのスキャンを開始"
+  },
+  "minScoreLabel": {
+    "message": "最小スコア"
+  },
+  "postLimitLabel": {
+    "message": "投稿制限数"
+  },
+  "limitAll": {
+    "message": "すべて（無制限）"
+  },
+  "unmarkAll": {
+    "message": "すべて選択解除"
+  },
+  "downloadInFolder": {
+    "message": "フォルダに保存"
+  },
+  "downloadAsZip": {
+    "message": "ZIPでダウンロード"
+  },
+  "downloadStartedToast": {
+    "message": "ダウンロード開始: $1"
+  },
+  "downloadSuccessToast": {
+    "message": "$1 件のメディアをダウンロードしました！"
+  },
+  "filterSubredditAll": {
+    "message": "すべてのサブレディット"
+  },
+  "scanningPosts": {
+    "message": "すべての投稿をスキャン中..."
+  },
+  "scanningStoriesHighlights": {
+    "message": "ストーリーとハイライトをスキャン中..."
+  },
+  "scanningStories": {
+    "message": "ストーリーをスキャン中..."
+  },
+  "scanningHighlights": {
+    "message": "ハイライトをスキャン中..."
+  },
+  "scanningProfile": {
+    "message": "プロフィールとHDアバターをスキャン中..."
+  },
+  "scanningAllMedia": {
+    "message": "すべてのメディアをスキャン中..."
+  },
+  "scanPage": {
+    "message": "このページをスキャン"
+  },
+  "scanPhotoTabs": {
+    "message": "すべての写真タブ"
+  },
+  "scanFeed": {
+    "message": "Scan Feed"
+  }
+}

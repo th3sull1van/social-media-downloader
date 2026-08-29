@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+
+# Private test fixtures and HAR captures (never commit real session data)
+fixtures-private/
+tests/fixtures-private/
+/fixtures-private/*.har
+/tests/fixtures-private/*.har
+*.private.har
+
+# Downloads, archives and test export directories
+downloads/
+Downloads/
+SMD/
+Meta_Downloads/
+*.zip
+*.tar
+*.tar.gz
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Logs, cache and build artifacts
+*.log
+.cache/
+.artifacts/
+coverage/
+.nyc_output/
+dist/
+build/
+
+# Operating System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+
+# IDE and Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

@@ -1,0 +1,245 @@
+{
+  "extensionName": {
+    "message": "Social Media Downloader - Instagram, Facebook & Reddit"
+  },
+  "extensionDescription": {
+    "message": "Unduh foto, video, reel, cerita, video DASH dengan audio, galeri, dan profil dari Instagram, Facebook, dan Reddit dalam resolusi asli maksimum."
+  },
+  "highResSubtitle": {
+    "message": "Unduh Resolusi Maksimum"
+  },
+  "noticeUnrecognized": {
+    "message": "Halaman tidak dikenali"
+  },
+  "noticeUnrecognizedDesc": {
+    "message": "Buka Reddit (feed, subreddit, atau profil) untuk mendeteksi media."
+  },
+  "detectedProfile": {
+    "message": "Profil Terdeteksi"
+  },
+  "detectedAlbum": {
+    "message": "Detected Album"
+  },
+  "mediaCountLabel": {
+    "message": "media"
+  },
+  "photosLabel": {
+    "message": "photos"
+  },
+  "scanAll": {
+    "message": "Pindai Semua"
+  },
+  "scanPosts": {
+    "message": "Postingan"
+  },
+  "scanStories": {
+    "message": "Stories"
+  },
+  "scanHighlights": {
+    "message": "Highlights"
+  },
+  "scanAvatar": {
+    "message": "HD Profile Pic"
+  },
+  "scanning": {
+    "message": "Scanning..."
+  },
+  "stopScan": {
+    "message": "Stop Scan"
+  },
+  "selectAll": {
+    "message": "Pilih Semua"
+  },
+  "deselectAll": {
+    "message": "Batal Pilih Semua"
+  },
+  "downloading": {
+    "message": "Mengunduh..."
+  },
+  "downloadStarting": {
+    "message": "Starting download..."
+  },
+  "downloadComplete": {
+    "message": "Pengunduhan berhasil!"
+  },
+  "collectedMedia": {
+    "message": "Collected Media"
+  },
+  "selectedSummary": {
+    "message": "$1 dari $2 dipilih"
+  },
+  "emptyStateTitle": {
+    "message": "Belum ada media yang terdeteksi."
+  },
+  "emptyStateDesc": {
+    "message": "Klik Pindai atau gulir feed untuk mendeteksi media resolusi penuh."
+  },
+  "formatFolders": {
+    "message": "Dalam Folder"
+  },
+  "formatZip": {
+    "message": "Arsip ZIP"
+  },
+  "downloadMediaBtn": {
+    "message": "Unduh $1 Media"
+  },
+  "downloadMediaSingle": {
+    "message": "Download 1 Item"
+  },
+  "downloadBtnDefault": {
+    "message": "Unduh Media"
+  },
+  "tabAll": {
+    "message": "Semua"
+  },
+  "tabPhotos": {
+    "message": "Foto"
+  },
+  "tabVideos": {
+    "message": "Video"
+  },
+  "tabStories": {
+    "message": "Stories"
+  },
+  "tabHighlights": {
+    "message": "Highlights"
+  },
+  "tabAvatar": {
+    "message": "Profile"
+  },
+  "downloadFloating": {
+    "message": "Download Media"
+  },
+  "scanFloatingBadge": {
+    "message": "Scan"
+  },
+  "previewTitle": {
+    "message": "Media preview:"
+  },
+  "highResGuaranteed": {
+    "message": "Original high resolution guaranteed"
+  },
+  "packagingZip": {
+    "message": "Mengemas file ZIP..."
+  },
+  "errorDownloading": {
+    "message": "Terjadi kesalahan saat mengunduh."
+  },
+  "noMediaFound": {
+    "message": "No media found to download."
+  },
+  "authError": {
+    "message": "Session token not found. Make sure you are logged in."
+  },
+  "resolvingHighRes": {
+    "message": "Resolving high resolution..."
+  },
+  "zipTooLarge": {
+    "message": "Pilihan terlalu besar untuk ZIP. Gunakan mode Folder atau pilih lebih sedikit item."
+  },
+  "cancelBtn": {
+    "message": "Batal"
+  },
+  "downloadCancelled": {
+    "message": "Pengunduhan dibatalkan."
+  },
+  "downloadingProgress": {
+    "message": "Mengunduh media..."
+  },
+  "tabPhotosOf": {
+    "message": "Foto tentang Anda"
+  },
+  "tabPhotosBy": {
+    "message": "Foto Anda"
+  },
+  "tabAlbums": {
+    "message": "Album"
+  },
+  "detectedSubreddit": {
+    "message": "Subreddit Terdeteksi"
+  },
+  "detectedPost": {
+    "message": "Postingan Terdeteksi"
+  },
+  "detectedFeed": {
+    "message": "Feed Reddit"
+  },
+  "scanGalleries": {
+    "message": "Galeri"
+  },
+  "scanVideos": {
+    "message": "Video"
+  },
+  "scanRedgifs": {
+    "message": "RedGifs"
+  },
+  "tabGalleries": {
+    "message": "Galeri"
+  },
+  "tabRedgifs": {
+    "message": "RedGifs"
+  },
+  "downloadPostMedia": {
+    "message": "Media Postingan"
+  },
+  "downloadProfileMedia": {
+    "message": "Unduh Profil: u/$1"
+  },
+  "scanProfileApi": {
+    "message": "Mulai Pemindaian Profil"
+  },
+  "minScoreLabel": {
+    "message": "Skor Minimum"
+  },
+  "postLimitLabel": {
+    "message": "Batas Postingan"
+  },
+  "limitAll": {
+    "message": "Semua (Tanpa batas)"
+  },
+  "unmarkAll": {
+    "message": "Batal Pilih Semua"
+  },
+  "downloadInFolder": {
+    "message": "Unduh ke Folder"
+  },
+  "downloadAsZip": {
+    "message": "Unduh sebagai ZIP"
+  },
+  "downloadStartedToast": {
+    "message": "Pengunduhan dimulai: $1"
+  },
+  "downloadSuccessToast": {
+    "message": "$1 media berhasil diunduh!"
+  },
+  "filterSubredditAll": {
+    "message": "Semua Subreddit"
+  },
+  "scanningPosts": {
+    "message": "Memindai semua postingan..."
+  },
+  "scanningStoriesHighlights": {
+    "message": "Memindai cerita & sorotan..."
+  },
+  "scanningStories": {
+    "message": "Memindai cerita..."
+  },
+  "scanningHighlights": {
+    "message": "Memindai sorotan..."
+  },
+  "scanningProfile": {
+    "message": "Memindai profil & foto HD..."
+  },
+  "scanningAllMedia": {
+    "message": "Memindai semua media..."
+  },
+  "scanPage": {
+    "message": "Pindai Halaman Ini"
+  },
+  "scanPhotoTabs": {
+    "message": "Semua Tab Foto"
+  },
+  "scanFeed": {
+    "message": "Scan Feed"
+  }
+}

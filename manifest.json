@@ -1,0 +1,94 @@
+{
+  "manifest_version": 3,
+  "default_locale": "pt_BR",
+  "name": "__MSG_extensionName__",
+  "version": "1.0.0",
+  "description": "__MSG_extensionDescription__",
+  "permissions": [
+    "downloads",
+    "storage",
+    "unlimitedStorage",
+    "activeTab",
+    "scripting",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "*://*.instagram.com/*",
+    "*://*.cdninstagram.com/*",
+    "*://*.facebook.com/*",
+    "*://*.fbcdn.net/*",
+    "*://*.reddit.com/*",
+    "*://*.redd.it/*",
+    "*://*.redgifs.com/*"
+  ],
+  "background": {
+    "service_worker": "src/background/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.instagram.com/*"],
+      "js": ["src/plugins/instagram/main-world/injected.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.facebook.com/*"],
+      "js": ["src/plugins/facebook/main-world/injected.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "*://*.instagram.com/*",
+        "*://*.facebook.com/*",
+        "*://*.reddit.com/*"
+      ],
+      "js": ["src/content/content.js"],
+      "world": "ISOLATED",
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/plugins/instagram/main-world/injected.js",
+        "src/plugins/facebook/main-world/injected.js",
+        "src/plugins/meta-shared/MetaNode.js",
+        "src/plugins/meta-shared/MetaCdn.js",
+        "assets/icons/icon32.png",
+        "src/content/inpage_overlay.css"
+      ],
+      "matches": [
+        "*://*.instagram.com/*",
+        "*://*.facebook.com/*",
+        "*://*.reddit.com/*"
+      ]
+    },
+    {
+      "resources": [
+        "src/plugins/reddit/RedditScanner.js",
+        "src/plugins/reddit/RedditNormalizer.js",
+        "src/core/domain/MediaItem.js",
+        "src/core/services/FilenameService.js"
+      ],
+      "matches": [ "*://*.reddit.com/*" ]
+    }
+  ],
+  "action": {
+    "default_title": "__MSG_extensionName__",
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "32": "assets/icons/icon32.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "32": "assets/icons/icon32.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  }
+}

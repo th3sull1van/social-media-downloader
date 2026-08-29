@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Social Media Downloader</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <img src="../../assets/icons/icon32.png" alt="Logo" class="logo">
+        <div class="brand-text">
+          <h1 data-i18n="extensionName">Social Media Downloader</h1>
+          <span class="subtitle" data-i18n="highResSubtitle">Original Maximum Resolution</span>
+        </div>
+      </div>
+      <div id="platform-badge" class="platform-badge ig-badge">Instagram</div>
+    </header>
+
+    <!-- Inactive Page Notice -->
+    <div id="inactive-notice" class="notice-card" style="display: none;">
+      <div class="notice-icon">ℹ️</div>
+      <div class="notice-text">
+        <strong data-i18n="noticeUnrecognized">Page not recognized</strong>
+        <p data-i18n="noticeUnrecognizedDesc">Navigate to Instagram, Facebook, or Reddit to start downloading.</p>
+      </div>
+    </div>
+
+    <!-- Active Platform Section -->
+    <main id="active-section" style="display: none;">
+      <!-- Target Info Card -->
+      <section class="target-card">
+        <div class="target-details">
+          <span id="target-type-label" class="target-type">Detected Target</span>
+          <h2 id="target-title" class="target-title">Loading...</h2>
+        </div>
+        <div class="target-stats">
+          <span id="media-counter" class="counter-badge">0</span>
+          <span class="counter-label" data-i18n="mediaCountLabel">media items</span>
+        </div>
+      </section>
+
+      <!-- Scan Actions -->
+      <section class="scan-actions">
+        <button id="btn-scan-all" class="btn btn-primary btn-scan">
+          <span id="scan-all-label" data-i18n="scanAll">Scan All</span>
+        </button>
+        <div id="ig-specific-buttons" class="quick-scanners ig-only">
+          <button id="btn-scan-posts" class="btn btn-secondary" data-i18n="scanPosts">Posts</button>
+          <button id="btn-scan-stories" class="btn btn-secondary" data-i18n="scanStories">Stories</button>
+          <button id="btn-scan-highlights" class="btn btn-secondary" data-i18n="scanHighlights">Highlights</button>
+          <button id="btn-scan-avatar" class="btn btn-secondary" data-i18n="scanAvatar">HD Profile Pic</button>
+        </div>
+        <div id="reddit-specific-buttons" class="quick-scanners reddit-only" style="display: none;">
+          <button id="btn-scan-galleries" class="btn btn-secondary" data-i18n="scanGalleries">Galleries</button>
+          <button id="btn-scan-videos" class="btn btn-secondary" data-i18n="scanVideos">Videos</button>
+          <button id="btn-scan-redgifs" class="btn btn-secondary" data-i18n="scanRedgifs">RedGifs</button>
+        </div>
+      </section>
+
+      <!-- Filter Tabs -->
+      <nav class="filter-tabs">
+        <button class="tab active" data-filter="all">
+          <span data-i18n="tabAll">All</span> <span id="p-tab-all" class="tab-count">(0)</span>
+        </button>
+        <button class="tab" data-filter="image">
+          <span data-i18n="tabPhotos">Photos</span> <span id="p-tab-image" class="tab-count">(0)</span>
+        </button>
+        <button class="tab" data-filter="video">
+          <span data-i18n="tabVideos">Videos</span> <span id="p-tab-video" class="tab-count">(0)</span>
+        </button>
+        <button class="tab ig-only" data-filter="stories">
+          <span data-i18n="tabStories">Stories</span> <span id="p-tab-stories" class="tab-count">(0)</span>
+        </button>
+        <button class="tab ig-only" data-filter="highlights">
+          <span data-i18n="tabHighlights">Highlights</span> <span id="p-tab-highlights" class="tab-count">(0)</span>
+        </button>
+        <button class="tab reddit-only" data-filter="gallery" style="display: none;">
+          <span data-i18n="tabGalleries">Galleries</span> <span id="p-tab-gallery" class="tab-count">(0)</span>
+        </button>
+        <button class="tab reddit-only" data-filter="redgifs" style="display: none;">
+          <span data-i18n="tabRedgifs">RedGifs</span> <span id="p-tab-redgifs" class="tab-count">(0)</span>
+        </button>
+      </nav>
+
+      <!-- Subreddit Filter (Reddit only) -->
+      <div id="subreddit-filter-container" class="filter-row reddit-only" style="display: none;">
+        <label for="filter-subreddit">Subreddit:</label>
+        <select id="filter-subreddit" class="select-dropdown">
+          <option value="all" data-i18n="filterSubredditAll">All Subreddits</option>
+        </select>
+      </div>
+
+      <!-- Selection Bar -->
+      <div class="selection-bar">
+        <div class="selection-controls">
+          <button id="btn-select-all" class="btn-link" data-i18n="selectAll">Select All</button>
+          <span class="divider">•</span>
+          <button id="btn-deselect-all" class="btn-link" data-i18n="deselectAll">Deselect All</button>
+          <button id="btn-dedup" class="btn-link reddit-only active" style="display: none; margin-left: 8px;">Deduplicate</button>
+        </div>
+        <div id="selected-summary" class="selection-summary">0 of 0 selected</div>
+      </div>
+
+      <!-- Media Preview Grid -->
+      <div id="media-grid" class="media-grid"></div>
+
+      <!-- Empty State -->
+      <div id="empty-state" class="empty-state" style="display: none;">
+        <div class="empty-icon">📷</div>
+        <h3 data-i18n="emptyStateTitle">No media captured yet</h3>
+        <p data-i18n="emptyStateDesc">Click Scan or scroll the page to detect media in full original resolution.</p>
+      </div>
+
+      <!-- Download Controls -->
+      <section class="download-section">
+        <div class="format-selector">
+          <label class="radio-label">
+            <input type="radio" name="download-format" value="individual" checked>
+            <span data-i18n="formatFolders">In Folders</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="download-format" value="zip">
+            <span data-i18n="formatZip">ZIP Archive</span>
+          </label>
+        </div>
+
+        <button id="btn-download" class="btn btn-success btn-download" disabled>
+          <span id="download-btn-text" data-i18n="downloadBtnDefault">Download Media</span>
+        </button>
+      </section>
+
+      <!-- Progress Container -->
+      <div id="download-progress-container" class="progress-card" style="display: none;">
+        <div class="progress-header">
+          <span id="progress-status-text" data-i18n="downloading">Downloading...</span>
+          <span id="progress-percentage">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+        <button id="btn-cancel-download" class="btn btn-cancel" data-i18n="cancelBtn">Cancel</button>
+      </div>
+    </main>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+{
+  "extensionName": {
+    "message": "Social Media Downloader - Instagram, Facebook & Reddit"
+  },
+  "extensionDescription": {
+    "message": "Instagram, Facebook और Reddit से फ़ोटो, वीडियो, रील्स, स्टोरीज़, DASH वीडियो और प्रोफ़ाइल मूल अधिकतम रिज़ॉल्यूशन में डाउनलोड करें।"
+  },
+  "highResSubtitle": {
+    "message": "अधिकतम रिज़ॉल्यूशन डाउनलोड"
+  },
+  "noticeUnrecognized": {
+    "message": "अज्ञात पृष्ठ"
+  },
+  "noticeUnrecognizedDesc": {
+    "message": "मीडिया खोजने के लिए Reddit पर नेविगेट करें।"
+  },
+  "detectedProfile": {
+    "message": "पहचाना गया प्रोफ़ाइल"
+  },
+  "detectedAlbum": {
+    "message": "Detected Album"
+  },
+  "mediaCountLabel": {
+    "message": "मीडिया"
+  },
+  "photosLabel": {
+    "message": "photos"
+  },
+  "scanAll": {
+    "message": "सभी स्कैन करें"
+  },
+  "scanPosts": {
+    "message": "पोस्ट"
+  },
+  "scanStories": {
+    "message": "Stories"
+  },
+  "scanHighlights": {
+    "message": "Highlights"
+  },
+  "scanAvatar": {
+    "message": "HD Profile Pic"
+  },
+  "scanning": {
+    "message": "Scanning..."
+  },
+  "stopScan": {
+    "message": "Stop Scan"
+  },
+  "selectAll": {
+    "message": "सभी चुनें"
+  },
+  "deselectAll": {
+    "message": "सभी अचयनित करें"
+  },
+  "downloading": {
+    "message": "डाउनलोड हो रहा है..."
+  },
+  "downloadStarting": {
+    "message": "Starting download..."
+  },
+  "downloadComplete": {
+    "message": "डाउनलोड सफलतापूर्वक पूरा हुआ!"
+  },
+  "collectedMedia": {
+    "message": "Collected Media"
+  },
+  "selectedSummary": {
+    "message": "$1 / $2 चयनित"
+  },
+  "emptyStateTitle": {
+    "message": "अभी तक कोई मीडिया नहीं मिला।"
+  },
+  "emptyStateDesc": {
+    "message": "पूर्ण रिज़ॉल्यूशन में मीडिया खोजने के लिए स्कैन पर क्लिक करें।"
+  },
+  "formatFolders": {
+    "message": "फ़ोल्डर में"
+  },
+  "formatZip": {
+    "message": "ZIP संग्रह"
+  },
+  "downloadMediaBtn": {
+    "message": "$1 मीडिया डाउनलोड करें"
+  },
+  "downloadMediaSingle": {
+    "message": "Download 1 Item"
+  },
+  "downloadBtnDefault": {
+    "message": "मीडिया डाउनलोड करें"
+  },
+  "tabAll": {
+    "message": "सभी"
+  },
+  "tabPhotos": {
+    "message": "फ़ोटो"
+  },
+  "tabVideos": {
+    "message": "वीडियो"
+  },
+  "tabStories": {
+    "message": "Stories"
+  },
+  "tabHighlights": {
+    "message": "Highlights"
+  },
+  "tabAvatar": {
+    "message": "Profile"
+  },
+  "downloadFloating": {
+    "message": "Download Media"
+  },
+  "scanFloatingBadge": {
+    "message": "Scan"
+  },
+  "previewTitle": {
+    "message": "Media preview:"
+  },
+  "highResGuaranteed": {
+    "message": "Original high resolution guaranteed"
+  },
+  "packagingZip": {
+    "message": "ZIP संग्रह पैक हो रहा है..."
+  },
+  "errorDownloading": {
+    "message": "डाउनलोड करते समय त्रुटि हुई।"
+  },
+  "noMediaFound": {
+    "message": "No media found to download."
+  },
+  "authError": {
+    "message": "Session token not found. Make sure you are logged in."
+  },
+  "resolvingHighRes": {
+    "message": "Resolving high resolution..."
+  },
+  "zipTooLarge": {
+    "message": "ZIP के लिए चयन बहुत बड़ा है। फ़ोल्डर मोड का उपयोग करें या कम आइटम चुनें।"
+  },
+  "cancelBtn": {
+    "message": "रद्द करें"
+  },
+  "downloadCancelled": {
+    "message": "डाउनलोड रद्द किया गया।"
+  },
+  "downloadingProgress": {
+    "message": "मीडिया डाउनलोड हो रहा है..."
+  },
+  "tabPhotosOf": {
+    "message": "आपकी फ़ोटो"
+  },
+  "tabPhotosBy": {
+    "message": "आपकी अपलोड की गई फ़ोटो"
+  },
+  "tabAlbums": {
+    "message": "एल्बम"
+  },
+  "detectedSubreddit": {
+    "message": "पहचाना गया सबरेडिट"
+  },
+  "detectedPost": {
+    "message": "पहचाना गया पोस्ट"
+  },
+  "detectedFeed": {
+    "message": "रेडिट फ़ीड"
+  },
+  "scanGalleries": {
+    "message": "गैलरी"
+  },
+  "scanVideos": {
+    "message": "वीडियो"
+  },
+  "scanRedgifs": {
+    "message": "RedGifs"
+  },
+  "tabGalleries": {
+    "message": "गैलरी"
+  },
+  "tabRedgifs": {
+    "message": "RedGifs"
+  },
+  "downloadPostMedia": {
+    "message": "पोस्ट मीडिया"
+  },
+  "downloadProfileMedia": {
+    "message": "प्रोफ़ाइल डाउनलोड करें: u/$1"
+  },
+  "scanProfileApi": {
+    "message": "प्रोफ़ाइल स्कैन शुरू करें"
+  },
+  "minScoreLabel": {
+    "message": "न्यूनतम स्कोर"
+  },
+  "postLimitLabel": {
+    "message": "पोस्ट सीमा"
+  },
+  "limitAll": {
+    "message": "सभी (असीमित)"
+  },
+  "unmarkAll": {
+    "message": "सभी अचयनित करें"
+  },
+  "downloadInFolder": {
+    "message": "फ़ोल्डर में डाउनलोड करें"
+  },
+  "downloadAsZip": {
+    "message": "ZIP के रूप में डाउनलोड करें"
+  },
+  "downloadStartedToast": {
+    "message": "डाउनलोड प्रारंभ: $1"
+  },
+  "downloadSuccessToast": {
+    "message": "$1 मीडिया सफलतापूर्वक डाउनलोड हुआ!"
+  },
+  "filterSubredditAll": {
+    "message": "सभी सबरेडिट्स"
+  },
+  "scanningPosts": {
+    "message": "सभी पोस्ट स्कैन किए जा रहे हैं..."
+  },
+  "scanningStoriesHighlights": {
+    "message": "कहानियां और हाइलाइट्स स्कैन किए जा रहे हैं..."
+  },
+  "scanningStories": {
+    "message": "कहानियां स्कैन की जा रही हैं..."
+  },
+  "scanningHighlights": {
+    "message": "हाइलाइट्स स्कैन की जा रही हैं..."
+  },
+  "scanningProfile": {
+    "message": "प्रोफ़ाइल और एचडी फ़ोटो स्कैन की जा रही है..."
+  },
+  "scanningAllMedia": {
+    "message": "सभी मीडिया स्कैन किए जा रहे हैं..."
+  },
+  "scanPage": {
+    "message": "इस पेज को स्कैन करें"
+  },
+  "scanPhotoTabs": {
+    "message": "सभी फोटो टैब"
+  },
+  "scanFeed": {
+    "message": "Scan Feed"
+  }
+}

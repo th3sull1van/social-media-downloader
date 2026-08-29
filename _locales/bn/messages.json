@@ -1,0 +1,245 @@
+{
+  "extensionName": {
+    "message": "Social Media Downloader - Instagram, Facebook & Reddit"
+  },
+  "extensionDescription": {
+    "message": "ইনস্টাগ্রাম, ফেসবুক এবং রেডডিট থেকে ফটো, ভিডিও, গল্প, ড্যাশ ভিডিও এবং প্রোফাইল সম্পূর্ণ মূল রেজোলিউশনে ডাউনলোড করুন।"
+  },
+  "highResSubtitle": {
+    "message": "সর্বোচ্চ রেজোলিউশন ডাউনলোড"
+  },
+  "noticeUnrecognized": {
+    "message": "অচেনা পৃষ্ঠা"
+  },
+  "noticeUnrecognizedDesc": {
+    "message": "মিডিয়া শনাক্ত করতে Reddit-এ নেভিগেট করুন।"
+  },
+  "detectedProfile": {
+    "message": "শনাক্তকৃত প্রোফাইল"
+  },
+  "detectedAlbum": {
+    "message": "Detected Album"
+  },
+  "mediaCountLabel": {
+    "message": "টি মিডিয়া"
+  },
+  "photosLabel": {
+    "message": "photos"
+  },
+  "scanAll": {
+    "message": "সব স্ক্যান করুন"
+  },
+  "scanPosts": {
+    "message": "পোস্ট"
+  },
+  "scanStories": {
+    "message": "Stories"
+  },
+  "scanHighlights": {
+    "message": "Highlights"
+  },
+  "scanAvatar": {
+    "message": "HD Profile Pic"
+  },
+  "scanning": {
+    "message": "Scanning..."
+  },
+  "stopScan": {
+    "message": "Stop Scan"
+  },
+  "selectAll": {
+    "message": "সব নির্বাচন করুন"
+  },
+  "deselectAll": {
+    "message": "নির্বাচন বাতিল"
+  },
+  "downloading": {
+    "message": "ডাউনলোড হচ্ছে..."
+  },
+  "downloadStarting": {
+    "message": "Starting download..."
+  },
+  "downloadComplete": {
+    "message": "ডাউনলোড সফলভাবে সম্পন্ন হয়েছে!"
+  },
+  "collectedMedia": {
+    "message": "Collected Media"
+  },
+  "selectedSummary": {
+    "message": "$1 / $2 টি নির্বাচিত"
+  },
+  "emptyStateTitle": {
+    "message": "এখনো কোনো মিডিয়া পাওয়া যায়নি।"
+  },
+  "emptyStateDesc": {
+    "message": "সম্পূর্ণ রেজোলিউশনে মিডিয়া শনাক্ত করতে স্ক্যান-এ ক্লিক করুন।"
+  },
+  "formatFolders": {
+    "message": "ফোল্ডারে"
+  },
+  "formatZip": {
+    "message": "ZIP ফাইল"
+  },
+  "downloadMediaBtn": {
+    "message": "$1 টি মিডিয়া ডাউনলোড করুন"
+  },
+  "downloadMediaSingle": {
+    "message": "Download 1 Item"
+  },
+  "downloadBtnDefault": {
+    "message": "মিডিয়া ডাউনলোড করুন"
+  },
+  "tabAll": {
+    "message": "সব"
+  },
+  "tabPhotos": {
+    "message": "ছবি"
+  },
+  "tabVideos": {
+    "message": "ভিডিও"
+  },
+  "tabStories": {
+    "message": "Stories"
+  },
+  "tabHighlights": {
+    "message": "Highlights"
+  },
+  "tabAvatar": {
+    "message": "Profile"
+  },
+  "downloadFloating": {
+    "message": "Download Media"
+  },
+  "scanFloatingBadge": {
+    "message": "Scan"
+  },
+  "previewTitle": {
+    "message": "Media preview:"
+  },
+  "highResGuaranteed": {
+    "message": "Original high resolution guaranteed"
+  },
+  "packagingZip": {
+    "message": "ZIP ফাইল প্যাক করা হচ্ছে..."
+  },
+  "errorDownloading": {
+    "message": "ডাউনলোড করার সময় ত্রুটি হয়েছে।"
+  },
+  "noMediaFound": {
+    "message": "No media found to download."
+  },
+  "authError": {
+    "message": "Session token not found. Make sure you are logged in."
+  },
+  "resolvingHighRes": {
+    "message": "Resolving high resolution..."
+  },
+  "zipTooLarge": {
+    "message": "ZIP এর জন্য নির্বাচনটি খুব বড়। ফোল্ডার মোড ব্যবহার করুন বা কম আইটেম নির্বাচন করুন।"
+  },
+  "cancelBtn": {
+    "message": "বাতিল"
+  },
+  "downloadCancelled": {
+    "message": "ডাউনলোড বাতিল করা হয়েছে।"
+  },
+  "downloadingProgress": {
+    "message": "Downloading media..."
+  },
+  "tabPhotosOf": {
+    "message": "Photos of you"
+  },
+  "tabPhotosBy": {
+    "message": "Your photos"
+  },
+  "tabAlbums": {
+    "message": "Albums"
+  },
+  "detectedSubreddit": {
+    "message": "শনাক্তকৃত সাবরেডিট"
+  },
+  "detectedPost": {
+    "message": "শনাক্তকৃত পোস্ট"
+  },
+  "detectedFeed": {
+    "message": "রেডিট ফিড"
+  },
+  "scanGalleries": {
+    "message": "গ্যালারি"
+  },
+  "scanVideos": {
+    "message": "ভিডিও"
+  },
+  "scanRedgifs": {
+    "message": "RedGifs"
+  },
+  "tabGalleries": {
+    "message": "গ্যালারি"
+  },
+  "tabRedgifs": {
+    "message": "RedGifs"
+  },
+  "downloadPostMedia": {
+    "message": "পোস্টের মিডিয়া"
+  },
+  "downloadProfileMedia": {
+    "message": "প্রোফাইল ডাউনলোড: u/$1"
+  },
+  "scanProfileApi": {
+    "message": "প্রোফাইল স্ক্যান শুরু করুন"
+  },
+  "minScoreLabel": {
+    "message": "সর্বনিম্ন স্কোর"
+  },
+  "postLimitLabel": {
+    "message": "পোস্টের সীমা"
+  },
+  "limitAll": {
+    "message": "সব (সীমাহীন)"
+  },
+  "unmarkAll": {
+    "message": "সব নির্বাচন বাতিল"
+  },
+  "downloadInFolder": {
+    "message": "ফোল্ডারে ডাউনলোড করুন"
+  },
+  "downloadAsZip": {
+    "message": "ZIP হিসেবে ডাউনলোড করুন"
+  },
+  "downloadStartedToast": {
+    "message": "ডাউনলোড শুরু হয়েছে: $1"
+  },
+  "downloadSuccessToast": {
+    "message": "$1 টি মিডিয়া সফলভাবে ডাউনলোড হয়েছে!"
+  },
+  "filterSubredditAll": {
+    "message": "সমস্ত সাবরেডিট"
+  },
+  "scanningPosts": {
+    "message": "Scanning all posts..."
+  },
+  "scanningStoriesHighlights": {
+    "message": "Scanning stories & highlights..."
+  },
+  "scanningStories": {
+    "message": "Scanning stories..."
+  },
+  "scanningHighlights": {
+    "message": "Scanning highlights..."
+  },
+  "scanningProfile": {
+    "message": "Scanning profile & avatar..."
+  },
+  "scanningAllMedia": {
+    "message": "Scanning all media..."
+  },
+  "scanPage": {
+    "message": "এই পৃষ্ঠা স্ক্যান করুন"
+  },
+  "scanPhotoTabs": {
+    "message": "সব ফটো ট্যাব"
+  },
+  "scanFeed": {
+    "message": "Scan Feed"
+  }
+}

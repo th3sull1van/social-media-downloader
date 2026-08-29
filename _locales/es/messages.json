@@ -1,0 +1,245 @@
+{
+  "extensionName": {
+    "message": "Social Media Downloader - Instagram, Facebook & Reddit"
+  },
+  "extensionDescription": {
+    "message": "Descarga fotos, videos, reels, historias, videos DASH con audio, galerías y perfiles de Instagram, Facebook y Reddit en máxima resolución."
+  },
+  "highResSubtitle": {
+    "message": "Descarga en Máxima Resolución"
+  },
+  "noticeUnrecognized": {
+    "message": "Página no reconocida"
+  },
+  "noticeUnrecognizedDesc": {
+    "message": "Navega a Reddit (feed, subreddit o perfil) para detectar medios."
+  },
+  "detectedProfile": {
+    "message": "Perfil Detectado"
+  },
+  "detectedAlbum": {
+    "message": "Álbum Detectado"
+  },
+  "mediaCountLabel": {
+    "message": "archivos"
+  },
+  "photosLabel": {
+    "message": "fotos"
+  },
+  "scanAll": {
+    "message": "Escanear Todo"
+  },
+  "scanPosts": {
+    "message": "Publicaciones"
+  },
+  "scanStories": {
+    "message": "Stories"
+  },
+  "scanHighlights": {
+    "message": "Destacados"
+  },
+  "scanAvatar": {
+    "message": "Foto Perfil HD"
+  },
+  "scanning": {
+    "message": "Escaneando..."
+  },
+  "stopScan": {
+    "message": "Detener Escaneo"
+  },
+  "selectAll": {
+    "message": "Seleccionar Todo"
+  },
+  "deselectAll": {
+    "message": "Deseleccionar Todo"
+  },
+  "downloading": {
+    "message": "Descargando..."
+  },
+  "downloadStarting": {
+    "message": "Iniciando descarga..."
+  },
+  "downloadComplete": {
+    "message": "¡Descarga completada con éxito!"
+  },
+  "collectedMedia": {
+    "message": "Archivos Recolectados"
+  },
+  "selectedSummary": {
+    "message": "$1 de $2 seleccionados"
+  },
+  "emptyStateTitle": {
+    "message": "No se han capturado medios aún."
+  },
+  "emptyStateDesc": {
+    "message": "Haz clic en Escanear o navega por el feed para detectar medios en resolución máxima."
+  },
+  "formatFolders": {
+    "message": "En Carpetas"
+  },
+  "formatZip": {
+    "message": "Archivo ZIP"
+  },
+  "downloadMediaBtn": {
+    "message": "Descargar $1 Medios"
+  },
+  "downloadMediaSingle": {
+    "message": "Descargar 1 Archivo"
+  },
+  "downloadBtnDefault": {
+    "message": "Descargar Medios"
+  },
+  "tabAll": {
+    "message": "Todos"
+  },
+  "tabPhotos": {
+    "message": "Fotos"
+  },
+  "tabVideos": {
+    "message": "Vídeos"
+  },
+  "tabStories": {
+    "message": "Stories"
+  },
+  "tabHighlights": {
+    "message": "Destacados"
+  },
+  "tabAvatar": {
+    "message": "Perfil"
+  },
+  "downloadFloating": {
+    "message": "Descargar Archivos"
+  },
+  "scanFloatingBadge": {
+    "message": "Escanear"
+  },
+  "previewTitle": {
+    "message": "Vista previa de archivos:"
+  },
+  "highResGuaranteed": {
+    "message": "Alta resolución original garantizada"
+  },
+  "packagingZip": {
+    "message": "Empaquetando archivo ZIP..."
+  },
+  "errorDownloading": {
+    "message": "Error al descargar medios."
+  },
+  "noMediaFound": {
+    "message": "No se encontraron archivos para descargar."
+  },
+  "authError": {
+    "message": "Sesión no encontrada. Asegúrate de haber iniciado sesión."
+  },
+  "resolvingHighRes": {
+    "message": "Resolviendo alta resolución..."
+  },
+  "zipTooLarge": {
+    "message": "Selección demasiado grande para ZIP. Usa el modo Carpetas o selecciona menos elementos."
+  },
+  "cancelBtn": {
+    "message": "Cancelar"
+  },
+  "downloadCancelled": {
+    "message": "Descarga cancelada."
+  },
+  "downloadingProgress": {
+    "message": "Descargando contenido..."
+  },
+  "tabPhotosOf": {
+    "message": "Fotos en las que apareces"
+  },
+  "tabPhotosBy": {
+    "message": "Tus fotos"
+  },
+  "tabAlbums": {
+    "message": "Álbumes"
+  },
+  "detectedSubreddit": {
+    "message": "Subreddit Detectado"
+  },
+  "detectedPost": {
+    "message": "Publicación Detectada"
+  },
+  "detectedFeed": {
+    "message": "Feed de Reddit"
+  },
+  "scanGalleries": {
+    "message": "Galerías"
+  },
+  "scanVideos": {
+    "message": "Vídeos"
+  },
+  "scanRedgifs": {
+    "message": "RedGifs"
+  },
+  "tabGalleries": {
+    "message": "Galerías"
+  },
+  "tabRedgifs": {
+    "message": "RedGifs"
+  },
+  "downloadPostMedia": {
+    "message": "Medios de la Publicación"
+  },
+  "downloadProfileMedia": {
+    "message": "Descargar Perfil: u/$1"
+  },
+  "scanProfileApi": {
+    "message": "Iniciar Escaneo del Perfil"
+  },
+  "minScoreLabel": {
+    "message": "Puntuación Mínima"
+  },
+  "postLimitLabel": {
+    "message": "Límite de Publicaciones"
+  },
+  "limitAll": {
+    "message": "Todos (Sin límite)"
+  },
+  "unmarkAll": {
+    "message": "Deseleccionar Todo"
+  },
+  "downloadInFolder": {
+    "message": "Descargar en Carpeta"
+  },
+  "downloadAsZip": {
+    "message": "Descargar como ZIP"
+  },
+  "downloadStartedToast": {
+    "message": "Descarga iniciada: $1"
+  },
+  "downloadSuccessToast": {
+    "message": "¡$1 medios descargados con éxito!"
+  },
+  "filterSubredditAll": {
+    "message": "Todos los Subreddits"
+  },
+  "scanningPosts": {
+    "message": "Escaneando todas las publicaciones..."
+  },
+  "scanningStoriesHighlights": {
+    "message": "Escaneando historias y destacados..."
+  },
+  "scanningStories": {
+    "message": "Escaneando historias..."
+  },
+  "scanningHighlights": {
+    "message": "Escaneando destacados..."
+  },
+  "scanningProfile": {
+    "message": "Escaneando perfil y foto HD..."
+  },
+  "scanningAllMedia": {
+    "message": "Escaneando todos los archivos multimedia..."
+  },
+  "scanPage": {
+    "message": "Escanear esta página"
+  },
+  "scanPhotoTabs": {
+    "message": "Todas las pestañas de fotos"
+  },
+  "scanFeed": {
+    "message": "Scan Feed"
+  }
+}

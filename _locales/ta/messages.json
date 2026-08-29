@@ -1,0 +1,245 @@
+{
+  "extensionName": {
+    "message": "Social Media Downloader - Instagram, Facebook & Reddit"
+  },
+  "extensionDescription": {
+    "message": "Instagram, Facebook மற்றும் Reddit இலிருந்து புகைப்படங்கள், வீடியோக்கள், கதைகள், DASH வீடியோக்கள் மற்றும் சுயவிவரங்களை அசல் அதிகபட்ச தெளிவுத்திறனில் பதிவிறக்கவும்."
+  },
+  "highResSubtitle": {
+    "message": "அதிகபட்ச தெளிவுத்திறன் பதிவிறக்கம்"
+  },
+  "noticeUnrecognized": {
+    "message": "அறியப்படாத பக்கம்"
+  },
+  "noticeUnrecognizedDesc": {
+    "message": "ஊடகத்தைக் கண்டறிய Reddit க்குச் செல்லவும்."
+  },
+  "detectedProfile": {
+    "message": "கண்டறியப்பட்ட சுயவிவரம்"
+  },
+  "detectedAlbum": {
+    "message": "Detected Album"
+  },
+  "mediaCountLabel": {
+    "message": "ஊடகங்கள்"
+  },
+  "photosLabel": {
+    "message": "photos"
+  },
+  "scanAll": {
+    "message": "அனைத்தையும் ஸ்கேன் செய்"
+  },
+  "scanPosts": {
+    "message": "இடுகைகள்"
+  },
+  "scanStories": {
+    "message": "Stories"
+  },
+  "scanHighlights": {
+    "message": "Highlights"
+  },
+  "scanAvatar": {
+    "message": "HD Profile Pic"
+  },
+  "scanning": {
+    "message": "Scanning..."
+  },
+  "stopScan": {
+    "message": "Stop Scan"
+  },
+  "selectAll": {
+    "message": "அனைத்தையும் தேர்ந்தெடு"
+  },
+  "deselectAll": {
+    "message": "தேர்வை நீக்கு"
+  },
+  "downloading": {
+    "message": "பதிவிறக்குகிறது..."
+  },
+  "downloadStarting": {
+    "message": "Starting download..."
+  },
+  "downloadComplete": {
+    "message": "பதிவிறக்கம் வெற்றிகரமாக முடிந்தது!"
+  },
+  "collectedMedia": {
+    "message": "Collected Media"
+  },
+  "selectedSummary": {
+    "message": "$1 / $2 தேர்ந்தெடுக்கப்பட்டது"
+  },
+  "emptyStateTitle": {
+    "message": "இதுவரை ஊடகம் எதுவும் கிடைக்கவில்லை."
+  },
+  "emptyStateDesc": {
+    "message": "முழுத் தெளிவுத்திறனில் ஊடகத்தைக் கண்டறிய ஸ்கேன் என்பதைக் கிளிக் செய்யவும்."
+  },
+  "formatFolders": {
+    "message": "கோப்புறைகளில்"
+  },
+  "formatZip": {
+    "message": "ZIP காப்பகம்"
+  },
+  "downloadMediaBtn": {
+    "message": "$1 ஊடகத்தைப் பதிவிறக்கு"
+  },
+  "downloadMediaSingle": {
+    "message": "Download 1 Item"
+  },
+  "downloadBtnDefault": {
+    "message": "ஊடகத்தைப் பதிவிறக்கு"
+  },
+  "tabAll": {
+    "message": "அனைத்தும்"
+  },
+  "tabPhotos": {
+    "message": "புகைப்படங்கள்"
+  },
+  "tabVideos": {
+    "message": "வீடியோக்கள்"
+  },
+  "tabStories": {
+    "message": "Stories"
+  },
+  "tabHighlights": {
+    "message": "Highlights"
+  },
+  "tabAvatar": {
+    "message": "Profile"
+  },
+  "downloadFloating": {
+    "message": "Download Media"
+  },
+  "scanFloatingBadge": {
+    "message": "Scan"
+  },
+  "previewTitle": {
+    "message": "Media preview:"
+  },
+  "highResGuaranteed": {
+    "message": "Original high resolution guaranteed"
+  },
+  "packagingZip": {
+    "message": "ZIP கோப்பு தொகுக்கப்படுகிறது..."
+  },
+  "errorDownloading": {
+    "message": "பதிவிறக்குவதில் பிழை ஏற்பட்டது."
+  },
+  "noMediaFound": {
+    "message": "No media found to download."
+  },
+  "authError": {
+    "message": "Session token not found. Make sure you are logged in."
+  },
+  "resolvingHighRes": {
+    "message": "Resolving high resolution..."
+  },
+  "zipTooLarge": {
+    "message": "ZIP க்கு தேர்வு மிகவும் பெரியது. கோப்புறைகள் பயன்முறையைப் பயன்படுத்தவும் அல்லது குறைவான உருப்படிகளைத் தேர்ந்தெடுக்கவும்."
+  },
+  "cancelBtn": {
+    "message": "ரத்துசெய்"
+  },
+  "downloadCancelled": {
+    "message": "பதிவிறக்கம் ரத்து செய்யப்பட்டது."
+  },
+  "downloadingProgress": {
+    "message": "Downloading media..."
+  },
+  "tabPhotosOf": {
+    "message": "Photos of you"
+  },
+  "tabPhotosBy": {
+    "message": "Your photos"
+  },
+  "tabAlbums": {
+    "message": "Albums"
+  },
+  "detectedSubreddit": {
+    "message": "கண்டறியப்பட்ட சப்ரெடிட்"
+  },
+  "detectedPost": {
+    "message": "கண்டறியப்பட்ட இடுகை"
+  },
+  "detectedFeed": {
+    "message": "ரெடிட் ஊட்டம்"
+  },
+  "scanGalleries": {
+    "message": "கேலரிகள்"
+  },
+  "scanVideos": {
+    "message": "வீடியோக்கள்"
+  },
+  "scanRedgifs": {
+    "message": "RedGifs"
+  },
+  "tabGalleries": {
+    "message": "கேலரிகள்"
+  },
+  "tabRedgifs": {
+    "message": "RedGifs"
+  },
+  "downloadPostMedia": {
+    "message": "இடுகை ஊடகம்"
+  },
+  "downloadProfileMedia": {
+    "message": "சுயவிவரத்தைப் பதிவிறக்கு: u/$1"
+  },
+  "scanProfileApi": {
+    "message": "சுயவிவர ஸ்கேனைத் தொடங்கு"
+  },
+  "minScoreLabel": {
+    "message": "குறைந்தபட்ச மதிப்பெண்"
+  },
+  "postLimitLabel": {
+    "message": "இடுகை வரம்பு"
+  },
+  "limitAll": {
+    "message": "அனைத்தும் (வரம்பற்றது)"
+  },
+  "unmarkAll": {
+    "message": "அனைத்துத் தேர்வையும் நீக்கு"
+  },
+  "downloadInFolder": {
+    "message": "கோப்புறையில் பதிவிறக்கு"
+  },
+  "downloadAsZip": {
+    "message": "ZIP ஆகப் பதிவிறக்கு"
+  },
+  "downloadStartedToast": {
+    "message": "பதிவிறக்கம் தொடங்கியது: $1"
+  },
+  "downloadSuccessToast": {
+    "message": "$1 ஊடகங்கள் வெற்றிகரமாகப் பதிவிறக்கப்பட்டன!"
+  },
+  "filterSubredditAll": {
+    "message": "அனைத்து சப்ரெடிட்களும்"
+  },
+  "scanningPosts": {
+    "message": "Scanning all posts..."
+  },
+  "scanningStoriesHighlights": {
+    "message": "Scanning stories & highlights..."
+  },
+  "scanningStories": {
+    "message": "Scanning stories..."
+  },
+  "scanningHighlights": {
+    "message": "Scanning highlights..."
+  },
+  "scanningProfile": {
+    "message": "Scanning profile & avatar..."
+  },
+  "scanningAllMedia": {
+    "message": "Scanning all media..."
+  },
+  "scanPage": {
+    "message": "இந்தப் பக்கத்தை ஸ்கேன் செய்"
+  },
+  "scanPhotoTabs": {
+    "message": "அனைத்து புகைப்படத் தாவல்கள்"
+  },
+  "scanFeed": {
+    "message": "Scan Feed"
+  }
+}

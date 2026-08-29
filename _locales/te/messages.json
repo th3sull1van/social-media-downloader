@@ -1,0 +1,245 @@
+{
+  "extensionName": {
+    "message": "Social Media Downloader - Instagram, Facebook & Reddit"
+  },
+  "extensionDescription": {
+    "message": "Instagram, Facebook మరియు Reddit నుండి ఫోటోలు, వీడియోలు, రీల్స్, కథనాలు, DASH వీడియోలు మరియు ప్రొఫైల్‌లను అసలు గరిష్ట రిజల్యూషన్‌లో డౌన్‌లోడ్ చేయండి."
+  },
+  "highResSubtitle": {
+    "message": "గరిష్ట రిజల్యూషన్ డౌన్‌లోడ్"
+  },
+  "noticeUnrecognized": {
+    "message": "గుర్తించబడని పేజీ"
+  },
+  "noticeUnrecognizedDesc": {
+    "message": "మీడియాను గుర్తించడానికి Reddit కి వెళ్లండి."
+  },
+  "detectedProfile": {
+    "message": "గుర్తించిన ప్రొఫైల్"
+  },
+  "detectedAlbum": {
+    "message": "Detected Album"
+  },
+  "mediaCountLabel": {
+    "message": "మీడియా"
+  },
+  "photosLabel": {
+    "message": "photos"
+  },
+  "scanAll": {
+    "message": "అన్నీ స్కాన్ చేయండి"
+  },
+  "scanPosts": {
+    "message": "పోస్ట్‌లు"
+  },
+  "scanStories": {
+    "message": "Stories"
+  },
+  "scanHighlights": {
+    "message": "Highlights"
+  },
+  "scanAvatar": {
+    "message": "HD Profile Pic"
+  },
+  "scanning": {
+    "message": "Scanning..."
+  },
+  "stopScan": {
+    "message": "Stop Scan"
+  },
+  "selectAll": {
+    "message": "అన్నీ ఎంచుకోండి"
+  },
+  "deselectAll": {
+    "message": "ఎంపికను తీసివేయండి"
+  },
+  "downloading": {
+    "message": "డౌన్‌లోడ్ అవుతోంది..."
+  },
+  "downloadStarting": {
+    "message": "Starting download..."
+  },
+  "downloadComplete": {
+    "message": "డౌన్‌లోడ్ విజయవంతంగా పూర్తయింది!"
+  },
+  "collectedMedia": {
+    "message": "Collected Media"
+  },
+  "selectedSummary": {
+    "message": "$1 / $2 ఎంచుకోబడింది"
+  },
+  "emptyStateTitle": {
+    "message": "ఇంకా ఎలాంటి మీడియా దొరకలేదు."
+  },
+  "emptyStateDesc": {
+    "message": "పూర్తి రిజల్యూషన్‌లో మీడియాను కనుగొనడానికి స్కాన్ క్లిక్ చేయండి."
+  },
+  "formatFolders": {
+    "message": "ఫోల్డర్లలో"
+  },
+  "formatZip": {
+    "message": "ZIP ఆర్కైవ్"
+  },
+  "downloadMediaBtn": {
+    "message": "$1 మీడియాను డౌన్‌లోడ్ చేయండి"
+  },
+  "downloadMediaSingle": {
+    "message": "Download 1 Item"
+  },
+  "downloadBtnDefault": {
+    "message": "మీడియా డౌన్‌లోడ్ చేయండి"
+  },
+  "tabAll": {
+    "message": "అన్నీ"
+  },
+  "tabPhotos": {
+    "message": "ఫోటోలు"
+  },
+  "tabVideos": {
+    "message": "వీడియోలు"
+  },
+  "tabStories": {
+    "message": "Stories"
+  },
+  "tabHighlights": {
+    "message": "Highlights"
+  },
+  "tabAvatar": {
+    "message": "Profile"
+  },
+  "downloadFloating": {
+    "message": "Download Media"
+  },
+  "scanFloatingBadge": {
+    "message": "Scan"
+  },
+  "previewTitle": {
+    "message": "Media preview:"
+  },
+  "highResGuaranteed": {
+    "message": "Original high resolution guaranteed"
+  },
+  "packagingZip": {
+    "message": "ZIP ఫైల్ ప్యాక్ అవుతోంది..."
+  },
+  "errorDownloading": {
+    "message": "డౌన్‌లోడ్ చేయడంలో లోపం సంభవించింది."
+  },
+  "noMediaFound": {
+    "message": "No media found to download."
+  },
+  "authError": {
+    "message": "Session token not found. Make sure you are logged in."
+  },
+  "resolvingHighRes": {
+    "message": "Resolving high resolution..."
+  },
+  "zipTooLarge": {
+    "message": "ZIP కోసం ఎంపిక చాలా పెద్దది. ఫోల్డర్ల మోడ్‌ను ఉపయోగించండి లేదా తక్కువ అంశాలను ఎంచుకోండి."
+  },
+  "cancelBtn": {
+    "message": "రద్దు చేయి"
+  },
+  "downloadCancelled": {
+    "message": "డౌన్‌లోడ్ రద్దు చేయబడింది."
+  },
+  "downloadingProgress": {
+    "message": "Downloading media..."
+  },
+  "tabPhotosOf": {
+    "message": "Photos of you"
+  },
+  "tabPhotosBy": {
+    "message": "Your photos"
+  },
+  "tabAlbums": {
+    "message": "Albums"
+  },
+  "detectedSubreddit": {
+    "message": "గుర్తించిన సబ్‌రెడిట్"
+  },
+  "detectedPost": {
+    "message": "గుర్తించిన పోస్ట్"
+  },
+  "detectedFeed": {
+    "message": "రెడిట్ ఫీడ్"
+  },
+  "scanGalleries": {
+    "message": "గ్యాలరీలు"
+  },
+  "scanVideos": {
+    "message": "వీడియోలు"
+  },
+  "scanRedgifs": {
+    "message": "RedGifs"
+  },
+  "tabGalleries": {
+    "message": "గ్యాలరీలు"
+  },
+  "tabRedgifs": {
+    "message": "RedGifs"
+  },
+  "downloadPostMedia": {
+    "message": "పోస్ట్ మీడియా"
+  },
+  "downloadProfileMedia": {
+    "message": "ప్రొఫైల్ డౌన్‌లోడ్: u/$1"
+  },
+  "scanProfileApi": {
+    "message": "ప్రొఫైల్ స్కాన్ ప్రారంభించండి"
+  },
+  "minScoreLabel": {
+    "message": "కనిష్ట స్కోరు"
+  },
+  "postLimitLabel": {
+    "message": "పోస్ట్ పరిమితి"
+  },
+  "limitAll": {
+    "message": "అన్నీ (పరిమితి లేదు)"
+  },
+  "unmarkAll": {
+    "message": "అన్నీ తీసివేయండి"
+  },
+  "downloadInFolder": {
+    "message": "ఫోల్డర్‌లోకి డౌన్‌లోడ్ చేయండి"
+  },
+  "downloadAsZip": {
+    "message": "ZIP గా డౌన్‌లోడ్ చేయండి"
+  },
+  "downloadStartedToast": {
+    "message": "డౌన్‌లోడ్ ప్రారంభమైంది: $1"
+  },
+  "downloadSuccessToast": {
+    "message": "$1 మీడియా విజయవంతంగా డౌన్‌లోడ్ చేయబడింది!"
+  },
+  "filterSubredditAll": {
+    "message": "అన్ని సబ్‌రెడిట్‌లు"
+  },
+  "scanningPosts": {
+    "message": "Scanning all posts..."
+  },
+  "scanningStoriesHighlights": {
+    "message": "Scanning stories & highlights..."
+  },
+  "scanningStories": {
+    "message": "Scanning stories..."
+  },
+  "scanningHighlights": {
+    "message": "Scanning highlights..."
+  },
+  "scanningProfile": {
+    "message": "Scanning profile & avatar..."
+  },
+  "scanningAllMedia": {
+    "message": "Scanning all media..."
+  },
+  "scanPage": {
+    "message": "ఈ పేజీని స్కాన్ చేయండి"
+  },
+  "scanPhotoTabs": {
+    "message": "అన్ని ఫోటో ట్యాబ్‌లు"
+  },
+  "scanFeed": {
+    "message": "Scan Feed"
+  }
+}

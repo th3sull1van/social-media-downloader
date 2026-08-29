@@ -1,0 +1,245 @@
+{
+  "extensionName": {
+    "message": "Social Media Downloader - Instagram, Facebook & Reddit"
+  },
+  "extensionDescription": {
+    "message": "Instagram, Facebook, Reddit에서 사진, 동영상, 릴스, 스토리, DASH 동영상(오디오 포함), 갤러리 및 프로필을 원본 최고 해상도로 다운로드하세요."
+  },
+  "highResSubtitle": {
+    "message": "최고 해상도 다운로드"
+  },
+  "noticeUnrecognized": {
+    "message": "인식할 수 없는 페이지"
+  },
+  "noticeUnrecognizedDesc": {
+    "message": "미디어를 감지하려면 Reddit(피드, 서브레딧 또는 프로필)으로 이동하세요."
+  },
+  "detectedProfile": {
+    "message": "감지된 프로필"
+  },
+  "detectedAlbum": {
+    "message": "Detected Album"
+  },
+  "mediaCountLabel": {
+    "message": "개 미디어"
+  },
+  "photosLabel": {
+    "message": "photos"
+  },
+  "scanAll": {
+    "message": "전체 스캔"
+  },
+  "scanPosts": {
+    "message": "게시물"
+  },
+  "scanStories": {
+    "message": "Stories"
+  },
+  "scanHighlights": {
+    "message": "Highlights"
+  },
+  "scanAvatar": {
+    "message": "HD Profile Pic"
+  },
+  "scanning": {
+    "message": "Scanning..."
+  },
+  "stopScan": {
+    "message": "Stop Scan"
+  },
+  "selectAll": {
+    "message": "전체 선택"
+  },
+  "deselectAll": {
+    "message": "선택 해제"
+  },
+  "downloading": {
+    "message": "다운로드 중..."
+  },
+  "downloadStarting": {
+    "message": "Starting download..."
+  },
+  "downloadComplete": {
+    "message": "다운로드가 완료되었습니다!"
+  },
+  "collectedMedia": {
+    "message": "Collected Media"
+  },
+  "selectedSummary": {
+    "message": "$1 / $2개 선택됨"
+  },
+  "emptyStateTitle": {
+    "message": "감지된 미디어가 없습니다."
+  },
+  "emptyStateDesc": {
+    "message": "스캔을 클릭하거나 피드를 스크롤하여 미디어를 감지하세요."
+  },
+  "formatFolders": {
+    "message": "폴더별 저장"
+  },
+  "formatZip": {
+    "message": "ZIP 압축 파일"
+  },
+  "downloadMediaBtn": {
+    "message": "미디어 $1개 다운로드"
+  },
+  "downloadMediaSingle": {
+    "message": "Download 1 Item"
+  },
+  "downloadBtnDefault": {
+    "message": "미디어 다운로드"
+  },
+  "tabAll": {
+    "message": "전체"
+  },
+  "tabPhotos": {
+    "message": "사진"
+  },
+  "tabVideos": {
+    "message": "비디오"
+  },
+  "tabStories": {
+    "message": "Stories"
+  },
+  "tabHighlights": {
+    "message": "Highlights"
+  },
+  "tabAvatar": {
+    "message": "Profile"
+  },
+  "downloadFloating": {
+    "message": "Download Media"
+  },
+  "scanFloatingBadge": {
+    "message": "Scan"
+  },
+  "previewTitle": {
+    "message": "Media preview:"
+  },
+  "highResGuaranteed": {
+    "message": "Original high resolution guaranteed"
+  },
+  "packagingZip": {
+    "message": "ZIP 파일 압축 중..."
+  },
+  "errorDownloading": {
+    "message": "다운로드 중 오류가 발생했습니다."
+  },
+  "noMediaFound": {
+    "message": "No media found to download."
+  },
+  "authError": {
+    "message": "Session token not found. Make sure you are logged in."
+  },
+  "resolvingHighRes": {
+    "message": "Resolving high resolution..."
+  },
+  "zipTooLarge": {
+    "message": "ZIP으로 압축하기에 선택 항목이 너무 큽니다. 폴더 모드를 사용하거나 더 적은 항목을 선택하세요."
+  },
+  "cancelBtn": {
+    "message": "취소"
+  },
+  "downloadCancelled": {
+    "message": "다운로드가 취소되었습니다."
+  },
+  "downloadingProgress": {
+    "message": "미디어 다운로드 중..."
+  },
+  "tabPhotosOf": {
+    "message": "내가 나온 사진"
+  },
+  "tabPhotosBy": {
+    "message": "회원님의 사진"
+  },
+  "tabAlbums": {
+    "message": "앨범"
+  },
+  "detectedSubreddit": {
+    "message": "감지된 서브레딧"
+  },
+  "detectedPost": {
+    "message": "감지된 게시물"
+  },
+  "detectedFeed": {
+    "message": "Reddit 피드"
+  },
+  "scanGalleries": {
+    "message": "갤러리"
+  },
+  "scanVideos": {
+    "message": "비디오"
+  },
+  "scanRedgifs": {
+    "message": "RedGifs"
+  },
+  "tabGalleries": {
+    "message": "갤러리"
+  },
+  "tabRedgifs": {
+    "message": "RedGifs"
+  },
+  "downloadPostMedia": {
+    "message": "게시물 미디어"
+  },
+  "downloadProfileMedia": {
+    "message": "프로필 다운로드: u/$1"
+  },
+  "scanProfileApi": {
+    "message": "프로필 스캔 시작"
+  },
+  "minScoreLabel": {
+    "message": "최소 점수"
+  },
+  "postLimitLabel": {
+    "message": "게시물 제한"
+  },
+  "limitAll": {
+    "message": "전체 (무제한)"
+  },
+  "unmarkAll": {
+    "message": "전체 선택 해제"
+  },
+  "downloadInFolder": {
+    "message": "폴더로 다운로드"
+  },
+  "downloadAsZip": {
+    "message": "ZIP으로 다운로드"
+  },
+  "downloadStartedToast": {
+    "message": "다운로드 시작: $1"
+  },
+  "downloadSuccessToast": {
+    "message": "$1개 미디어가 다운로드되었습니다!"
+  },
+  "filterSubredditAll": {
+    "message": "모든 서브레딧"
+  },
+  "scanningPosts": {
+    "message": "모든 게시물 검색 중..."
+  },
+  "scanningStoriesHighlights": {
+    "message": "스토리 및 하이라이트 검색 중..."
+  },
+  "scanningStories": {
+    "message": "스토리 검색 중..."
+  },
+  "scanningHighlights": {
+    "message": "하이라이트 검색 중..."
+  },
+  "scanningProfile": {
+    "message": "프로필 및 HD 사진 검색 중..."
+  },
+  "scanningAllMedia": {
+    "message": "모든 미디어 검색 중..."
+  },
+  "scanPage": {
+    "message": "이 페이지 스캔"
+  },
+  "scanPhotoTabs": {
+    "message": "모든 사진 탭"
+  },
+  "scanFeed": {
+    "message": "Scan Feed"
+  }
+}

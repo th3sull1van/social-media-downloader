@@ -1,0 +1,245 @@
+{
+  "extensionName": {
+    "message": "Social Media Downloader - Instagram, Facebook & Reddit"
+  },
+  "extensionDescription": {
+    "message": "Tải xuống ảnh, video, reels, tin, video DASH có âm thanh, bộ sưu tập và hồ sơ từ Instagram, Facebook và Reddit ở độ phân giải gốc tối đa."
+  },
+  "highResSubtitle": {
+    "message": "Tải Độ Phân Giải Tối Đa"
+  },
+  "noticeUnrecognized": {
+    "message": "Trang không được nhận dạng"
+  },
+  "noticeUnrecognizedDesc": {
+    "message": "Điều hướng đến Reddit để bắt đầu phát hiện phương tiện."
+  },
+  "detectedProfile": {
+    "message": "Hồ sơ đã phát hiện"
+  },
+  "detectedAlbum": {
+    "message": "Detected Album"
+  },
+  "mediaCountLabel": {
+    "message": "tệp"
+  },
+  "photosLabel": {
+    "message": "photos"
+  },
+  "scanAll": {
+    "message": "Quét tất cả"
+  },
+  "scanPosts": {
+    "message": "Bài viết"
+  },
+  "scanStories": {
+    "message": "Stories"
+  },
+  "scanHighlights": {
+    "message": "Highlights"
+  },
+  "scanAvatar": {
+    "message": "HD Profile Pic"
+  },
+  "scanning": {
+    "message": "Scanning..."
+  },
+  "stopScan": {
+    "message": "Stop Scan"
+  },
+  "selectAll": {
+    "message": "Chọn tất cả"
+  },
+  "deselectAll": {
+    "message": "Bỏ chọn tất cả"
+  },
+  "downloading": {
+    "message": "Đang tải xuống..."
+  },
+  "downloadStarting": {
+    "message": "Starting download..."
+  },
+  "downloadComplete": {
+    "message": "Tải xuống hoàn tất thành công!"
+  },
+  "collectedMedia": {
+    "message": "Collected Media"
+  },
+  "selectedSummary": {
+    "message": "Đã chọn $1 / $2"
+  },
+  "emptyStateTitle": {
+    "message": "Chưa có phương tiện nào được ghi lại."
+  },
+  "emptyStateDesc": {
+    "message": "Nhấp vào Quét hoặc cuộn trang để phát hiện phương tiện ở độ phân giải tối đa."
+  },
+  "formatFolders": {
+    "message": "Theo thư mục"
+  },
+  "formatZip": {
+    "message": "Tập tin ZIP"
+  },
+  "downloadMediaBtn": {
+    "message": "Tải $1 phương tiện"
+  },
+  "downloadMediaSingle": {
+    "message": "Download 1 Item"
+  },
+  "downloadBtnDefault": {
+    "message": "Tải phương tiện"
+  },
+  "tabAll": {
+    "message": "Tất cả"
+  },
+  "tabPhotos": {
+    "message": "Ảnh"
+  },
+  "tabVideos": {
+    "message": "Video"
+  },
+  "tabStories": {
+    "message": "Stories"
+  },
+  "tabHighlights": {
+    "message": "Highlights"
+  },
+  "tabAvatar": {
+    "message": "Profile"
+  },
+  "downloadFloating": {
+    "message": "Download Media"
+  },
+  "scanFloatingBadge": {
+    "message": "Scan"
+  },
+  "previewTitle": {
+    "message": "Media preview:"
+  },
+  "highResGuaranteed": {
+    "message": "Original high resolution guaranteed"
+  },
+  "packagingZip": {
+    "message": "Đang nén tệp ZIP..."
+  },
+  "errorDownloading": {
+    "message": "Lỗi khi tải xuống phương tiện."
+  },
+  "noMediaFound": {
+    "message": "No media found to download."
+  },
+  "authError": {
+    "message": "Session token not found. Make sure you are logged in."
+  },
+  "resolvingHighRes": {
+    "message": "Resolving high resolution..."
+  },
+  "zipTooLarge": {
+    "message": "Lựa chọn quá lớn cho tệp ZIP. Hãy sử dụng chế độ Thư mục hoặc chọn ít mục hơn."
+  },
+  "cancelBtn": {
+    "message": "Hủy"
+  },
+  "downloadCancelled": {
+    "message": "Đã hủy tải xuống."
+  },
+  "downloadingProgress": {
+    "message": "Đang tải xuống tệp phương tiện..."
+  },
+  "tabPhotosOf": {
+    "message": "Ảnh có mặt bạn"
+  },
+  "tabPhotosBy": {
+    "message": "Ảnh của bạn"
+  },
+  "tabAlbums": {
+    "message": "Album"
+  },
+  "detectedSubreddit": {
+    "message": "Subreddit đã phát hiện"
+  },
+  "detectedPost": {
+    "message": "Bài viết đã phát hiện"
+  },
+  "detectedFeed": {
+    "message": "Bảng tin Reddit"
+  },
+  "scanGalleries": {
+    "message": "Bộ sưu tập"
+  },
+  "scanVideos": {
+    "message": "Video"
+  },
+  "scanRedgifs": {
+    "message": "RedGifs"
+  },
+  "tabGalleries": {
+    "message": "Bộ sưu tập"
+  },
+  "tabRedgifs": {
+    "message": "RedGifs"
+  },
+  "downloadPostMedia": {
+    "message": "Phương tiện bài viết"
+  },
+  "downloadProfileMedia": {
+    "message": "Tải hồ sơ: u/$1"
+  },
+  "scanProfileApi": {
+    "message": "Bắt đầu quét hồ sơ"
+  },
+  "minScoreLabel": {
+    "message": "Điểm tối thiểu"
+  },
+  "postLimitLabel": {
+    "message": "Giới hạn bài viết"
+  },
+  "limitAll": {
+    "message": "Tất cả (Không giới hạn)"
+  },
+  "unmarkAll": {
+    "message": "Bỏ chọn tất cả"
+  },
+  "downloadInFolder": {
+    "message": "Tải vào thư mục"
+  },
+  "downloadAsZip": {
+    "message": "Tải dưới dạng ZIP"
+  },
+  "downloadStartedToast": {
+    "message": "Bắt đầu tải: $1"
+  },
+  "downloadSuccessToast": {
+    "message": "Đã tải thành công $1 tệp phương tiện!"
+  },
+  "filterSubredditAll": {
+    "message": "Tất cả Subreddit"
+  },
+  "scanningPosts": {
+    "message": "Đang quét tất cả bài đăng..."
+  },
+  "scanningStoriesHighlights": {
+    "message": "Đang quét tin và tin nổi bật..."
+  },
+  "scanningStories": {
+    "message": "Đang quét tin..."
+  },
+  "scanningHighlights": {
+    "message": "Đang quét tin nổi bật..."
+  },
+  "scanningProfile": {
+    "message": "Đang quét hồ sơ và ảnh HD..."
+  },
+  "scanningAllMedia": {
+    "message": "Đang quét tất cả phương tiện..."
+  },
+  "scanPage": {
+    "message": "Quét trang này"
+  },
+  "scanPhotoTabs": {
+    "message": "Tất cả tab ảnh"
+  },
+  "scanFeed": {
+    "message": "Scan Feed"
+  }
+}

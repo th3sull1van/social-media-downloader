@@ -1,0 +1,245 @@
+{
+  "extensionName": {
+    "message": "Social Media Downloader - Instagram, Facebook & Reddit"
+  },
+  "extensionDescription": {
+    "message": "قم بتنزيل الصور ومقاطع الفيديو والقصص ومقاطع DASH والألبومات والملفات الشخصية من Instagram وFacebook وReddit بأعلى جودة."
+  },
+  "highResSubtitle": {
+    "message": "تنزيل بأعلى دقة"
+  },
+  "noticeUnrecognized": {
+    "message": "الصفحة غير معروفة"
+  },
+  "noticeUnrecognizedDesc": {
+    "message": "انتقل إلى Reddit لاكتشاف الوسائط."
+  },
+  "detectedProfile": {
+    "message": "الملف الشخصي المكتشف"
+  },
+  "detectedAlbum": {
+    "message": "Detected Album"
+  },
+  "mediaCountLabel": {
+    "message": "وسائط"
+  },
+  "photosLabel": {
+    "message": "photos"
+  },
+  "scanAll": {
+    "message": "مسح الكل"
+  },
+  "scanPosts": {
+    "message": "المنشورات"
+  },
+  "scanStories": {
+    "message": "Stories"
+  },
+  "scanHighlights": {
+    "message": "Highlights"
+  },
+  "scanAvatar": {
+    "message": "HD Profile Pic"
+  },
+  "scanning": {
+    "message": "Scanning..."
+  },
+  "stopScan": {
+    "message": "Stop Scan"
+  },
+  "selectAll": {
+    "message": "تحديد الكل"
+  },
+  "deselectAll": {
+    "message": "إلغاء تحديد الكل"
+  },
+  "downloading": {
+    "message": "جارٍ التنزيل..."
+  },
+  "downloadStarting": {
+    "message": "Starting download..."
+  },
+  "downloadComplete": {
+    "message": "اكتمل التنزيل بنجاح!"
+  },
+  "collectedMedia": {
+    "message": "Collected Media"
+  },
+  "selectedSummary": {
+    "message": "تم تحديد $1 من $2"
+  },
+  "emptyStateTitle": {
+    "message": "لم يتم التقاط أي وسائط بعد."
+  },
+  "emptyStateDesc": {
+    "message": "انقر على مسح أو قم بالتمرير لاكتشاف الوسائط بأعلى دقة."
+  },
+  "formatFolders": {
+    "message": "في مجلدات"
+  },
+  "formatZip": {
+    "message": "أرشيف ZIP"
+  },
+  "downloadMediaBtn": {
+    "message": "تنزيل $1 وسائط"
+  },
+  "downloadMediaSingle": {
+    "message": "Download 1 Item"
+  },
+  "downloadBtnDefault": {
+    "message": "تنزيل الوسائط"
+  },
+  "tabAll": {
+    "message": "الكل"
+  },
+  "tabPhotos": {
+    "message": "الصور"
+  },
+  "tabVideos": {
+    "message": "الفيديوهات"
+  },
+  "tabStories": {
+    "message": "Stories"
+  },
+  "tabHighlights": {
+    "message": "Highlights"
+  },
+  "tabAvatar": {
+    "message": "Profile"
+  },
+  "downloadFloating": {
+    "message": "Download Media"
+  },
+  "scanFloatingBadge": {
+    "message": "Scan"
+  },
+  "previewTitle": {
+    "message": "Media preview:"
+  },
+  "highResGuaranteed": {
+    "message": "Original high resolution guaranteed"
+  },
+  "packagingZip": {
+    "message": "جارٍ ضغط ملف ZIP..."
+  },
+  "errorDownloading": {
+    "message": "خطأ أثناء التنزيل."
+  },
+  "noMediaFound": {
+    "message": "No media found to download."
+  },
+  "authError": {
+    "message": "Session token not found. Make sure you are logged in."
+  },
+  "resolvingHighRes": {
+    "message": "Resolving high resolution..."
+  },
+  "zipTooLarge": {
+    "message": "التحديد كبير جداً بالنسبة لملف ZIP. استخدم وضع المجلدات أو حدد عناصر أقل."
+  },
+  "cancelBtn": {
+    "message": "إلغاء"
+  },
+  "downloadCancelled": {
+    "message": "تم إلغاء التنزيل."
+  },
+  "downloadingProgress": {
+    "message": "جارٍ تنزيل الوسائط..."
+  },
+  "tabPhotosOf": {
+    "message": "صور لك"
+  },
+  "tabPhotosBy": {
+    "message": "صورك"
+  },
+  "tabAlbums": {
+    "message": "الألبومات"
+  },
+  "detectedSubreddit": {
+    "message": "المنتدى الفرعي المكتشف"
+  },
+  "detectedPost": {
+    "message": "المنشور المكتشف"
+  },
+  "detectedFeed": {
+    "message": "خلاصة Reddit"
+  },
+  "scanGalleries": {
+    "message": "المعارض"
+  },
+  "scanVideos": {
+    "message": "الفيديوهات"
+  },
+  "scanRedgifs": {
+    "message": "RedGifs"
+  },
+  "tabGalleries": {
+    "message": "المعارض"
+  },
+  "tabRedgifs": {
+    "message": "RedGifs"
+  },
+  "downloadPostMedia": {
+    "message": "وسائط المنشور"
+  },
+  "downloadProfileMedia": {
+    "message": "تنزيل الملف الشخصي: u/$1"
+  },
+  "scanProfileApi": {
+    "message": "بدء مسح الملف الشخصي"
+  },
+  "minScoreLabel": {
+    "message": "الحد الأدنى للنقاط"
+  },
+  "postLimitLabel": {
+    "message": "حد المنشورات"
+  },
+  "limitAll": {
+    "message": "الكل (بلا حد)"
+  },
+  "unmarkAll": {
+    "message": "إلغاء تحديد الكل"
+  },
+  "downloadInFolder": {
+    "message": "تنزيل إلى مجلد"
+  },
+  "downloadAsZip": {
+    "message": "تنزيل كملف ZIP"
+  },
+  "downloadStartedToast": {
+    "message": "بدأ التنزيل: $1"
+  },
+  "downloadSuccessToast": {
+    "message": "تم تنزيل $1 وسائط بنجاح!"
+  },
+  "filterSubredditAll": {
+    "message": "جميع مجتمعات ريديت"
+  },
+  "scanningPosts": {
+    "message": "جارٍ فحص جميع المنشورات..."
+  },
+  "scanningStoriesHighlights": {
+    "message": "جارٍ فحص القصص والعناصر المميزة..."
+  },
+  "scanningStories": {
+    "message": "جارٍ فحص القصص..."
+  },
+  "scanningHighlights": {
+    "message": "جارٍ فحص العناصر المميزة..."
+  },
+  "scanningProfile": {
+    "message": "جارٍ فحص الملف الشخصي والصورة عالية الدقة..."
+  },
+  "scanningAllMedia": {
+    "message": "جارٍ فحص جميع الوسائط..."
+  },
+  "scanPage": {
+    "message": "مسح هذه الصفحة"
+  },
+  "scanPhotoTabs": {
+    "message": "كل علامات تبويب الصور"
+  },
+  "scanFeed": {
+    "message": "Scan Feed"
+  }
+}

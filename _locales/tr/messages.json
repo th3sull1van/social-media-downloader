@@ -1,0 +1,245 @@
+{
+  "extensionName": {
+    "message": "Social Media Downloader - Instagram, Facebook & Reddit"
+  },
+  "extensionDescription": {
+    "message": "Instagram, Facebook ve Reddit'ten fotoğrafları, videoları, reels'leri, hikayeleri, DASH videolarını ve profilleri orijinal maksimum çözünürlükte indirin."
+  },
+  "highResSubtitle": {
+    "message": "Maksimum Çözünürlükte İndirme"
+  },
+  "noticeUnrecognized": {
+    "message": "Sayfa tanınmadı"
+  },
+  "noticeUnrecognizedDesc": {
+    "message": "Medyayı algılamak için Reddit'e (akış, subreddit veya profil) gidin."
+  },
+  "detectedProfile": {
+    "message": "Algılanan Profil"
+  },
+  "detectedAlbum": {
+    "message": "Detected Album"
+  },
+  "mediaCountLabel": {
+    "message": "medya"
+  },
+  "photosLabel": {
+    "message": "photos"
+  },
+  "scanAll": {
+    "message": "Tümünü Tara"
+  },
+  "scanPosts": {
+    "message": "Gönderiler"
+  },
+  "scanStories": {
+    "message": "Stories"
+  },
+  "scanHighlights": {
+    "message": "Highlights"
+  },
+  "scanAvatar": {
+    "message": "HD Profile Pic"
+  },
+  "scanning": {
+    "message": "Scanning..."
+  },
+  "stopScan": {
+    "message": "Stop Scan"
+  },
+  "selectAll": {
+    "message": "Tümünü Seç"
+  },
+  "deselectAll": {
+    "message": "Seçimi Kaldır"
+  },
+  "downloading": {
+    "message": "İndiriliyor..."
+  },
+  "downloadStarting": {
+    "message": "Starting download..."
+  },
+  "downloadComplete": {
+    "message": "İndirme başarıyla tamamlandı!"
+  },
+  "collectedMedia": {
+    "message": "Collected Media"
+  },
+  "selectedSummary": {
+    "message": "$1 / $2 seçildi"
+  },
+  "emptyStateTitle": {
+    "message": "Henüz medya yakalanmadı."
+  },
+  "emptyStateDesc": {
+    "message": "Tam çözünürlükte medya algılamak için Tara'ya tıklayın veya akışı kaydırın."
+  },
+  "formatFolders": {
+    "message": "Klasörlerde"
+  },
+  "formatZip": {
+    "message": "ZIP Arşivi"
+  },
+  "downloadMediaBtn": {
+    "message": "$1 Medyayı İndir"
+  },
+  "downloadMediaSingle": {
+    "message": "Download 1 Item"
+  },
+  "downloadBtnDefault": {
+    "message": "Medyayı İndir"
+  },
+  "tabAll": {
+    "message": "Tümü"
+  },
+  "tabPhotos": {
+    "message": "Fotoğraflar"
+  },
+  "tabVideos": {
+    "message": "Videolar"
+  },
+  "tabStories": {
+    "message": "Stories"
+  },
+  "tabHighlights": {
+    "message": "Highlights"
+  },
+  "tabAvatar": {
+    "message": "Profile"
+  },
+  "downloadFloating": {
+    "message": "Download Media"
+  },
+  "scanFloatingBadge": {
+    "message": "Scan"
+  },
+  "previewTitle": {
+    "message": "Media preview:"
+  },
+  "highResGuaranteed": {
+    "message": "Original high resolution guaranteed"
+  },
+  "packagingZip": {
+    "message": "ZIP arşivi paketleniyor..."
+  },
+  "errorDownloading": {
+    "message": "İndirme hatası."
+  },
+  "noMediaFound": {
+    "message": "No media found to download."
+  },
+  "authError": {
+    "message": "Session token not found. Make sure you are logged in."
+  },
+  "resolvingHighRes": {
+    "message": "Resolving high resolution..."
+  },
+  "zipTooLarge": {
+    "message": "ZIP için seçim çok büyük. Klasörler modunu kullanın veya daha az öğe seçin."
+  },
+  "cancelBtn": {
+    "message": "İptal"
+  },
+  "downloadCancelled": {
+    "message": "İndirme iptal edildi."
+  },
+  "downloadingProgress": {
+    "message": "Medyalar indiriliyor..."
+  },
+  "tabPhotosOf": {
+    "message": "Olduğun fotoğraflar"
+  },
+  "tabPhotosBy": {
+    "message": "Fotoğrafların"
+  },
+  "tabAlbums": {
+    "message": "Albümler"
+  },
+  "detectedSubreddit": {
+    "message": "Algılanan Subreddit"
+  },
+  "detectedPost": {
+    "message": "Algılanan Gönderi"
+  },
+  "detectedFeed": {
+    "message": "Reddit Akışı"
+  },
+  "scanGalleries": {
+    "message": "Galeriler"
+  },
+  "scanVideos": {
+    "message": "Videolar"
+  },
+  "scanRedgifs": {
+    "message": "RedGifs"
+  },
+  "tabGalleries": {
+    "message": "Galeriler"
+  },
+  "tabRedgifs": {
+    "message": "RedGifs"
+  },
+  "downloadPostMedia": {
+    "message": "Gönderi Medyası"
+  },
+  "downloadProfileMedia": {
+    "message": "Profili İndir: u/$1"
+  },
+  "scanProfileApi": {
+    "message": "Profil Taramasını Başlat"
+  },
+  "minScoreLabel": {
+    "message": "Minimum Puan"
+  },
+  "postLimitLabel": {
+    "message": "Gönderi Sınırı"
+  },
+  "limitAll": {
+    "message": "Tümü (Sınırsız)"
+  },
+  "unmarkAll": {
+    "message": "Seçimi Kaldır"
+  },
+  "downloadInFolder": {
+    "message": "Klasöre İndir"
+  },
+  "downloadAsZip": {
+    "message": "ZIP Olarak İndir"
+  },
+  "downloadStartedToast": {
+    "message": "İndirme başladı: $1"
+  },
+  "downloadSuccessToast": {
+    "message": "$1 medya başarıyla indirildi!"
+  },
+  "filterSubredditAll": {
+    "message": "Tüm Subredditler"
+  },
+  "scanningPosts": {
+    "message": "Tüm gönderiler taranıyor..."
+  },
+  "scanningStoriesHighlights": {
+    "message": "Hikayeler ve öne çıkanlar taranıyor..."
+  },
+  "scanningStories": {
+    "message": "Hikayeler taranıyor..."
+  },
+  "scanningHighlights": {
+    "message": "Öne çıkanlar taranıyor..."
+  },
+  "scanningProfile": {
+    "message": "Profil ve HD fotoğraf taranıyor..."
+  },
+  "scanningAllMedia": {
+    "message": "Tüm medyalar taranıyor..."
+  },
+  "scanPage": {
+    "message": "Bu Sayfayı Tara"
+  },
+  "scanPhotoTabs": {
+    "message": "Tüm Fotoğraf Sekmeleri"
+  },
+  "scanFeed": {
+    "message": "Scan Feed"
+  }
+}

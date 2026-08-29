@@ -1,0 +1,20 @@
+{
+  "extends": "./jsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "comments": "Browser-context scripts (src/content, src/popup, src/offscreen, main-world) are excluded: they are classic scripts relying on duck-typed DOM access. The typecheck covers Core, plugins, messaging, domain, tests, and tooling.",
+  "exclude": [
+    "node_modules",
+    "vendor",
+    "src/content",
+    "src/popup",
+    "src/offscreen",
+    "src/plugins/instagram/main-world",
+    "src/plugins/facebook/main-world"
+  ]
+}

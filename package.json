@@ -1,0 +1,35 @@
+{
+  "name": "social-media-downloader",
+  "version": "1.0.0",
+  "description": "Chrome Extension (Manifest V3) to download photos, videos, reels, stories, highlights, DASH videos (with audio), galleries, and profiles from Instagram, Facebook, and Reddit in maximum resolution.",
+  "main": "src/background/background.js",
+  "type": "module",
+  "scripts": {
+    "test": "bun tests/run-tests.js",
+    "typecheck": "tsc --noEmit",
+    "check:dependencies": "bun tools/validation/dependency-rules.js",
+    "check:manifest": "bun tools/validation/manifest-check.js",
+    "check:i18n": "bun tools/validation/i18n-check.js",
+    "build:locales": "bun tools/build-locales.js",
+    "check:har": "bun tools/validation/har-check.js",
+    "har:report": "bun tools/validation/har-check.js --report=.artifacts/har-report.json",
+    "har:compare": "bun tools/har-compare.js --report=.artifacts/har-report.json --baseline=tests/fixtures/har/expected/baseline.json",
+    "validate:local": "bun run check:har -- --private --report=.artifacts/har-report.json && bun run typecheck && bun run test && bun run check:manifest && bun run check:dependencies && bun run check:i18n",
+    "validate": "bun run check:har -- --require-public --report=.artifacts/har-report.json && bun run typecheck && bun run test && bun run check:manifest && bun run check:dependencies && bun run check:i18n"
+  },
+  "keywords": [
+    "chrome-extension",
+    "manifest-v3",
+    "instagram",
+    "facebook",
+    "reddit",
+    "downloader",
+    "media-downloader"
+  ],
+  "author": "th3sull1van",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "typescript": "^5.6.0"
+  }
+}
