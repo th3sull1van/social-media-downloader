@@ -21,7 +21,7 @@
 
 <br>
 
-<img src="assets/icons/icon128.png" width="128" alt="Social Media Downloader Icon">
+<img src="assets/icons/icon.svg" width="128" alt="Social Media Downloader Icon">
 
 <br>
 <br>
