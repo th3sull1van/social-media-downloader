@@ -76,24 +76,22 @@ See the [plugin system guide](docs/architecture/plugin-system.md).
 
 ## Download Structure & Organization
 
-Downloads are placed in your browser's default downloads directory under the standard `SMD` root:
+Individual downloads go to your browser's downloads directory under the `SMD` root; ZIP archive entries drop the `SMD/` prefix. Exact layout comes from each plugin's naming module:
 
 ```text
 Downloads/
 └── SMD/
     ├── Instagram/
     │   └── @username/
-    │       ├── username_2026-08-28_15-30-00_post_shortcode_1.jpg
-    │       └── username_2026-08-28_15-30-00_reel_shortcode.mp4
+    │       ├── posts/                                  # timeline posts & reels (authentic CDN names, e.g. 714823214_..._n.jpg)
+    │       ├── stories/                                # story_{postId}.jpg
+    │       ├── highlights/{Highlight_Title}/           # highlight_{postId}.jpg
+    │       └── profile_pic/                            # {username}_profile_pic.jpg
     ├── Facebook/
-    │   └── Target_Name/
-    │       ├── Profile_Pictures/
-    │       ├── Timeline_Photos/
-    │       └── Album_Name/
+    │   └── {Target_Name}/                              # flat folder; authentic CDN names or {photoId}.jpg
     └── Reddit/
-        └── r_subreddit/
-            ├── 2026-08-28_author_post_id_image.png
-            └── 2026-08-28_author_post_id_muxed.mp4
+        └── u_{author}/r_{subreddit}/
+            └── r_{subreddit}_u_{author}_{postId}_{mediaId}.mp4
 ```
 
 Or packaged into a single timestamped ZIP archive:

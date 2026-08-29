@@ -76,24 +76,22 @@ Veja o [guia do sistema de plugins](docs/architecture/plugin-system.md).
 
 ## Estrutura de Pastas de Download
 
-Os downloads são organizados na pasta padrão de downloads do navegador sob a raiz `SMD`:
+Downloads individuais vão para a pasta de downloads do navegador sob a raiz `SMD`; entradas de arquivo ZIP omitem o prefixo `SMD/`. O layout exato vem do módulo de nomenclatura de cada plugin:
 
 ```text
 Downloads/
 └── SMD/
     ├── Instagram/
-    │   └── @username/
-    │       ├── username_2026-08-28_15-30-00_post_shortcode_1.jpg
-    │       └── username_2026-08-28_15-30-00_reel_shortcode.mp4
+    │   └── @usuario/
+    │       ├── posts/                                  # posts e reels (nomes autênticos de CDN, ex.: 714823214_..._n.jpg)
+    │       ├── stories/                                # story_{postId}.jpg
+    │       ├── highlights/{Titulo_Do_Destaque}/        # highlight_{postId}.jpg
+    │       └── profile_pic/                            # {usuario}_profile_pic.jpg
     ├── Facebook/
-    │   └── Nome_Do_Perfil/
-    │       ├── Profile_Pictures/
-    │       ├── Timeline_Photos/
-    │       └── Nome_Do_Album/
+    │   └── {Nome_Do_Perfil}/                           # pasta plana; nomes autênticos de CDN ou {photoId}.jpg
     └── Reddit/
-        └── r_subreddit/
-            ├── 2026-08-28_autor_post_id_imagem.png
-            └── 2026-08-28_autor_post_id_muxed.mp4
+        └── u_{autor}/r_{subreddit}/
+            └── r_{subreddit}_u_{autor}_{postId}_{mediaId}.mp4
 ```
 
 Ou em arquivo `.ZIP` consolidado:
