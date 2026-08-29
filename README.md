@@ -1,6 +1,8 @@
 <div align="center">
 
-# 📥 Social Media Downloader (SMD) — High-Performance Media Discovery & Download Extension for Instagram, Facebook & Reddit (Manifest V3)
+<img src="assets/icons/icon.svg" width="128" alt="Social Media Downloader Icon">
+
+# Social Media Downloader (SMD)
 
 **A modular, high-fidelity Chrome extension to discover, resolve, multiplex, and package original full-resolution media from Instagram, Facebook, and Reddit with zero compression loss.**
 
@@ -12,64 +14,67 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Manifest-V3-3b82f6?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Chrome Manifest V3">
   <img src="https://img.shields.io/badge/Runtime-Bun-f472b6?style=for-the-badge&logo=bun&logoColor=white" alt="Runtime Bun">
-  <img src="https://img.shields.io/badge/Platforms-Instagram_|_Facebook_|_Reddit-ec4899?style=for-the-badge" alt="Platforms">
-  <img src="https://img.shields.io/badge/Resolution-Original_Max_Quality-22c55e?style=for-the-badge" alt="Max Resolution">
-  <img src="https://img.shields.io/badge/Locales-22_Languages-f59e0b?style=for-the-badge" alt="22 Locales">
-  <img src="https://img.shields.io/badge/Tests-25_Passing-10b981?style=for-the-badge" alt="25 Tests Passing">
   <img src="https://img.shields.io/badge/License-MIT-6366f1?style=for-the-badge" alt="License MIT">
 </p>
-
-<br>
-
-<img src="assets/icons/icon.svg" width="128" alt="Social Media Downloader Icon">
-
-<br>
-<br>
 
 </div>
 
 ---
 
-## 🌟 Key Architecture & Capabilities
+## Key Architecture & Capabilities
 
-- **⚡ Strict Core / Plugin Separation**:
+- **Strict Core / Plugin Separation**:
   - Independent first-class platform plugins for **Instagram**, **Facebook**, and **Reddit**.
   - Generic Core owns download management, queue orchestration, ZIP packaging, filename sanitization, and localized UI.
   - Zero cross-plugin leakage or platform conditionals in Core infrastructure.
 
-- **📸 Maximum Resolution & Authentic CDN Extraction**:
-  - **Instagram**: Polaris GraphQL profile harvesting, full multi-slide carousel preservation, Reels, Stories, Highlights, and uncompressed avatar resolution.
-  - **Facebook**: In-page Comet Router navigation across photo tabs (`photos_of`, `photos_by`, `photos_albums`, custom albums) with progressive pagination, DOM harvesting, and CDN dimension parameter stripping while preserving HMAC signatures.
+- **Maximum Resolution & Authentic CDN Extraction**:
+  - **Instagram**: GraphQL profile harvesting, full multi-slide carousel preservation, Reels, Stories, Highlights, and uncompressed avatar resolution.
+  - **Facebook**: In-page navigation across photo tabs with progressive pagination, DOM harvesting, and CDN dimension parameter stripping while preserving signed URLs.
   - **Reddit**: Public JSON API multi-source discovery, direct uncompressed images, galleries, RedGifs video resolution, and cross-post deduplication.
 
-- **🎬 In-Browser DASH Audio/Video Multiplexing**:
+- **In-Browser DASH Audio/Video Multiplexing**:
   - Reddit DASH videos with split video and audio tracks are paired and multiplexed directly inside the browser using a lightweight MP4 muxer engine (`RedditVideoMuxer`).
   - Generates ready-to-play single `.mp4` video files with synchronized audio with zero external server dependencies.
 
-- **📦 Memory-Safe Offscreen ZIP Packaging & Folder Downloads**:
+- **Memory-Safe Offscreen ZIP Packaging & Folder Downloads**:
   - Download media individually into cleanly organized directories (`Downloads/SMD/...`) or package batches into a single ZIP archive.
   - Offscreen document execution avoids service worker memory constraints and uses stream-safe chunked packing with a 1GB safety ceiling.
 
-- **🛡️ Security, Privacy & Subframe Isolation**:
+- **Security & Subframe Isolation**:
   - Content scripts and main-world bridges enforce top-window frame isolation (`window === window.top`) to avoid interference from third-party or internal iframes.
   - Comprehensive filename sanitization strips forbidden filesystem characters, reserved DOS names, zero-width tokens, and RTL directional overrides.
 
-- **🌐 Comprehensive Localization (22 Locales)**:
+- **Comprehensive Localization (22 Locales)**:
   - 100% native Chrome i18n key and placeholder parity across 22 global languages: Arabic, Bengali, German, English, Spanish, French, Hindi, Indonesian, Italian, Japanese, Korean, Marathi, Portuguese (BR & PT), Russian, Tamil, Telugu, Turkish, Urdu, Vietnamese, Chinese (Simplified & Traditional).
 
 ---
 
-## 🔌 Supported Platform Plugins
+## Supported Platform Plugins
 
 | Platform | Capabilities & Media Types | Extraction Strategy | Architecture Guide |
 | :--- | :--- | :--- | :--- |
-| **📸 Instagram** | Posts, multi-slide Carousels, Reels, Stories, Highlights, Avatars | Polaris GraphQL + CDN un-crop | [Instagram Architecture](docs/platforms/instagram/ARCHITECTURE.md) |
-| **👥 Facebook** | Photo Albums, Uploads, Photos of Target, Timeline, Avatars | In-page Comet navigation + DOM/JSON harvest | [Facebook Architecture](docs/platforms/facebook/ARCHITECTURE.md) |
-| **👽 Reddit** | Images, Multi-image Galleries, DASH Videos (with Audio), RedGifs | Public JSON API + in-browser MP4 muxer | [Reddit Architecture](docs/platforms/reddit/ARCHITECTURE.md) |
+| **Instagram** | Posts, multi-slide Carousels, Reels, Stories, Highlights, Avatars | GraphQL + CDN un-crop | [Instagram Architecture](docs/platforms/instagram/ARCHITECTURE.md) |
+| **Facebook** | Photo Albums, Uploads, Photos of Target, Timeline, Avatars | In-page navigation + DOM/JSON harvest | [Facebook Architecture](docs/platforms/facebook/ARCHITECTURE.md) |
+| **Reddit** | Images, Multi-image Galleries, DASH Videos (with Audio), RedGifs | Public JSON API + in-browser MP4 muxer | [Reddit Architecture](docs/platforms/reddit/ARCHITECTURE.md) |
 
 ---
 
-## 📁 Download Structure & Organization
+## Adding a New Platform
+
+New platforms plug into the same Core — no changes to download, queue, ZIP, or UI infrastructure required.
+
+1. Create `src/plugins/<platform>/` implementing the platform plugin contract.
+2. Register the plugin deterministically in the plugin registry.
+3. Add HAR/JSON fixtures under `tests/fixtures/<platform>/` and contract tests under `tests/contracts/`.
+4. Add platform docs under `docs/platforms/<platform>/` and localized strings under `_locales/`.
+5. Declare only the host permissions the platform needs, with a documented purpose.
+
+See the [plugin system guide](docs/architecture/plugin-system.md).
+
+---
+
+## Download Structure & Organization
 
 Downloads are placed in your browser's default downloads directory under the standard `SMD` root:
 
@@ -100,7 +105,7 @@ Downloads/
 
 ---
 
-## 🚀 Getting Started & Installation
+## Getting Started & Installation
 
 1. **Clone the repository**:
    ```bash
@@ -117,7 +122,7 @@ Downloads/
 
 ---
 
-## 🧪 Validation & Automated Testing Suite
+## Validation & Automated Testing Suite
 
 The repository is guarded by a comprehensive automated test suite and strict architectural validation gates:
 
@@ -142,6 +147,14 @@ bun run check:har
 
 ---
 
-## 📄 License
+## Privacy & Security
+
+- **No data collection**: scanning, resolution, and packaging run entirely in your browser — no analytics, no telemetry, no external servers.
+- **Minimal permissions**: each host permission backs a documented feature (see the [permissions guide](docs/architecture/permissions.md)).
+- **No credential logging**: logs never include cookies, tokens, or session identifiers.
+
+---
+
+## License
 
 MIT © [th3sull1van](https://github.com/th3sull1van)
