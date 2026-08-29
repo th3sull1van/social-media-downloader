@@ -33,7 +33,7 @@ export class RedditNaming {
 
     const safeSub = FilenameService.sanitize(sub, 40, 'reddit');
     const safeAuthor = FilenameService.sanitize(author, 40, 'user');
-    const relDir = includeRoot ? `SMD/Reddit/r_${safeSub}/u_${safeAuthor}` : `r_${safeSub}/u_${safeAuthor}`;
+    const relDir = includeRoot ? `SMD/Reddit/u_${safeAuthor}/r_${safeSub}` : `u_${safeAuthor}/r_${safeSub}`;
 
     const context = {
       subreddit: safeSub,

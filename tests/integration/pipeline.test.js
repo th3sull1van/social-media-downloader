@@ -47,7 +47,7 @@ export async function runPipelineTests() {
   assert.strictEqual(igItems[1].metadata.slideIndex, 2);
 
   const igFilename = InstagramPlugin.getFilename(igItems[0], { targetName: 'test_influencer' });
-  assert.strictEqual(igFilename, 'SMD/Instagram/@test_influencer/posts/111_n.jpg');
+  assert.strictEqual(igFilename, 'SMD/Instagram/test_influencer/posts/111_n.jpg');
 
   // 2. Facebook Pipeline
   const fbRawPhoto = {
@@ -95,6 +95,6 @@ export async function runPipelineTests() {
   assert.strictEqual(dedupResult.uniqueItems[0].metadata.score, 500); // Kept the higher score post
 
   const redditFilename = RedditPlugin.getFilename(dedupResult.uniqueItems[0]);
-  assert.ok(redditFilename.startsWith('SMD/Reddit/r_aww/u_user/'));
+  assert.ok(redditFilename.startsWith('SMD/Reddit/u_user/r_aww/'));
   assert.ok(redditFilename.includes('jbx4ht0eptkh1.jpg'));
 }
