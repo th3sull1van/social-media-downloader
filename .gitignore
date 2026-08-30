@@ -1,5 +1,7 @@
 # Agent session state
 .omp/
+.impeccable/
+.impeccable
 
 # Dependencies
 node_modules/

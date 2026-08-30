@@ -11,6 +11,7 @@
     "check:manifest": "bun tools/validation/manifest-check.js",
     "check:i18n": "bun tools/validation/i18n-check.js",
     "build:locales": "bun tools/build-locales.js",
+    "build:dist": "bun tools/build-dist.js",
     "check:har": "bun tools/validation/har-check.js",
     "har:report": "bun tools/validation/har-check.js --report=.artifacts/har-report.json",
     "har:compare": "bun tools/har-compare.js --report=.artifacts/har-report.json --baseline=tests/fixtures/har/expected/baseline.json",
