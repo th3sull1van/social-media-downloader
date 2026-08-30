@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-29T19:27:17-03:00",
+  "title": "Design System: Social Media Downloader",
+  "extensions": {
+    "colorMeta": {
+      "instagram-magenta": { "role": "primary", "displayName": "Instagram Magenta", "canonical": "#e1306c", "tonalRamp": ["#4a0f22", "#7a1a3c", "#a82452", "#d02b60", "#e1306c", "#ec5f8d", "#f390ad", "#fad0dd"] },
+      "facebook-signal-blue": { "role": "primary", "displayName": "Facebook Signal Blue", "canonical": "#1877f2", "tonalRamp": ["#0a2a52", "#0d3d7a", "#1150a3", "#1877f2", "#4a97f5", "#7ab5f8", "#a5cdfa", "#d3e6fd"] },
+      "reddit-orangered": { "role": "primary", "displayName": "Reddit Orangered", "canonical": "#ff4500", "tonalRamp": ["#4d1500", "#7f2500", "#b33800", "#ff4500", "#ff6a2b", "#ff8f57", "#ffb585", "#ffdcba"] },
+      "go-green": { "role": "tertiary", "displayName": "Go Green", "canonical": "#34d27b", "tonalRamp": ["#0c3320", "#14543a", "#1c7453", "#34d27b", "#5fdf94", "#8ae8ad", "#b6f0c7", "#e2f8e6"] },
+      "halt-red": { "role": "tertiary", "displayName": "Halt Red", "canonical": "#e5484d", "tonalRamp": ["#3f1113", "#6b1d20", "#982a2e", "#e5484d", "#ec6f72", "#f39598", "#f9babc", "#fde0e1"] },
+      "bg-primary": { "role": "neutral", "displayName": "Ink Base", "canonical": "#121214", "tonalRamp": ["#121214", "#1c1c1f", "#242429", "#26262b", "#2c2c33", "#2e2e33", "#33333a", "#3a3a41"] },
+      "bg-card": { "role": "neutral", "displayName": "Card Base", "canonical": "#1c1c1f", "tonalRamp": ["#1c1c1f", "#2a2a2f", "#3a3a41", "#4a4a52", "#5c5c66", "#7a7a85", "#9c9ca6", "#c9c9d1"] },
+      "text-secondary": { "role": "neutral", "displayName": "Text Secondary", "canonical": "#9e9ea7", "tonalRamp": ["#3a3a41", "#4a4a52", "#5c5c66", "#6e6e77", "#9e9ea7", "#b0b0b8", "#c9c9d1", "#e4e4ea"] },
+      "text-muted": { "role": "neutral", "displayName": "Text Muted", "canonical": "#8b8b93", "tonalRamp": ["#3a3a41", "#4a4a52", "#5c5c66", "#6e6e77", "#8b8b93", "#b0b0b8", "#c9c9d1", "#e4e4ea"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Modal target title — the largest statement in the system." },
+      "title": { "displayName": "Title", "purpose": "Popup target title." },
+      "headline": { "displayName": "Headline", "purpose": "Popup brand title." },
+      "body": { "displayName": "Body", "purpose": "General copy, statuses, descriptions. 12-13px density is deliberate." },
+      "label": { "displayName": "Label", "purpose": "Uppercase micro-labels: platform chips, eyebrows, counts, tags." },
+      "counter": { "displayName": "Counter", "purpose": "Media counter — the only 800 weight in the system." }
+    },
+    "shadows": [
+      { "name": "fab-ambient", "value": "0 4px 16px rgba(0,0,0,0.4)", "purpose": "Detaches the floating launch button from the host page." },
+      { "name": "fab-ambient-hover", "value": "0 6px 22px rgba(0,0,0,0.55)", "purpose": "FAB hover lift; pairs with translateY(-2px)." },
+      { "name": "modal-structural", "value": "0 16px 48px rgba(0,0,0,0.75)", "purpose": "Lifts the modal shell over the 0.78 scrim." }
+    ],
+    "motion": [
+      { "name": "fade-in", "value": "0.15s ease-out", "purpose": "Modal overlay entrance (smdFadeIn keyframes)." },
+      { "name": "spin", "value": "0.6s linear infinite", "purpose": "Scanner spinner rotation (smdSpin keyframes)." },
+      { "name": "hover-lift", "value": "transform 0.15s ease", "purpose": "FAB hover lift." },
+      { "name": "progress", "value": "width 0.2s ease", "purpose": "Progress bar fill." },
+      { "name": "grid-hover", "value": "transform 0.1s ease", "purpose": "Grid item hover scale (1.02)." },
+      { "name": "control", "value": "all 0.2s", "purpose": "Popup button state transitions." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Platform-accent fill for the main scan action; recolors with the active platform theme.",
+      "html": "<button class=\"ds-btn-primary\">Scan All</button>",
+      "css": ".ds-btn-primary { background: #e1306c; color: #ffffff; border: none; border-radius: 6px; padding: 9px 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; } .ds-btn-primary:hover { opacity: 0.9; } .ds-btn-primary:active { opacity: 0.8; } .ds-btn-primary:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Bordered dark button for quick scans (Posts, Stories, Galleries); hover steps up one tonal level.",
+      "html": "<button class=\"ds-btn-secondary\">Stories</button>",
+      "css": ".ds-btn-secondary { background: #1c1c1f; border: 1px solid #2e2e33; color: #9e9ea7; border-radius: 6px; padding: 6px 10px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; } .ds-btn-secondary:hover { background: #26262b; color: #f0f0f2; } .ds-btn-secondary:active { background: #2c2c33; } .ds-btn-secondary:focus-visible { outline: 2px solid #e1306c; outline-offset: 1px; }"
+    },
+    {
+      "name": "Download Button",
+      "kind": "button",
+      "refersTo": "button-download",
+      "description": "The Go Green save action; the only green in the system. Dark Ink Base text for contrast.",
+      "html": "<button class=\"ds-btn-download\">Download Media</button>",
+      "css": ".ds-btn-download { background: #34d27b; color: #121214; border: none; border-radius: 6px; padding: 10px 12px; width: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; } .ds-btn-download:hover { opacity: 0.92; } .ds-btn-download:disabled { opacity: 0.4; cursor: not-allowed; } .ds-btn-download:focus-visible { outline: 2px solid #121214; outline-offset: 2px; }"
+    },
+    {
+      "name": "Cancel Button",
+      "kind": "button",
+      "refersTo": "button-cancel",
+      "description": "Outline-only Halt Red danger action; hover adds a translucent red wash, never a fill.",
+      "html": "<button class=\"ds-btn-cancel\">Cancel</button>",
+      "css": ".ds-btn-cancel { background: transparent; border: 1px solid #e5484d; color: #e5484d; border-radius: 4px; padding: 4px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.15s; } .ds-btn-cancel:hover { background: rgba(229, 72, 77, 0.15); } .ds-btn-cancel:focus-visible { outline: 2px solid #e5484d; outline-offset: 1px; }"
+    },
+    {
+      "name": "Platform Chip",
+      "kind": "chip",
+      "refersTo": "chip-platform",
+      "description": "Pill identity chip for the detected platform; Instagram uses the brand gradient, Facebook/Reddit use solid accents.",
+      "html": "<span class=\"ds-chip\">Instagram</span> <span class=\"ds-chip ds-chip-fb\">Facebook</span> <span class=\"ds-chip ds-chip-reddit\">Reddit</span>",
+      "css": ".ds-chip { display: inline-block; background: linear-gradient(135deg, #e1306c, #fd1d1d, #f56040); color: #ffffff; border-radius: 9999px; padding: 3px 9px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; } .ds-chip-fb { background: #1877f2; } .ds-chip-reddit { background: #ff4500; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flat bordered dark well for target info and notices; eyebrow + title pattern carries the hierarchy.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-eyebrow\">Detected Target</div><div class=\"ds-card-title\">u/example_user</div></div>",
+      "css": ".ds-card { background: #1c1c1f; border: 1px solid #2e2e33; border-radius: 8px; padding: 10px 12px; color: #f0f0f2; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; } .ds-card-eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.02em; color: #6e6e77; } .ds-card-title { font-size: 15px; font-weight: 700; color: #f0f0f2; margin-top: 2px; }"
+    },
+    {
+      "name": "Filter Tabs",
+      "kind": "nav",
+      "refersTo": "button-secondary",
+      "description": "Horizontally scrollable media filter tabs; active tab = Hover Step background + platform accent text.",
+      "html": "<div class=\"ds-tabs\"><button class=\"ds-tab ds-tab-active\">All (12)</button><button class=\"ds-tab\">Photos (8)</button><button class=\"ds-tab\">Videos (4)</button></div>",
+      "css": ".ds-tabs { display: flex; gap: 4px; } .ds-tab { background: transparent; border: none; color: #9e9ea7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 6px; cursor: pointer; white-space: nowrap; transition: all 0.2s; } .ds-tab:hover { color: #f0f0f2; } .ds-tab-active { background: #26262b; color: #e1306c; } .ds-tab:focus-visible { outline: 2px solid #e1306c; outline-offset: 1px; }"
+    },
+    {
+      "name": "Media Grid Item",
+      "kind": "custom",
+      "refersTo": "grid-item",
+      "description": "Signature component: square dark-well thumbnail; selection is a 2px accent border plus a corner check overlay; corner tags mark format/resolution.",
+      "html": "<div class=\"ds-grid\"><div class=\"ds-grid-item\"><span class=\"ds-grid-tag\">MP4</span></div><div class=\"ds-grid-item ds-grid-item-selected\"><span class=\"ds-check\">&#10003;</span><span class=\"ds-grid-tag ds-grid-tag-res\">4K</span></div></div>",
+      "css": ".ds-grid { display: grid; grid-template-columns: repeat(2, 64px); gap: 6px; } .ds-grid-item { position: relative; aspect-ratio: 1 / 1; background: #242429; border: 2px solid transparent; border-radius: 6px; overflow: hidden; cursor: pointer; transition: transform 0.1s ease; } .ds-grid-item:hover { transform: scale(1.02); } .ds-grid-item-selected { border-color: #e1306c; } .ds-check { position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; border-radius: 4px; background: #e1306c; border: 1px solid #e1306c; color: #ffffff; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; } .ds-grid-tag { position: absolute; bottom: 4px; left: 4px; background: rgba(0, 0, 0, 0.75); color: #ffffff; font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 3px; } .ds-grid-tag-res { left: auto; right: 4px; }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "input",
+      "refersTo": "button-secondary",
+      "description": "Sunken tray radio group for the download format (In Folders / ZIP Archive); checked face steps up to Segment Step.",
+      "html": "<div class=\"ds-segmented\"><label class=\"ds-segment\"><input type=\"radio\" name=\"ds-seg\" checked><span class=\"ds-segment-face\">In Folders</span></label><label class=\"ds-segment\"><input type=\"radio\" name=\"ds-seg\"><span class=\"ds-segment-face\">ZIP Archive</span></label></div>",
+      "css": ".ds-segmented { display: inline-flex; background: #141417; border: 1px solid #2e2e33; border-radius: 6px; padding: 2px; gap: 2px; } .ds-segment { display: flex; cursor: pointer; position: relative; } .ds-segment input { position: absolute; opacity: 0; pointer-events: none; } .ds-segment-face { padding: 6px 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #9e9ea7; border-radius: 4px; transition: all 0.15s; } .ds-segment input:checked + .ds-segment-face { background: #2c2c33; color: #ffffff; } .ds-segment input:focus-visible + .ds-segment-face { outline: 2px solid #e1306c; outline-offset: 1px; }"
+    },
+    {
+      "name": "Progress Bar",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Pill-track progress with accent fill and 11px/600 header; the fill recolors with the platform theme.",
+      "html": "<div class=\"ds-progress\"><div class=\"ds-progress-header\"><span>Downloading&hellip;</span><span>42%</span></div><div class=\"ds-progress-track\"><div class=\"ds-progress-fill\" style=\"width: 42%\"></div></div></div>",
+      "css": ".ds-progress { display: flex; flex-direction: column; gap: 6px; width: 200px; } .ds-progress-header { display: flex; justify-content: space-between; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 600; color: #f0f0f2; } .ds-progress-track { width: 100%; height: 6px; background: #121214; border-radius: 9999px; overflow: hidden; } .ds-progress-fill { height: 100%; background: #e1306c; transition: width 0.2s ease; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Darkroom Archive",
+    "overview": "The Darkroom Archive treats every SMD surface as the antechamber to the photographs themselves. Surfaces are near-black operator chrome — quiet, dense, monochrome — so that the media being archived is the only hero on screen. Color is scarce and functional: one platform accent at a time acts as the safelight, marking what belongs to the current platform; green is reserved for the act of saving; red only appears when the user must stop something. Nothing is decorative; every hue is a status, and every pixel of chrome exists to frame, select, and package the user's archive.\n\nDensity is a feature, not a compromise. This is a 400px popup and an in-page modal competing with a live social feed for attention; controls are compact (11–13px labels, 6–8px rhythm) and confident — bordered, quick to parse, unambiguous about state. The system must remain soft and friendly at the edges: pill chips, fully rounded progress tracks, gentle 6–12px radii, and forgiving hover states keep the instrument feel from turning clinical. The stance is anti-marketing: no gradients except the Instagram brand gradient, no colored fills without status meaning, no decorative imagery in chrome.",
+    "keyCharacteristics": [
+      "Near-black monochrome surfaces (#121214 base, #1c1c1f cards, #2e2e33 borders); media and accents supply all color.",
+      "One accent at a time: the platform accent recolors primary actions, selection, and progress as a set (magenta / signal blue / orangered), never mixed on screen.",
+      "State-coded action colors: green = save/download, red = cancel/danger, platform accent = platform identity + selection.",
+      "Compact confident controls: 11–13px type, 6px radius, 1px borders, tight 6–8px rhythm.",
+      "Friendly geometry on dark: 9999px pills, fully rounded progress bars, 12px modal shell."
+    ],
+    "rules": [
+      { "name": "The One Accent Rule", "body": "Only one platform accent appears at a time, and it recolors the whole accent set — buttons, selection borders, check overlays, progress, FAB, chip — as one coherent theme. Never mix two platform accents on screen.", "section": "colors" },
+      { "name": "The Status-Only Color Rule", "body": "Saturated color is status, never decoration. Green appears only on the download action; red only on cancel/danger; a platform accent only on platform identity and selection. If a surface needs color to look designed, it is wrong.", "section": "colors" },
+      { "name": "The Gradient Exception Rule", "body": "The only gradient is the Instagram brand gradient on the Instagram badge/chip; it is a brand asset carried from the platform's own identity, and it must never be generalized to other surfaces.", "section": "colors" },
+      { "name": "The Weight-Carries-Hierarchy Rule", "body": "No new font faces. Hierarchy comes from the system stack's weights (400/600/700/800), size steps of 9–18px, and uppercase 10–11px micro-labels — never from adding a typeface.", "section": "typography" },
+      { "name": "The Flat-Panel Rule", "body": "Surfaces inside the popup and modal are flat at rest; shadows belong exclusively to UI floating over third-party pages (FAB, modal shell) or to hover/active responses.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do recolor the entire accent set as a theme when the platform changes (buttons, selection borders, check overlays, progress, FAB, chip switch together).",
+      "Do keep every saturated color status-coded: green = save, red = stop, platform accent = identity/selection.",
+      "Do use 1px Hairline Borders + tonal layering for panel depth; reserve shadows for the FAB and modal shell.",
+      "Do keep type in the system stack; use weight (400/600/700/800), 9–18px steps, and uppercase 10–11px micro-labels for hierarchy.",
+      "Do keep the media grid square, accent-bordered on selection, with corner tags — it is the signature component."
+    ],
+    "donts": [
+      "Don't add a second gradient; the Instagram badge gradient is the only one.",
+      "Don't mix two platform accents on one screen.",
+      "Don't introduce colored fills without status meaning (no decorative color in chrome).",
+      "Don't add shadows inside popup/modal panels — the Flat-Panel Rule.",
+      "Don't grow control sizes past 13px body / 11px labels; the compact operator density is deliberate (11–13px is the working range).",
+      "Don't add a new typeface; the system stack carries all hierarchy."
+    ]
+  }
+}

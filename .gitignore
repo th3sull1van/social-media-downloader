@@ -1,11 +1,12 @@
+# Agent session state
+.omp/
+
 # Dependencies
 node_modules/
 
 # Private test fixtures and HAR captures (never commit real session data)
 fixtures-private/
 tests/fixtures-private/
-/fixtures-private/*.har
-/tests/fixtures-private/*.har
 *.private.har
 
 # Downloads, archives and test export directories
@@ -16,6 +17,7 @@ Meta_Downloads/
 *.zip
 *.tar
 *.tar.gz
+*.crx
 
 # Environment and secrets
 .env
@@ -29,13 +31,12 @@ Meta_Downloads/
 .cache/
 .artifacts/
 coverage/
-.nyc_output/
 dist/
 build/
 
 # Operating System files
 .DS_Store
-.DS_Store?
+Desktop.ini
 ._*
 .Spotlight-V100
 .Trashes
