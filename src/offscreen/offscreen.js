@@ -94,6 +94,8 @@ const state = {
   tempDirHandle: null,
   zipFileHandle: null,
   writable: null,
+  /** @type {Promise<any>} */
+  writeQueue: Promise.resolve(),
   /** @type {Array<Uint8Array>} */
   memoryChunks: [],
   /** @type {Array<{ nameBytes: Uint8Array, crc32: number, size: number, offset: number, dosTime: number, dosDate: number }>} */
@@ -131,6 +133,7 @@ async function resetState() {
   state.completed = 0;
   state.cancelled = false;
   state.lastPct = -1;
+  state.writeQueue = Promise.resolve();
 
   if (state.writable) {
     try { await state.writable.abort(); } catch (e) {}
@@ -177,43 +180,57 @@ async function addFile(name, bufferOrB64) {
     return { ok: false, reason: 'invalid_data' };
   }
 
-  const nameBytes = textEncoder.encode(name);
+  const sanitizedName = String(name || 'file').replace(/\\/g, '/').replace(/^\/+/, '');
+  const nameBytes = textEncoder.encode(sanitizedName);
   const crc32 = computeCrc32(bytes);
   const { dosTime, dosDate } = getDosDateTime();
   const localHeader = createLocalHeader(nameBytes, crc32, bytes.length, dosTime, dosDate);
-  const localHeaderOffset = state.currentOffset;
 
-  if (state.useOpfs && state.writable) {
-    await state.writable.write(localHeader);
-    await state.writable.write(bytes);
-  } else {
-    state.memoryChunks.push(localHeader);
-    state.memoryChunks.push(bytes);
-  }
+  const writeOperation = async () => {
+    if (!state.active || state.cancelled) return { ok: false, reason: 'cancelled' };
 
-  state.entries.push({
-    nameBytes,
-    crc32,
-    size: bytes.length,
-    offset: localHeaderOffset,
-    dosTime,
-    dosDate
-  });
+    const localHeaderOffset = state.currentOffset;
 
-  state.currentOffset += localHeader.byteLength + bytes.length;
-  state.completed++;
+    if (state.useOpfs && state.writable) {
+      await state.writable.write(localHeader);
+      await state.writable.write(bytes);
+    } else {
+      state.memoryChunks.push(localHeader);
+      state.memoryChunks.push(bytes);
+    }
 
-  reportProgress({
-    status: 'DOWNLOADING_BLOBS',
-    completed: state.completed
-  });
+    state.entries.push({
+      nameBytes,
+      crc32,
+      size: bytes.length,
+      offset: localHeaderOffset,
+      dosTime,
+      dosDate
+    });
 
-  return { ok: true, jobBytes: state.currentOffset };
+    state.currentOffset += localHeader.byteLength + bytes.length;
+    state.completed++;
+
+    reportProgress({
+      status: 'DOWNLOADING_BLOBS',
+      completed: state.completed
+    });
+
+    return { ok: true, jobBytes: state.currentOffset };
+  };
+
+  // Mutex sequential write queue guarantees correct byte ordering & exact Central Directory offsets
+  return (state.writeQueue = state.writeQueue.then(writeOperation, writeOperation));
 }
 
 async function finishZip(zipFilename, discard) {
   if (!state.active) return { ok: false, reason: 'no_active_zip' };
   state.active = false;
+
+  // Drain any in-flight write operations first
+  try {
+    await state.writeQueue;
+  } catch (e) {}
 
   if (discard || state.cancelled) {
     if (state.writable) {

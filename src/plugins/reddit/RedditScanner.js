@@ -285,7 +285,7 @@ export class RedditScanner {
     // the author search endpoint. This dual-source discovery provides complete coverage.
     let searchAfter = null;
     let searchPages = 0;
-    while (totalPosts < limit && searchPages < 10) {
+    while (totalPosts < limit && searchPages < 3) {
       searchPages++;
       const searchUrl = `https://www.reddit.com/search.json?q=author%3A${encodeURIComponent(username)}&sort=new&limit=100&include_over_18=on&raw_json=1${searchAfter ? `&after=${encodeURIComponent(searchAfter)}` : ''}`;
       const searchRes = await fetch(searchUrl);

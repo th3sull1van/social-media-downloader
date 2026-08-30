@@ -463,6 +463,23 @@
   }
 
   // 4. Media Accumulation & Normalization
+  let renderFrameScheduled = false;
+  function scheduleModalGridRender() {
+    if (renderFrameScheduled) return;
+    renderFrameScheduled = true;
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => {
+        renderFrameScheduled = false;
+        renderModalGrid();
+      });
+    } else {
+      setTimeout(() => {
+        renderFrameScheduled = false;
+        renderModalGrid();
+      }, 0);
+    }
+  }
+
   function addMediaItems(items) {
     if (!Array.isArray(items)) return;
     let addedCount = 0;
@@ -490,7 +507,7 @@
 
     if (addedCount > 0) {
       updateFloatingWidgetBadge();
-      renderModalGrid();
+      scheduleModalGridRender();
     }
   }
 
@@ -1687,9 +1704,7 @@
       const items = res.success && Array.isArray(res.items) ? res.items : [];
 
       if (items.length > 0) {
-        for (const item of items) {
-          addMediaItems([item]);
-        }
+        addMediaItems(items);
         return;
       }
 
@@ -1724,9 +1739,13 @@
       return 0;
     }
 
-    const postEls = document.querySelectorAll('shreddit-post');
+    const postEls = Array.from(document.querySelectorAll('shreddit-post'));
     const collected = [];
-    for (const postEl of postEls) {
+    for (let i = 0; i < postEls.length; i++) {
+      const postEl = postEls[i];
+      if (i > 0 && i % 15 === 0) {
+        await new Promise(r => setTimeout(r, 0));
+      }
       let postData;
       try {
         postData = scanner.extractFromShredditPost(postEl);
@@ -1758,8 +1777,8 @@
 
     // Cross-post/repost dedup with score ranking (Reddit platform invariant).
     const { uniqueItems } = normalizer.deduplicateMediaItems(collected);
-    for (const item of uniqueItems) {
-      addMediaItems([item]);
+    if (uniqueItems.length > 0) {
+      addMediaItems(uniqueItems);
     }
     return uniqueItems.length;
   }
@@ -2212,6 +2231,9 @@
 
     if (!grid || !empty) return;
 
+    // Skip building DOM cards if modal is hidden
+    if (floatingModal.style.display === 'none') return;
+
     const filtered = Array.from(state.media.values()).filter(matchesActiveFilter);
 
     if (filtered.length === 0) {
@@ -2221,6 +2243,8 @@
       grid.textContent = '';
       grid.style.display = 'grid';
       empty.style.display = 'none';
+      const fragment = document.createDocumentFragment();
+
       filtered.forEach((item) => {
         const isSelected = state.selectedIds.has(item.id);
         const card = document.createElement('div');
@@ -2289,8 +2313,10 @@
           }
         });
 
-        grid.appendChild(card);
+        fragment.appendChild(card);
       });
+
+      grid.appendChild(fragment);
     }
 
     updateSelectionSummary();
