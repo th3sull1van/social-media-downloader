@@ -34,13 +34,13 @@ export class RedditScanner {
 
     const id = postEl.getAttribute('id') || postEl.getAttribute('post-id') || '';
     const cleanId = id.replace(/^t3_/, '');
-    const title = postEl.getAttribute('post-title') || postEl.querySelector('h1, [slot="title"]')?.textContent?.trim() || 'reddit_post';
+    const title = postEl.getAttribute('post-title') || postEl.querySelector?.('h1, [slot="title"]')?.textContent?.trim() || 'reddit_post';
     const author = postEl.getAttribute('author') || postEl.getAttribute('author-name') || 'reddit_user';
     const subreddit = postEl.getAttribute('subreddit-prefixed-name') || postEl.getAttribute('subreddit-name') || '';
-    const postType = postEl.getAttribute('post-type') || '';
+    const postType = (postEl.getAttribute('post-type') || '').toLowerCase();
     const contentHref = postEl.getAttribute('content-href') || '';
     const permalink = postEl.getAttribute('permalink') || '';
-    const domain = postEl.getAttribute('domain') || '';
+    const domain = (postEl.getAttribute('domain') || '').toLowerCase();
     const score = parseInt(postEl.getAttribute('score') || '0', 10);
     const createdTimestamp = postEl.getAttribute('created-timestamp') || '';
 
@@ -49,18 +49,20 @@ export class RedditScanner {
       title: title.trim(),
       author: author.replace(/^u\//, ''),
       subreddit: subreddit.replace(/^r\//, ''),
-      postType: postType.toLowerCase(),
+      postType,
       contentHref,
       permalink: permalink.startsWith('/') ? `https://www.reddit.com${permalink}` : permalink,
-      domain: domain.toLowerCase(),
+      domain,
       score: isNaN(score) ? 0 : score,
       createdTimestamp,
       mediaItems: []
     };
 
     // 1. Gallery Detection
-    const galleryCarousel = postEl.querySelector('gallery-carousel') || postEl.shadowRoot?.querySelector('gallery-carousel');
-    const isGalleryPost = postData.postType === 'gallery' || !!galleryCarousel || contentHref.includes('/gallery/') || postEl.hasAttribute('gallery-data') || !!postEl.querySelector('ul[slot="gallery-items"], faceplate-carousel');
+    const isGalleryPost = postData.postType === 'gallery' ||
+      contentHref.includes('/gallery/') ||
+      postEl.hasAttribute('gallery-data') ||
+      !!postEl.querySelector?.('gallery-carousel, ul[slot="gallery-items"], faceplate-carousel');
 
     if (isGalleryPost) {
       postData.postType = 'gallery';
@@ -70,8 +72,12 @@ export class RedditScanner {
     }
 
     // 2. Video Detection
-    const shredditPlayer = postEl.querySelector('shreddit-player, shreddit-player-2');
-    if (postData.postType === 'video' || shredditPlayer || domain === 'v.redd.it' || contentHref.includes('v.redd.it')) {
+    const isVideoPost = postData.postType === 'video' ||
+      domain === 'v.redd.it' ||
+      contentHref.includes('v.redd.it') ||
+      !!postEl.querySelector?.('shreddit-player, shreddit-player-2');
+
+    if (!postData.mediaItems.length && isVideoPost) {
       postData.postType = 'video';
       const videoInfo = RedditScanner.extractVideoFromDom(postEl, contentHref);
       if (videoInfo) postData.mediaItems = [videoInfo];
@@ -90,10 +96,16 @@ export class RedditScanner {
       }];
     }
 
-    // 4. Single Image Detection
+    // 4. Single Image Detection (attribute lookup first, DOM fallback only if needed)
     if (postData.mediaItems.length === 0) {
-      const img = postEl.querySelector('img[src*="redd.it"], img[src*="redditmedia.com"], [slot="post-media-container"] img');
-      const src = img?.getAttribute('src') || contentHref;
+      let src = '';
+      if (contentHref && !RedditScanner.isIconOrStyleAsset(contentHref) && (contentHref.includes('redd.it') || contentHref.includes('imgur.com') || /\.(jpg|jpeg|png|gif|webp)/i.test(contentHref))) {
+        src = contentHref;
+      } else {
+        const img = postEl.querySelector?.('img[src*="redd.it"], img[src*="redditmedia.com"], [slot="post-media-container"] img');
+        src = img?.getAttribute('src') || '';
+      }
+
       if (src && !RedditScanner.isIconOrStyleAsset(src) && (src.includes('redd.it') || src.includes('imgur.com') || /\.(jpg|jpeg|png|gif|webp)/i.test(src))) {
         postData.mediaItems = [{
           type: 'image',

@@ -1708,7 +1708,44 @@
         return;
       }
 
-      // JSON API refused (HTTP 403: NSFW/quarantined) or returned nothing.
+      // If background fetch returned 0 items (often 403 network policy from SW),
+      // try in-page fetch from the authenticated tab origin before DOM fallback.
+      try {
+        let pageItems = [];
+        const { RedditScanner: sc } = await import(chrome.runtime.getURL('src/plugins/reddit/RedditScanner.js'));
+        if (target.kind === 'user') {
+          const userUrl = `https://www.reddit.com/user/${encodeURIComponent(target.id)}/submitted.json?limit=100&raw_json=1`;
+          const uRes = await fetch(userUrl, { headers: { 'Accept': 'application/json' } });
+          if (uRes.ok) {
+            const uJson = await uRes.json();
+            const children = uJson.data?.children || [];
+            for (const child of children) {
+              pageItems.push(...sc.parseApiPostObject(child.data));
+            }
+          }
+        } else if (target.kind === 'subreddit') {
+          const subUrl = `https://www.reddit.com/r/${encodeURIComponent(target.id)}/hot.json?limit=100&raw_json=1`;
+          const sRes = await fetch(subUrl, { headers: { 'Accept': 'application/json' } });
+          if (sRes.ok) {
+            const sJson = await sRes.json();
+            const children = sJson.data?.children || [];
+            for (const child of children) {
+              pageItems.push(...sc.parseApiPostObject(child.data));
+            }
+          }
+        } else if (target.kind === 'post') {
+          const pResult = await sc.fetchPostById(target.id);
+          pageItems = pResult.items || [];
+        }
+
+        if (pageItems.length > 0) {
+          addMediaItems(pageItems);
+          return;
+        }
+      } catch (err) {
+        console.warn('[SMD Content] In-page JSON fetch fallback error:', err);
+      }
+
       // Fallback: extract media from the server-rendered shreddit HTML.
       const domCount = await redditDomFallback();
       if (domCount === 0) {
