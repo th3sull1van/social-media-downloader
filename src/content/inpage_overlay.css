@@ -191,6 +191,29 @@
   flex-shrink: 0;
 }
 
+/* Close button: enlarge touch target without changing the glyph size. */
+.smd-close-btn {
+  min-width: 32px;
+  min-height: 32px;
+}
+
+/* Small viewports: keep the scanner bar on one row (scroll, don't wrap —
+   wrapping eats grid height and double-stacks the bar, observed at 390px). */
+@media (max-width: 600px) {
+  .smd-scanner-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+  .smd-btn-action {
+    white-space: nowrap;
+  }
+  .smd-segment-face,
+  .smd-btn-download {
+    white-space: nowrap;
+  }
+}
+
+
 .smd-btn-action {
   background: #242429;
   border: 1px solid #33333a;
@@ -244,7 +267,7 @@
 .smd-cancel-btn {
   background: transparent;
   border: 1px solid #e5484d;
-  color: #e5484d;
+  color: #ee6a6e;
   padding: 3px 10px;
   border-radius: 4px;
   font-size: 11px;
@@ -253,15 +276,55 @@
 }
 .smd-cancel-btn:hover { background: rgba(229, 72, 77, 0.15); }
 
+/* Error State */
+.smd-status-box.smd-status-box--error {
+  background: rgba(229, 72, 77, 0.12);
+  border-bottom-color: rgba(229, 72, 77, 0.4);
+}
+
+.smd-status-box.smd-status-box--error .smd-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e5484d;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+/* #f1b8ba on rgba(229,72,77,0.12) over #18181b passes AA for normal text. */
+.smd-status-box.smd-status-box--error #smd-status-text {
+  color: #f1b8ba;
+}
+
+
 /* Filter Tabs */
-.smd-filter-tabs {
+.smd-filter-bar {
   padding: 8px 20px;
-  display: flex;
-  gap: 6px;
   background: #141417;
   border-bottom: 1px solid #2e2e33;
+  display: flex;
+  align-items: center;
   overflow-x: auto;
   flex-shrink: 0;
+  scrollbar-width: none;
+}
+.smd-filter-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.smd-filter-tabs {
+  display: inline-flex;
+  background: #101012;
+  border: 1px solid #2e2e33;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+/* Fallback if smd-filter-tabs is used without smd-filter-bar wrapper */
+.smd-modal-content > .smd-filter-tabs {
+  margin: 8px 20px;
 }
 
 .smd-tab {
@@ -270,16 +333,34 @@
   color: #9e9ea7;
   font-size: 12px;
   font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 5px 12px;
+  border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s;
+  user-select: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.smd-tab:hover {
+  color: #f0f0f2;
 }
 
 .smd-tab.active {
-  background: #27272e;
-  color: #fff;
+  background: #2c2c33;
+  color: #ffffff;
+}
+
+.smd-tab:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 1px;
+}
+
+.smd-tab span {
+  font-size: 11px;
+  opacity: 0.8;
 }
 
 /* Selection Bar */
@@ -444,9 +525,17 @@
   display: flex;
   align-items: center;
   cursor: pointer;
+  position: relative;
 }
 
-.smd-segment input { display: none; }
+.smd-segment input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  margin: 0;
+}
 
 .smd-segment-face {
   padding: 6px 12px;
@@ -454,6 +543,28 @@
   font-weight: 600;
   color: #9e9ea7;
   border-radius: 4px;
+  user-select: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.smd-segment:hover .smd-segment-face {
+  color: #f0f0f2;
+}
+
+/* Receipt actions inside the progress card (completion receipt) */
+.smd-receipt-actions {
+  display: flex;
+  gap: 8px;
+  align-self: flex-end;
+  margin-top: 4px;
+}
+
+/* Keep the native focus ring visible on the dark chrome */
+.smd-modal-overlay button:focus-visible,
+.smd-modal-overlay [role="button"]:focus-visible,
+.smd-modal-overlay input:focus-visible + .smd-segment-face {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
 }
 
 .smd-segment input:checked + .smd-segment-face {
@@ -480,7 +591,7 @@
 
 .smd-progress-card {
   padding: 12px 20px;
-  background: #1a1a1e;
+  background: #1f1f23;
   border-top: 1px solid #2e2e33;
   display: flex;
   flex-direction: column;

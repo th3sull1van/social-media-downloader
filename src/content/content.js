@@ -49,6 +49,7 @@
     selectedIds: new Set(),
     activeFilter: 'all',
     isScanning: false,
+    isDownloading: false,
     autoSelectAll: true,
     pendingRequests: new Map()
   };
@@ -828,6 +829,12 @@
           }]);
         }
       }
+    } catch (err) {
+      if (isIndependent) {
+        console.warn('[SMD Content] Instagram profile avatar scan failed:', err);
+        updateScanStatusUI(true, t('scanFailed'), true);
+        setTimeout(() => updateScanStatusUI(false), 6000);
+      }
     } finally {
       if (isIndependent) {
         state.isScanning = false;
@@ -943,6 +950,7 @@
       }
     } catch (e) {
       console.warn('[SMD Content] Stories scan error:', e);
+      updateScanStatusUI(true, t('scanFailed'), true);
     } finally {
       if (isIndependent) {
         state.isScanning = false;
@@ -969,6 +977,7 @@
       }
     } catch (e) {
       console.warn('[SMD Content] Highlights scan error:', e);
+      updateScanStatusUI(true, t('scanFailed'), true);
     } finally {
       if (isIndependent) {
         state.isScanning = false;
@@ -995,6 +1004,7 @@
       }
     } catch (e) {
       console.warn('[SMD Content] Scan all error:', e);
+      updateScanStatusUI(true, t('scanFailed'), true);
     } finally {
       state.isScanning = false;
       updateScanStatusUI(false);
@@ -1618,6 +1628,9 @@
       }
 
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+      console.warn('[SMD Content] Facebook multi-tab scan failed:', e);
+      updateScanStatusUI(true, t('scanFailed'), true);
     } finally {
       state.isScanning = false;
       facebookScanTargetKey = '';
@@ -1625,12 +1638,16 @@
     }
   }
 
+
   function scanFacebookCurrentPage() {
-    state.isScanning = true;
-    updateScanStatusUI(true, t('scanning'));
     try {
+      state.isScanning = true;
+      updateScanStatusUI(true, t('scanning'));
       fbSweepScriptTags();
       harvestFacebookDomPhotos();
+    } catch (e) {
+      console.warn('[SMD Content] Facebook current page scan failed:', e);
+      updateScanStatusUI(true, t('scanFailed'), true);
     } finally {
       state.isScanning = false;
       updateScanStatusUI(false);
@@ -1682,6 +1699,9 @@
       if (domCount === 0) {
         console.warn('[SMD Content] Reddit scan returned 0 items (empty, private, or quarantined target).');
       }
+    } catch (e) {
+      console.warn('[SMD Content] Reddit scan failed:', e);
+      updateScanStatusUI(true, t('scanFailed'), true);
     } finally {
       state.isScanning = false;
       updateScanStatusUI(false);
@@ -1787,6 +1807,9 @@
     floatingModal.id = 'smd-modal-overlay';
     floatingModal.className = `smd-modal-overlay ${isFacebook ? 'smd-fb-theme' : (isReddit ? 'smd-reddit-theme' : '')}`;
     floatingModal.style.display = 'none';
+    floatingModal.setAttribute('role', 'dialog');
+    floatingModal.setAttribute('aria-modal', 'true');
+    floatingModal.setAttribute('aria-labelledby', 'smd-target-title');
 
     const chipClass = isFacebook ? 'smd-chip-fb' : (isReddit ? 'smd-chip-reddit' : '');
     const platformLabel = isInstagram ? 'Instagram' : (isFacebook ? 'Facebook' : 'Reddit');
@@ -1832,7 +1855,7 @@
           </div>
           <div class="smd-header-right">
             <span class="smd-platform-chip ${chipClass}">${platformLabel}</span>
-            <button id="smd-modal-close" class="smd-close-btn">&times;</button>
+            <button id="smd-modal-close" class="smd-close-btn" aria-label="${t('closeModal')}">&times;</button>
           </div>
         </div>
 
@@ -1845,18 +1868,19 @@
         <!-- Scan Status Box -->
         <div id="smd-status-box" class="smd-status-box" style="display: none;">
           <div>
-            <span class="smd-spinner"></span>
-            <span id="smd-status-text">${t('scanning')}</span>
+            <span class="smd-spinner"></span><span class="smd-status-dot" style="display: none;"></span><span id="smd-status-text" aria-live="polite">${t('scanning')}</span>
           </div>
           <button id="smd-cancel-scan" class="smd-cancel-btn">${t('stopScan')}</button>
         </div>
 
         <!-- Filter Tabs -->
-        <div class="smd-filter-tabs">
-          <button class="smd-tab active" data-filter="all">${t('tabAll')} <span id="smd-t-all">(0)</span></button>
-          <button class="smd-tab" data-filter="image">${t('tabPhotos')} <span id="smd-t-image">(0)</span></button>
-          <button class="smd-tab" data-filter="video">${t('tabVideos')} <span id="smd-t-video">(0)</span></button>
-          ${extraFilterTabs}
+        <div class="smd-filter-bar">
+          <div class="smd-filter-tabs smd-segmented" role="tablist" aria-label="${t('filterLabel')}">
+            <button class="smd-tab active" data-filter="all">${t('tabAll')} <span id="smd-t-all">(0)</span></button>
+            <button class="smd-tab" data-filter="image">${t('tabPhotos')} <span id="smd-t-image">(0)</span></button>
+            <button class="smd-tab" data-filter="video">${t('tabVideos')} <span id="smd-t-video">(0)</span></button>
+            ${extraFilterTabs}
+          </div>
         </div>
 
         <!-- Selection Bar -->
@@ -1887,12 +1911,16 @@
           <div class="smd-progress-track">
             <div id="smd-progress-bar-fill" class="smd-progress-fill" style="width: 0%;"></div>
           </div>
+          <button id="smd-btn-retry-download" class="smd-cancel-btn" style="display: none; align-self: flex-end; margin-top: 4px; border-color: #9e9ea7; color: #9e9ea7;">${t('retryBtn')}</button>
           <button id="smd-btn-cancel-download" class="smd-cancel-btn" style="align-self: flex-end; margin-top: 4px;">${t('cancelBtn')}</button>
+          <div id="smd-receipt-actions" class="smd-receipt-actions" style="display: none;">
+            <button id="smd-btn-show-folder" class="smd-cancel-btn" style="border-color: #9e9ea7; color: #9e9ea7;">${t('showInFolder')}</button>
+          </div>
         </div>
 
         <!-- Footer -->
         <div class="smd-modal-footer">
-          <div class="smd-segmented">
+          <div class="smd-segmented" role="radiogroup" aria-label="${t('formatLabel')}">
             <label class="smd-segment">
               <input type="radio" name="smd-modal-format" value="zip" checked>
               <span class="smd-segment-face">${t('formatZip')}</span>
@@ -1938,6 +1966,40 @@
       state.isScanning = false;
       updateScanStatusUI(false);
     });
+    uiGetById('smd-btn-retry-download')?.addEventListener('click', () => {
+      uiGetById('smd-btn-start-download')?.click();
+    });
+
+    uiGetById('smd-btn-show-folder')?.addEventListener('click', () => {
+      const receiptId = state.lastReceiptDownloadId;
+      if (typeof chrome !== 'undefined' && chrome.downloads && typeof receiptId === 'number') {
+        chrome.downloads.show(receiptId);
+      }
+    });
+
+    // Esc closes the modal; Tab cycles inside it while open.
+    floatingModal.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape') {
+        ev.stopPropagation();
+        toggleModal();
+        return;
+      }
+      if (ev.key === 'Tab') {
+        const focusables = uiShadow.querySelectorAll('.smd-modal-overlay button:not([style*="display: none"]):not([disabled]), .smd-modal-overlay [role="button"][tabindex="0"], .smd-modal-overlay input');
+        if (!focusables.length) return;
+        const list = Array.from(focusables).filter((el) => el.offsetParent !== null || el === document.activeElement);
+        if (!list.length) return;
+        const first = list[0];
+        const last = list[list.length - 1];
+        if (ev.shiftKey && document.activeElement === first) {
+          ev.preventDefault();
+          last.focus();
+        } else if (!ev.shiftKey && document.activeElement === last) {
+          ev.preventDefault();
+          first.focus();
+        }
+      }
+    });
 
     uiGetById('smd-btn-cancel-download')?.addEventListener('click', () => {
       chrome.runtime.sendMessage({ type: 'CANCEL_DOWNLOAD' });
@@ -1964,25 +2026,39 @@
     });
 
     floatingModal.querySelectorAll('.smd-tab').forEach((tab) => {
+      tab.setAttribute('role', 'tab');
       tab.addEventListener('click', () => {
-        floatingModal.querySelectorAll('.smd-tab').forEach(tEl => tEl.classList.remove('active'));
+        floatingModal.querySelectorAll('.smd-tab').forEach((tEl) => {
+          tEl.classList.remove('active');
+          tEl.setAttribute('aria-selected', 'false');
+        });
         tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
         state.activeFilter = tab.getAttribute('data-filter') || 'all';
         renderModalGrid();
       });
     });
 
     uiGetById('smd-btn-start-download')?.addEventListener('click', () => {
+      if (state.isDownloading) return;
       const format = floatingModal.querySelector('input[name="smd-modal-format"]:checked')?.value || 'zip';
-      const selected = Array.from(state.media.values()).filter(m => state.selectedIds.has(m.id));
+      const selected = Array.from(state.media.values()).filter((m) => state.selectedIds.has(m.id));
       if (!selected.length) return;
 
+      state.isDownloading = true;
       chrome.runtime.sendMessage({
         type: 'START_DOWNLOAD',
         platform: state.platform,
         targetName: state.username || state.targetName,
         items: selected,
         format
+      }, (res) => {
+        if (chrome.runtime.lastError || !res?.success) {
+          state.isDownloading = false;
+          updateDownloadProgressUI(null);
+          updateScanStatusUI(true, t('errorDownloading'));
+          setScanStatusError(true);
+        }
       });
     });
   }
@@ -1993,6 +2069,12 @@
       titleEl.textContent = '';
       titleEl.textContent = isInstagram && state.username ? `@${state.username}` : state.targetName;
     }
+  }
+
+  function updateFloatingWidgetBadge() {
+    if (!floatingWidget) createFloatingUI();
+    const badge = floatingWidget?.querySelector('.smd-badge');
+    if (badge) badge.textContent = String(state.media.size);
   }
 
   function toggleModal() {
@@ -2007,21 +2089,27 @@
     }
   }
 
-  function updateFloatingWidgetBadge() {
-    if (!floatingWidget) createFloatingUI();
-    const badge = floatingWidget?.querySelector('.smd-badge');
-    if (badge) badge.textContent = String(state.media.size);
+  function setScanStatusError(isError) {
+    const statusBox = uiGetById('smd-status-box');
+    const spinner = statusBox?.querySelector('.smd-spinner');
+    const dot = statusBox?.querySelector('.smd-status-dot');
+    const stopBtn = uiGetById('smd-cancel-scan');
+    if (statusBox) statusBox.classList.toggle('smd-status-box--error', isError);
+    if (spinner) spinner.style.display = isError ? 'none' : '';
+    if (dot) dot.style.display = isError ? 'inline-block' : 'none';
+    if (stopBtn) stopBtn.style.display = isError ? 'none' : '';
   }
 
-  function updateScanStatusUI(isScanning, statusText = '') {
+  function updateScanStatusUI(isScanning, statusText = '', isError = false) {
     const statusBox = uiGetById('smd-status-box');
     const textEl = uiGetById('smd-status-text');
     if (statusBox) statusBox.style.display = isScanning ? 'flex' : 'none';
     if (textEl && statusText) textEl.textContent = statusText;
+    setScanStatusError(isError && isScanning);
 
     const actionButtons = uiShadow?.querySelectorAll('.smd-btn-action') || [];
     actionButtons.forEach((btn) => {
-      btn.disabled = isScanning;
+      btn.disabled = isScanning && !isError;
     });
   }
 
@@ -2075,15 +2163,17 @@
       grid.style.display = 'none';
       empty.style.display = 'flex';
     } else {
+      grid.textContent = '';
       grid.style.display = 'grid';
       empty.style.display = 'none';
-      grid.textContent = '';
-
       filtered.forEach((item) => {
         const isSelected = state.selectedIds.has(item.id);
         const card = document.createElement('div');
         card.className = `smd-grid-item ${isSelected ? 'selected' : ''}`;
-
+        card.setAttribute('role', 'button');
+        card.tabIndex = 0;
+        card.setAttribute('aria-pressed', String(isSelected));
+        card.setAttribute('aria-label', item.width && item.height ? `${item.width}x${item.height}` : t('mediaItemLabel'));
         // Remote data is attached via DOM properties/text only (no innerHTML).
         const thumb = item.thumbnailUrl || item.url;
         if (isAllowedMediaUrl(thumb)) {
@@ -2124,16 +2214,24 @@
         }
 
         card.addEventListener('click', () => {
-          if (state.selectedIds.has(item.id)) {
-            state.selectedIds.delete(item.id);
-            card.classList.remove('selected');
-            card.querySelector('.smd-check-overlay').textContent = '';
-          } else {
+          const nowSelected = !state.selectedIds.has(item.id);
+          if (nowSelected) {
             state.selectedIds.add(item.id);
-            card.classList.add('selected');
-            card.querySelector('.smd-check-overlay').textContent = '✓';
+          } else {
+            state.selectedIds.delete(item.id);
           }
+          card.classList.toggle('selected', nowSelected);
+          card.setAttribute('aria-pressed', String(nowSelected));
+          const check = card.querySelector('.smd-check-overlay');
+          if (check) check.textContent = nowSelected ? '✓' : '';
           updateSelectionSummary();
+        });
+
+        card.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter' || ev.key === ' ') {
+            ev.preventDefault();
+            card.click();
+          }
         });
 
         grid.appendChild(card);
@@ -2148,6 +2246,7 @@
     const totalCount = state.media.size;
     const summary = uiGetById('smd-selection-summary');
     const btnDownload = uiGetById('smd-btn-start-download');
+
     const downloadText = uiGetById('smd-download-text');
 
     if (summary) summary.textContent = t('selectedSummary', [String(selectedCount), String(totalCount)]) || `${selectedCount} of ${totalCount} selected`;
@@ -2165,14 +2264,23 @@
   function updateDownloadProgressUI(job) {
     const box = uiGetById('smd-download-progress-box');
     const statusText = uiGetById('smd-progress-status-text');
+
+    if (typeof job.receiptDownloadId === 'number') {
+      state.lastReceiptDownloadId = job.receiptDownloadId;
+    }
     const percentage = uiGetById('smd-progress-percentage');
     const fill = uiGetById('smd-progress-bar-fill');
     const btnCancel = uiGetById('smd-btn-cancel-download');
+    const btnRetry = uiGetById('smd-btn-retry-download');
+    const receiptActions = uiGetById('smd-receipt-actions');
 
     if (!box || !statusText || !percentage || !fill) return;
 
     if (!job) {
       box.style.display = 'none';
+      state.isDownloading = false;
+      if (btnRetry) btnRetry.style.display = 'none';
+      if (receiptActions) receiptActions.style.display = 'none';
       return;
     }
 
@@ -2186,12 +2294,42 @@
     fill.style.width = `${pct}%`;
 
     const isRunning = ['DOWNLOADING', 'DOWNLOADING_BLOBS', 'PACKAGING_ZIP'].includes(job.status);
-    if (btnCancel) btnCancel.style.display = isRunning ? 'inline-block' : 'none';
+    const isFailed = job.status === 'FAILED' || job.status === 'FAILED_SIZE';
+    const isTerminal = !isRunning && !isFailed;
 
-    if (isPackaging) statusText.textContent = t('packagingZip');
-    else if (job.status === 'COMPLETED') statusText.textContent = job.filenameOverridden ? t('filenameOverriddenWarning') : t('downloadComplete');
-    else if (job.status === 'CANCELLED') statusText.textContent = t('downloadCancelled');
-    else statusText.textContent = t('downloading');
+    if (btnCancel) btnCancel.style.display = isRunning ? 'inline-block' : 'none';
+    if (btnRetry) btnRetry.style.display = isFailed ? 'inline-block' : 'none';
+
+    const btnStart = uiGetById('smd-btn-start-download');
+    if (btnStart) btnStart.disabled = isRunning;
+
+    if (receiptActions) {
+      const canShow = isTerminal && typeof chrome !== 'undefined' && chrome.downloads && typeof job.receiptDownloadId === 'number';
+      receiptActions.style.display = canShow ? 'flex' : 'none';
+    }
+
+    if (isFailed) {
+      state.isDownloading = false;
+      statusText.textContent = job.status === 'FAILED_SIZE'
+        ? t('zipTooLarge')
+        : (job.error ? `${t('errorDownloading')} (${job.error})` : t('errorDownloading'));
+      return;
+    }
+
+    if (isRunning) {
+      statusText.textContent = isPackaging ? t('packagingZip') : t('downloading');
+      return;
+    }
+
+    // Terminal: COMPLETED or CANCELLED
+    state.isDownloading = false;
+    if (job.status === 'COMPLETED') {
+      statusText.textContent = job.failed > 0
+        ? `${t('downloadComplete')} (${t('itemsFailedLabel', [String(job.failed)])})`
+        : (job.filenameOverridden ? t('filenameOverriddenWarning') : t('downloadComplete'));
+    } else {
+      statusText.textContent = t('downloadCancelled');
+    }
   }
 
   // 9. Initialize immediately on page load

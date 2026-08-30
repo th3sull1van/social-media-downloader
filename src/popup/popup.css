@@ -9,7 +9,7 @@
   --border-color: #2e2e33;
   --text-primary: #f0f0f2;
   --text-secondary: #9e9ea7;
-  --text-muted: #6e6e77;
+  --text-muted: #8b8b93;
 
   --accent-ig: linear-gradient(135deg, #e1306c, #fd1d1d, #f56040);
   --accent-fb: #1877f2;
@@ -173,9 +173,16 @@ body {
 /* Filter Tabs */
 .filter-tabs {
   display: flex;
-  gap: 4px;
+  background: #141417;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
   overflow-x: auto;
-  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.filter-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tab {
@@ -184,15 +191,29 @@ body {
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 600;
-  padding: 6px 10px;
-  border-radius: 6px;
+  padding: 5px 10px;
+  border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
+  user-select: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tab:hover {
+  color: var(--text-primary);
 }
 
 .tab.active {
-  background: var(--bg-hover);
-  color: var(--color-accent);
+  background: #2c2c33;
+  color: #ffffff;
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
 }
 
 .tab-count { font-size: 11px; opacity: 0.8; }
@@ -327,16 +348,59 @@ body {
 
 .format-selector {
   display: flex;
-  gap: 16px;
-  justify-content: center;
+  background: #141417;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+  justify-content: stretch;
   font-size: 12px;
 }
 
 .radio-label {
   display: flex;
+  flex: 1;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
   cursor: pointer;
+  position: relative;
+}
+
+.radio-label input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  margin: 0;
+}
+
+.radio-label span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-radius: 4px;
+  user-select: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.radio-label:hover span {
+  color: var(--text-primary);
+}
+
+.radio-label input:checked + span {
+  background: #2c2c33;
+  color: #ffffff;
+}
+
+.radio-label input:focus-visible + span {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
 }
 
 .btn-download {
