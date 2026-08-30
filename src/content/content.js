@@ -2231,6 +2231,29 @@
     return true;
   }
 
+  let cardImageObserver = null;
+  function getCardImageObserver(rootContainer) {
+    if (!cardImageObserver) {
+      cardImageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            const src = img.dataset.src;
+            if (src) {
+              img.src = src;
+              img.removeAttribute('data-src');
+            }
+            observer.unobserve(img);
+          }
+        });
+      }, {
+        root: rootContainer,
+        rootMargin: '250px 0px 250px 0px'
+      });
+    }
+    return cardImageObserver;
+  }
+
   function renderModalGrid() {
     if (!floatingModal) return;
 
@@ -2272,10 +2295,14 @@
       grid.style.display = 'none';
       empty.style.display = 'flex';
     } else {
+      if (cardImageObserver) {
+        cardImageObserver.disconnect();
+      }
       grid.textContent = '';
       grid.style.display = 'grid';
       empty.style.display = 'none';
       const fragment = document.createDocumentFragment();
+      const observer = getCardImageObserver(grid);
 
       filtered.forEach((item) => {
         const isSelected = state.selectedIds.has(item.id);
@@ -2289,10 +2316,18 @@
         const thumb = item.thumbnailUrl || item.url;
         if (isAllowedMediaUrl(thumb)) {
           const img = document.createElement('img');
-          img.src = thumb;
+          img.dataset.src = thumb;
           img.alt = 'Preview';
           img.loading = 'lazy';
+          img.decoding = 'async';
+          img.width = 130;
+          img.height = 130;
           card.appendChild(img);
+          if (observer) {
+            observer.observe(img);
+          } else {
+            img.src = thumb;
+          }
         }
 
         const check = document.createElement('div');

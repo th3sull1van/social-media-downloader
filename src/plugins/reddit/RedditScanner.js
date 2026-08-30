@@ -187,7 +187,9 @@ export class RedditScanner {
         if (meta) {
           const ext = meta.m ? meta.m.split('/').pop() : 'jpg';
           const highRes = `https://i.redd.it/${gItem.media_id}.${ext}`;
-          const preview = meta.s?.u ? meta.s.u.replace(/&amp;/g, '&') : highRes;
+          const previewCandidates = meta.p || [];
+          const midPreview = previewCandidates[Math.min(2, previewCandidates.length - 1)]?.u || meta.s?.u;
+          const preview = midPreview ? midPreview.replace(/&amp;/g, '&') : highRes;
           results.push(RedditNormalizer.normalizeItem({
             id: gItem.media_id,
             url: highRes,
@@ -207,13 +209,14 @@ export class RedditScanner {
       const rVideo = postData.media.reddit_video;
       const fallbackUrl = rVideo.fallback_url || '';
       const baseUrl = fallbackUrl.replace(/\/DASH_[^\/?#]+.*$/, '');
+      const thumbUrl = (postData.thumbnail && /^https?:\/\//i.test(postData.thumbnail)) ? postData.thumbnail : '';
       results.push(RedditNormalizer.normalizeItem({
         id: postData.id,
         type: 'video',
         url: fallbackUrl,
         baseUrl,
         fallbackUrl,
-        previewUrl: postData.thumbnail || '',
+        previewUrl: thumbUrl,
         ext: 'mp4',
         index: 1,
         total: 1
@@ -223,12 +226,13 @@ export class RedditScanner {
 
     // 3. RedGifs embed
     if (postData.url && postData.url.includes('redgifs.com')) {
+      const thumbUrl = (postData.thumbnail && /^https?:\/\//i.test(postData.thumbnail)) ? postData.thumbnail : '';
       results.push(RedditNormalizer.normalizeItem({
         id: postData.id,
         type: 'redgifs',
         url: postData.url,
         isRedGifs: true,
-        previewUrl: postData.thumbnail || '',
+        previewUrl: thumbUrl,
         ext: 'mp4',
         index: 1,
         total: 1
@@ -238,11 +242,18 @@ export class RedditScanner {
 
     // 4. Direct Image
     if (postData.url && !RedditScanner.isIconOrStyleAsset(postData.url) && (postData.url.includes('redd.it') || postData.url.includes('imgur.com') || /\.(jpg|jpeg|png|gif|webp)/i.test(postData.url))) {
+      const cleanUrl = RedditNormalizer.cleanMediaUrl(postData.url);
+      const previewImgs = postData.preview?.images?.[0]?.resolutions || [];
+      const midPreview = previewImgs[Math.min(2, previewImgs.length - 1)]?.url;
+      const thumbUrl = (midPreview ? midPreview.replace(/&amp;/g, '&') : '') ||
+        ((postData.thumbnail && /^https?:\/\//i.test(postData.thumbnail)) ? postData.thumbnail : '') ||
+        cleanUrl;
+
       results.push(RedditNormalizer.normalizeItem({
         id: postData.id,
         type: 'image',
-        url: RedditNormalizer.cleanMediaUrl(postData.url),
-        previewUrl: postData.thumbnail || postData.url,
+        url: cleanUrl,
+        previewUrl: thumbUrl,
         ext: 'jpg',
         index: 1,
         total: 1
