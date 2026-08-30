@@ -5,6 +5,7 @@
  */
 import assert from 'node:assert';
 import { DownloadManager } from '../../src/core/application/DownloadManager.js';
+import { ArchiveService } from '../../src/core/services/ArchiveService.js';
 
 /**
  * Installs a controllable chrome.* stub. Returns the stub and recorded calls.
@@ -356,5 +357,15 @@ export async function runDownloadManagerTests() {
     // An explicit _2 after its own generated _2 also stays unique.
     assert.strictEqual(DownloadManager.uniquifyArchivePath('Album/a_n_2.jpg', used), 'Album/a_n_2_2.jpg');
     assert.strictEqual(DownloadManager.uniquifyArchivePath('Album/other.png', used), 'Album/other.png');
+  }
+
+  // 15. ArchiveService base64 chunking: large payloads chunk correctly without stack overflow.
+  {
+    const bigArray = new Uint8Array(100_000).fill(0x5A);
+    const b64 = ArchiveService.bytesToBase64(bigArray);
+    assert.ok(typeof b64 === 'string');
+    const roundTrip = Buffer.from(b64, 'base64');
+    assert.strictEqual(roundTrip.length, 100_000);
+    assert.ok(roundTrip.every((b) => b === 0x5A));
   }
 };

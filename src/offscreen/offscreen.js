@@ -1,14 +1,105 @@
 /**
- * Social Media Downloader — Offscreen ZIP Packager
- * Manifest V3 Offscreen Document dedicated for JSZip packaging in STORE mode.
- * Safe memory ceiling with real-time packaging progress reporting.
+ * Social Media Downloader — Offscreen ZIP Packager (OPFS Disk Streaming Engine)
+ * Manifest V3 Offscreen Document dedicated for streaming ZIP packaging in STORE mode.
+ * Uses Origin Private File System (OPFS) for zero-RAM disk-cached streaming,
+ * with graceful in-memory fallback when OPFS is unavailable.
  */
 
+// CRC-32 Lookup Table
+const CRC_TABLE = new Uint32Array(256);
+for (let i = 0; i < 256; i++) {
+  let c = i;
+  for (let k = 0; k < 8; k++) {
+    c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+  }
+  CRC_TABLE[i] = c;
+}
+
+function computeCrc32(bytes) {
+  let crc = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) {
+    crc = (CRC_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8)) >>> 0;
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function getDosDateTime(date = new Date()) {
+  const year = date.getFullYear();
+  const dosTime = ((date.getHours() << 11) | (date.getMinutes() << 5) | (date.getSeconds() >> 1)) & 0xFFFF;
+  const dosDate = (((year < 1980 ? 0 : year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate()) & 0xFFFF;
+  return { dosTime, dosDate };
+}
+
+function createLocalHeader(nameBytes, crc32, size, dosTime, dosDate) {
+  const buf = new Uint8Array(30 + nameBytes.length);
+  const view = new DataView(buf.buffer);
+  view.setUint32(0, 0x04034b50, true); // Local file header signature (PK\x03\x04)
+  view.setUint16(4, 20, true);         // Version needed to extract (2.0)
+  view.setUint16(6, 0x0800, true);     // General purpose bit flag (UTF-8)
+  view.setUint16(8, 0, true);          // Compression method (0 = STORE)
+  view.setUint16(10, dosTime, true);   // Last mod time
+  view.setUint16(12, dosDate, true);   // Last mod date
+  view.setUint32(14, crc32, true);     // CRC-32
+  view.setUint32(18, size, true);      // Compressed size
+  view.setUint32(22, size, true);      // Uncompressed size
+  view.setUint16(26, nameBytes.length, true); // Filename length
+  view.setUint16(28, 0, true);         // Extra field length
+  buf.set(nameBytes, 30);
+  return buf;
+}
+
+function createCentralDirectoryHeader(entry) {
+  const buf = new Uint8Array(46 + entry.nameBytes.length);
+  const view = new DataView(buf.buffer);
+  view.setUint32(0, 0x02014b50, true); // Central file header signature (PK\x01\x02)
+  view.setUint16(4, 20, true);         // Version made by (2.0)
+  view.setUint16(6, 20, true);         // Version needed to extract (2.0)
+  view.setUint16(8, 0x0800, true);     // General purpose bit flag (UTF-8)
+  view.setUint16(10, 0, true);         // Compression method (0 = STORE)
+  view.setUint16(12, entry.dosTime, true); // Last mod time
+  view.setUint16(14, entry.dosDate, true); // Last mod date
+  view.setUint32(16, entry.crc32, true);   // CRC-32
+  view.setUint32(20, entry.size, true);    // Compressed size
+  view.setUint32(24, entry.size, true);    // Uncompressed size
+  view.setUint16(28, entry.nameBytes.length, true); // Filename length
+  view.setUint16(30, 0, true);         // Extra field length
+  view.setUint16(32, 0, true);         // File comment length
+  view.setUint16(34, 0, true);         // Disk number start
+  view.setUint16(36, 0, true);         // Internal file attributes
+  view.setUint32(38, 0, true);         // External file attributes
+  view.setUint32(42, entry.offset, true); // Relative offset of local header
+  buf.set(entry.nameBytes, 46);
+  return buf;
+}
+
+function createEocdRecord(entryCount, cdSize, cdOffset) {
+  const buf = new Uint8Array(22);
+  const view = new DataView(buf.buffer);
+  view.setUint32(0, 0x06054b50, true); // End of central dir signature (PK\x05\x06)
+  view.setUint16(4, 0, true);          // Disk number
+  view.setUint16(6, 0, true);          // Start disk
+  view.setUint16(8, entryCount, true); // Entries on this disk
+  view.setUint16(10, entryCount, true);// Total entries
+  view.setUint32(12, cdSize, true);    // Size of central directory
+  view.setUint32(16, cdOffset, true);  // Offset of central directory
+  view.setUint16(20, 0, true);         // Comment length
+  return buf;
+}
+
+const textEncoder = new TextEncoder();
+
 const state = {
-  zip: null,
-  jobBytes: 0,
+  active: false,
+  useOpfs: false,
+  tempDirHandle: null,
+  zipFileHandle: null,
+  writable: null,
+  /** @type {Array<Uint8Array>} */
+  memoryChunks: [],
+  /** @type {Array<{ nameBytes: Uint8Array, crc32: number, size: number, offset: number, dosTime: number, dosDate: number }>} */
+  entries: [],
+  currentOffset: 0,
   completed: 0,
-  sizeLimitHit: false,
   cancelled: false,
   lastPct: -1,
   lastObjectUrl: null,
@@ -17,22 +108,49 @@ const state = {
   generatedBlobUrls: new Set()
 };
 
-// Memory guard: 1 GB ceiling
-const MAX_ZIP_BYTES = 1024 * 1024 * 1024;
-
 function reportProgress(patch) {
   try {
     chrome.runtime.sendMessage({ type: 'ZIP_OFFSCREEN_PROGRESS', patch }).catch(() => {});
   } catch (e) {}
 }
 
-function resetState() {
-  state.zip = new JSZip();
-  state.jobBytes = 0;
+async function cleanupOpfs() {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.storage && typeof navigator.storage.getDirectory === 'function') {
+      const root = await navigator.storage.getDirectory();
+      await root.removeEntry('smd_zip_temp', { recursive: true });
+    }
+  } catch (e) {}
+}
+
+async function resetState() {
+  state.active = true;
+  state.entries = [];
+  state.memoryChunks = [];
+  state.currentOffset = 0;
   state.completed = 0;
-  state.sizeLimitHit = false;
   state.cancelled = false;
   state.lastPct = -1;
+
+  if (state.writable) {
+    try { await state.writable.abort(); } catch (e) {}
+    state.writable = null;
+  }
+
+  state.useOpfs = false;
+  try {
+    if (typeof navigator !== 'undefined' && navigator.storage && typeof navigator.storage.getDirectory === 'function') {
+      await cleanupOpfs();
+      const root = await navigator.storage.getDirectory();
+      state.tempDirHandle = await root.getDirectoryHandle('smd_zip_temp', { create: true });
+      state.zipFileHandle = await state.tempDirHandle.getFileHandle('archive.zip', { create: true });
+      state.writable = await state.zipFileHandle.createWritable();
+      state.useOpfs = true;
+    }
+  } catch (err) {
+    state.useOpfs = false;
+    state.writable = null;
+  }
 }
 
 function base64ToBytes(b64) {
@@ -43,7 +161,7 @@ function base64ToBytes(b64) {
 }
 
 async function addFile(name, bufferOrB64) {
-  if (!state.zip) return { ok: false, reason: 'no_active_zip' };
+  if (!state.active) return { ok: false, reason: 'no_active_zip' };
   if (state.cancelled) return { ok: false, reason: 'cancelled' };
 
   let bytes;
@@ -59,41 +177,97 @@ async function addFile(name, bufferOrB64) {
     return { ok: false, reason: 'invalid_data' };
   }
 
-  if (state.jobBytes + bytes.byteLength > MAX_ZIP_BYTES) {
-    state.sizeLimitHit = true;
-    return { ok: false, reason: 'size_limit', jobBytes: state.jobBytes };
+  const nameBytes = textEncoder.encode(name);
+  const crc32 = computeCrc32(bytes);
+  const { dosTime, dosDate } = getDosDateTime();
+  const localHeader = createLocalHeader(nameBytes, crc32, bytes.length, dosTime, dosDate);
+  const localHeaderOffset = state.currentOffset;
+
+  if (state.useOpfs && state.writable) {
+    await state.writable.write(localHeader);
+    await state.writable.write(bytes);
+  } else {
+    state.memoryChunks.push(localHeader);
+    state.memoryChunks.push(bytes);
   }
-  state.jobBytes += bytes.byteLength;
-  state.zip.file(name, bytes, { binary: true, compression: 'STORE' });
+
+  state.entries.push({
+    nameBytes,
+    crc32,
+    size: bytes.length,
+    offset: localHeaderOffset,
+    dosTime,
+    dosDate
+  });
+
+  state.currentOffset += localHeader.byteLength + bytes.length;
   state.completed++;
 
   reportProgress({
-    status: state.sizeLimitHit ? 'FAILED_SIZE' : 'DOWNLOADING_BLOBS',
+    status: 'DOWNLOADING_BLOBS',
     completed: state.completed
   });
 
-  return { ok: true, jobBytes: state.jobBytes };
+  return { ok: true, jobBytes: state.currentOffset };
 }
 
 async function finishZip(zipFilename, discard) {
-  if (!state.zip) return { ok: false, reason: 'no_active_zip' };
-  const zip = state.zip;
-  state.zip = null;
+  if (!state.active) return { ok: false, reason: 'no_active_zip' };
+  state.active = false;
 
-  if (discard) return { ok: false, reason: 'discarded', completed: state.completed };
-  if (state.cancelled) return { ok: false, reason: 'cancelled', completed: state.completed };
-  if (state.sizeLimitHit) return { ok: false, reason: 'size_limit', completed: state.completed };
+  if (discard || state.cancelled) {
+    if (state.writable) {
+      try { await state.writable.abort(); } catch (e) {}
+      state.writable = null;
+    }
+    await cleanupOpfs();
+    return { ok: false, reason: discard ? 'discarded' : 'cancelled', completed: state.completed };
+  }
 
-  reportProgress({ status: 'PACKAGING_ZIP' });
+  reportProgress({ status: 'PACKAGING_ZIP', zipPercent: 0 });
 
   try {
-    const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' }, (metadata) => {
-      const pct = Math.round((metadata.percent || 0) / 5) * 5;
+    const cdStartOffset = state.currentOffset;
+    let cdSize = 0;
+
+    // Write Central Directory headers
+    for (let i = 0; i < state.entries.length; i++) {
+      const cdHeader = createCentralDirectoryHeader(state.entries[i]);
+      if (state.useOpfs && state.writable) {
+        await state.writable.write(cdHeader);
+      } else {
+        state.memoryChunks.push(cdHeader);
+      }
+      cdSize += cdHeader.byteLength;
+      state.currentOffset += cdHeader.byteLength;
+
+      const pct = Math.round(((i + 1) / state.entries.length) * 80);
       if (pct !== state.lastPct) {
         state.lastPct = pct;
         reportProgress({ status: 'PACKAGING_ZIP', zipPercent: pct });
       }
-    });
+    }
+
+    // Write End of Central Directory record
+    const eocd = createEocdRecord(state.entries.length, cdSize, cdStartOffset);
+    if (state.useOpfs && state.writable) {
+      await state.writable.write(eocd);
+      await state.writable.close();
+      state.writable = null;
+    } else {
+      state.memoryChunks.push(eocd);
+    }
+    state.currentOffset += eocd.byteLength;
+
+    reportProgress({ status: 'PACKAGING_ZIP', zipPercent: 100 });
+
+    let zipBlob;
+    if (state.useOpfs && state.zipFileHandle) {
+      zipBlob = await state.zipFileHandle.getFile();
+    } else {
+      zipBlob = new Blob(state.memoryChunks, { type: 'application/zip' });
+      state.memoryChunks = [];
+    }
 
     const objectUrl = URL.createObjectURL(zipBlob);
     state.lastObjectUrl = objectUrl;
@@ -103,10 +277,16 @@ async function finishZip(zipFilename, discard) {
         URL.revokeObjectURL(state.lastObjectUrl);
         state.lastObjectUrl = null;
       }
+      cleanupOpfs().catch(() => {});
     }, 600_000);
 
     return { ok: true, objectUrl, completed: state.completed };
   } catch (err) {
+    if (state.writable) {
+      try { await state.writable.abort(); } catch (e) {}
+      state.writable = null;
+    }
+    await cleanupOpfs();
     return { ok: false, reason: err?.message || 'zip_failed', completed: state.completed };
   }
 }
@@ -116,9 +296,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   switch (message.type) {
     case 'OFFSCREEN_BEGIN_ZIP':
-      resetState();
-      sendResponse({ ok: true });
-      return;
+      resetState().then(() => sendResponse({ ok: true })).catch(() => sendResponse({ ok: false }));
+      return true;
 
     case 'OFFSCREEN_ADD_FILE':
       addFile(message.name, message.dataB64 || message.buffer).then(sendResponse);
@@ -130,6 +309,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case 'OFFSCREEN_ABORT_ZIP':
       state.cancelled = true;
+      if (state.writable) {
+        state.writable.abort().catch(() => {});
+        state.writable = null;
+      }
+      cleanupOpfs().catch(() => {});
       sendResponse({ ok: true });
       return;
 
