@@ -753,15 +753,10 @@
       const fbAvatar = document.querySelector('svg[aria-label] image, div[role="main"] image')?.getAttribute('xlink:href');
       if (fbAvatar) return fbAvatar;
     } else if (isReddit) {
-      // shreddit avatar (verified against live DOM 2026-08-29): the profile
-      // header renders <img alt="Avatar de <name> ..." src="styles.redditmedia
-      // .com/t5_xxx/styles/profileIcon_*.png?width=58...">. The bare URL (no
-      // query) serves the max-resolution render; adding params 403s (signed).
-      // Subreddit pages expose the same shape with communityIcon_*.
-      const redditAvatar = document.querySelector(
-        'img[alt*="vatar" i][src*="profileIcon"],' +
-        'img[alt*="vatar" i][src*="communityIcon"],' +
-        'img[alt*="vatar" i][src*="redd.it"]'
+      // Scope to header element to avoid whole-document DOM query on infinite-scroll pages
+      const headerScope = document.querySelector('shreddit-profile-header, header, [slot="header"], #profile-header') || document.body;
+      const redditAvatar = headerScope?.querySelector(
+        'img[src*="profileIcon"], img[src*="communityIcon"], img[src*="useravatar"], img[alt*="avatar" i]'
       );
       const redditSrc = redditAvatar ? (redditAvatar.src || '').split('?')[0] : '';
       if (redditSrc) return redditSrc;
