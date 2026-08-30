@@ -39,7 +39,7 @@ Original maximum resolution through authentic CDN extraction: no compression, no
 ## Brand Commitments
 
 - Name: "Social Media Downloader" (abbreviated SMD); README describes it as "modular, high-fidelity".
-- Icon asset: `assets/icons/icon.svg` (sizes referenced as `assets/icons/icon32.png` in the popup).
+- Icon asset: `assets/icons/icon128.png` (sizes referenced as `assets/icons/icon32.png` in the popup).
 - No visual style, palette, or typography is contractually binding; UI work has design freedom subject to the repo rules and the constraints above.
 
 ## Evidence on Hand

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/icons/icon.svg" width="128" alt="Social Media Downloader Ícone">
+<img src="assets/icons/icon128.png" width="128" alt="Social Media Downloader Ícone">
 
 # Social Media Downloader (SMD)
 
