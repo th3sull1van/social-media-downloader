@@ -265,5 +265,20 @@
   },
   "scanFailed": {
     "message": "Scan failed. The page may have changed — try again."
+  },
+  "dedupExactLabel": {
+    "message": "Дедупликация одинаковых медиа"
+  },
+  "dedupExactTooltip": {
+    "message": "Пропускает дубликаты фото и видео с помощью расчета CRC-32 в реальном времени"
+  },
+  "dedupHistoricalLabel": {
+    "message": "История дедупликации"
+  },
+  "dedupHistoricalDesc": {
+    "message": "Пропускать медиа, загруженные в предыдущих сессиях"
+  },
+  "duplicatesSkipped": {
+    "message": "Пропущено дубликатов: $1"
   }
 }

@@ -4,6 +4,7 @@
  */
 import { defaultRegistry } from '../core/application/PluginRegistry.js';
 import { DownloadManager } from '../core/application/DownloadManager.js';
+import { StorageService } from '../core/services/StorageService.js';
 import { InstagramPlugin } from '../plugins/instagram/InstagramPlugin.js';
 import { FacebookPlugin } from '../plugins/facebook/FacebookPlugin.js';
 import { RedditPlugin } from '../plugins/reddit/RedditPlugin.js';
@@ -83,10 +84,38 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   switch (type) {
     case 'START_DOWNLOAD': {
-      const { platform, targetName, items, format } = message.payload || message;
+      const { platform, targetName, items, format, options } = message.payload || message;
       ensureOffscreenDocument().then(() => {
-        return downloadManager.startDownload({ platform, targetName, items, format });
+        return downloadManager.startDownload({ platform, targetName, items, format, options });
       }).then(sendResponse).catch((err) => {
+        sendResponse({ success: false, error: err.message });
+      });
+      return true;
+    }
+
+    case 'GET_SETTINGS': {
+      StorageService.getSettings().then((settings) => {
+        sendResponse({ success: true, settings });
+      }).catch((err) => {
+        sendResponse({ success: false, error: err.message });
+      });
+      return true;
+    }
+
+    case 'SAVE_SETTINGS': {
+      const settings = message.payload || message.settings || {};
+      StorageService.saveSettings(settings).then((ok) => {
+        sendResponse({ success: ok });
+      }).catch((err) => {
+        sendResponse({ success: false, error: err.message });
+      });
+      return true;
+    }
+
+    case 'CLEAR_DEDUP_HISTORY': {
+      StorageService.clearHistory().then((ok) => {
+        sendResponse({ success: ok });
+      }).catch((err) => {
         sendResponse({ success: false, error: err.message });
       });
       return true;

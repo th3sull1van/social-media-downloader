@@ -265,5 +265,20 @@
   },
   "scanFailed": {
     "message": "Scan failed. The page may have changed — try again."
+  },
+  "dedupExactLabel": {
+    "message": "Deduplica file multimediali identici"
+  },
+  "dedupExactTooltip": {
+    "message": "Salta foto e video duplicati tramite il calcolo CRC-32 in tempo reale"
+  },
+  "dedupHistoricalLabel": {
+    "message": "Deduplica Storica"
+  },
+  "dedupHistoricalDesc": {
+    "message": "Salta i file multimediali già scaricati in sessioni precedenti"
+  },
+  "duplicatesSkipped": {
+    "message": "$1 duplicati ignorati"
   }
 }

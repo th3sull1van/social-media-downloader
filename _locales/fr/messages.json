@@ -265,5 +265,20 @@
   },
   "scanFailed": {
     "message": "Scan failed. The page may have changed — try again."
+  },
+  "dedupExactLabel": {
+    "message": "Dédupliquer les médias identiques"
+  },
+  "dedupExactTooltip": {
+    "message": "Ignore les photos et vidéos en double grâce au calcul CRC-32 en temps réel"
+  },
+  "dedupHistoricalLabel": {
+    "message": "Déduplication Historique"
+  },
+  "dedupHistoricalDesc": {
+    "message": "Ignorer les médias déjà téléchargés lors de sessions précédentes"
+  },
+  "duplicatesSkipped": {
+    "message": "$1 doublons ignorés"
   }
 }

@@ -117,15 +117,29 @@
 
       <!-- Download Controls -->
       <section class="download-section">
-        <div class="format-selector">
-          <label class="radio-label">
-            <input type="radio" name="download-format" value="individual" checked>
-            <span data-i18n="formatFolders">In Folders</span>
-          </label>
-          <label class="radio-label">
-            <input type="radio" name="download-format" value="zip">
-            <span data-i18n="formatZip">ZIP Archive</span>
-          </label>
+        <div class="download-options-bar">
+          <div class="format-selector">
+            <label class="radio-label">
+              <input type="radio" name="download-format" value="individual" checked>
+              <span data-i18n="formatFolders">In Folders</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="download-format" value="zip">
+              <span data-i18n="formatZip">ZIP Archive</span>
+            </label>
+          </div>
+          <div class="dedup-controls">
+            <label class="checkbox-label" data-i18n-title="dedupExactTooltip">
+              <input type="checkbox" id="popup-dedup-toggle">
+              <span data-i18n="dedupExactLabel">Deduplicate identical</span>
+            </label>
+            <div id="popup-historical-dedup-container" class="nested-option" style="display: none;">
+              <label class="checkbox-label" data-i18n-title="dedupHistoricalDesc">
+                <input type="checkbox" id="popup-historical-dedup-toggle">
+                <span data-i18n="dedupHistoricalLabel">Historical dedup</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         <button id="btn-download" class="btn btn-success btn-download" disabled>

@@ -268,5 +268,20 @@
   },
   "scanFailed": {
     "message": "Falha ao escanear. A página pode ter mudado — tente novamente."
+  },
+  "dedupExactLabel": {
+    "message": "Deduplicar mídias idênticas"
+  },
+  "dedupExactTooltip": {
+    "message": "Ignora fotos e vídeos duplicados usando cálculo CRC-32 em tempo real"
+  },
+  "dedupHistoricalLabel": {
+    "message": "Deduplicação Histórica"
+  },
+  "dedupHistoricalDesc": {
+    "message": "Pular mídias já baixadas em sessões anteriores"
+  },
+  "duplicatesSkipped": {
+    "message": "$1 duplicadas ignoradas"
   }
 }

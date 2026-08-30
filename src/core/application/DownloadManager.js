@@ -6,6 +6,7 @@
 import { DownloadJobModel } from '../domain/DownloadJob.js';
 import { FilenameService } from '../services/FilenameService.js';
 import { ArchiveService } from '../services/ArchiveService.js';
+import { StorageService } from '../services/StorageService.js';
 import { Logger } from '../services/LoggingService.js';
 
 export class DownloadManager {
@@ -139,9 +140,12 @@ export class DownloadManager {
    * @param {string} params.targetName
    * @param {import('../domain/MediaItem.js').MediaItem[]} params.items
    * @param {import('../domain/DownloadJob.js').DownloadFormat} [params.format='individual']
+   * @param {Object} [params.options]
+   * @param {boolean} [params.options.deduplicate]
+   * @param {boolean} [params.options.historicalDedup]
    * @returns {Promise<{ success: boolean, message?: string, error?: string }>}
    */
-  async startDownload({ platform, targetName, items, format = 'individual' }) {
+  async startDownload({ platform, targetName, items, format = 'individual', options }) {
     if (!items || !items.length) {
       return { success: false, error: 'No items provided' };
     }
@@ -153,12 +157,16 @@ export class DownloadManager {
     const plugin = this.registry.get(platform);
     const safeTargetName = FilenameService.sanitize(targetName || 'Media_Collection', 80, 'Media_Collection');
 
+    const settings = await StorageService.getSettings();
+    const deduplicate = options && typeof options.deduplicate === 'boolean' ? options.deduplicate : settings.deduplicate;
+    const historicalDedup = deduplicate && (options && typeof options.historicalDedup === 'boolean' ? options.historicalDedup : settings.historicalDedup);
+
     if (format === 'zip') {
-      this.processZipDownload(plugin, platform, safeTargetName, items).catch((err) => {
+      this.processZipDownload(plugin, platform, safeTargetName, items, { deduplicate, historicalDedup }).catch((err) => {
         this.logger.error('ZIP download error:', err);
       });
     } else {
-      this.processIndividualDownloads(plugin, platform, safeTargetName, items).catch((err) => {
+      this.processIndividualDownloads(plugin, platform, safeTargetName, items, { deduplicate, historicalDedup }).catch((err) => {
         this.logger.error('Individual download error:', err);
       });
     }
@@ -315,11 +323,17 @@ export class DownloadManager {
    * @param {string} platform
    * @param {string} targetName
    * @param {import('../domain/MediaItem.js').MediaItem[]} items
+   * @param {Object} [options]
+   * @param {boolean} [options.deduplicate]
+   * @param {boolean} [options.historicalDedup]
    */
-  async processIndividualDownloads(plugin, platform, targetName, items) {
+  async processIndividualDownloads(plugin, platform, targetName, items, { deduplicate = false, historicalDedup = false } = {}) {
     const total = items.length;
-    /** @type {Map<number, { ok: boolean }>} */
+    /** @type {Map<number, { ok: boolean, skipped?: boolean }>} */
     const results = new Map();
+    const sessionSignatures = new Set();
+    const newHistoricalSignatures = [];
+    let skippedDuplicates = 0;
 
     this.activeJob = DownloadJobModel.create({
       platform,
@@ -345,20 +359,58 @@ export class DownloadManager {
         let ok = false;
         let downloadId = null;
         try {
-          downloadId = await this.downloadItem(plugin, item, targetFilename);
-          ok = true;
+          if (deduplicate) {
+            let bytes = null;
+            if (plugin && typeof plugin.resolveMedia === 'function') {
+              const artifact = await plugin.resolveMedia(item, {});
+              if (artifact && (artifact.kind === 'generated' || artifact.data)) {
+                bytes = artifact.data instanceof Uint8Array ? artifact.data : new Uint8Array(await artifact.data.arrayBuffer());
+              } else if (artifact && artifact.kind === 'direct' && artifact.source?.url) {
+                const response = await fetch(artifact.source.url, { mode: 'cors' });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                bytes = new Uint8Array(await response.arrayBuffer());
+              }
+            } else {
+              const response = await fetch(item.downloadUrl || item.url, { mode: 'cors' });
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+              bytes = new Uint8Array(await response.arrayBuffer());
+            }
+
+            if (bytes) {
+              const sig = ArchiveService.getSignature(bytes);
+              if (sessionSignatures.has(sig) || (historicalDedup && (await StorageService.isHistoricallyDownloaded(sig)))) {
+                skippedDuplicates++;
+                if (this.activeJob) {
+                  this.activeJob.skippedDuplicates = skippedDuplicates;
+                }
+                results.set(currentIndex, { ok: true, skipped: true });
+                continue;
+              }
+              sessionSignatures.add(sig);
+              newHistoricalSignatures.push(sig);
+              downloadId = await this.downloadGeneratedBlob(bytes, targetFilename);
+              ok = true;
+            } else {
+              downloadId = await this.downloadItem(plugin, item, targetFilename);
+              ok = true;
+            }
+          } else {
+            downloadId = await this.downloadItem(plugin, item, targetFilename);
+            ok = true;
+          }
         } catch (err) {
           this.logger.warn(`Failed to download item ${item.id || currentIndex}:`, err);
         }
 
-        results.set(currentIndex, { ok });
+        results.set(currentIndex, { ok, skipped: false });
 
         // Per-item counters written from the owning worker only (no shared counter race).
         if (this.activeJob) {
           let completed = 0;
           let failed = 0;
           for (const r of results.values()) {
-            if (r.ok) completed++; else failed++;
+            if (r.ok && !r.skipped) completed++;
+            else if (!r.ok) failed++;
           }
           this.activeJob.completed = completed;
           this.activeJob.failed = failed;
@@ -366,7 +418,7 @@ export class DownloadManager {
             this.activeJob.receiptDownloadId = downloadId;
           }
           this.activeJob.updatedAt = Date.now();
-          this.updateBadge(`${completed}/${total}`);
+          this.updateBadge(`${completed + skippedDuplicates}/${total}`);
           this.broadcastProgress();
         }
 
@@ -384,6 +436,9 @@ export class DownloadManager {
     const individualStatus = this.currentJobStatus();
     if (this.activeJob && individualStatus !== 'CANCELLED') {
       this.activeJob.status = 'COMPLETED';
+      if (historicalDedup && newHistoricalSignatures.length > 0) {
+        await StorageService.addHistoricalSignatures(newHistoricalSignatures);
+      }
     }
 
     this.updateBadge('✓', '#4BB543');
@@ -400,10 +455,16 @@ export class DownloadManager {
    * @param {string} platform
    * @param {string} targetName
    * @param {import('../domain/MediaItem.js').MediaItem[]} items
+   * @param {Object} [options]
+   * @param {boolean} [options.deduplicate]
+   * @param {boolean} [options.historicalDedup]
    */
-  async processZipDownload(plugin, platform, targetName, items) {
+  async processZipDownload(plugin, platform, targetName, items, { deduplicate = false, historicalDedup = false } = {}) {
     const timestamp = FilenameService.getTimestamp();
     const zipFilename = `SMD/${platform}-${targetName}-${timestamp}.zip`;
+    const sessionSignatures = new Set();
+    const newHistoricalSignatures = [];
+    let skippedDuplicates = 0;
 
     this.activeJob = DownloadJobModel.create({
       platform,
@@ -423,7 +484,7 @@ export class DownloadManager {
       const concurrency = 6;
       let index = 0;
       let sizeLimitHit = false;
-      /** @type {Map<number, boolean>} */
+      /** @type {Map<number, { ok: boolean, skipped?: boolean }>} */
       const results = new Map();
       /** @type {Set<string>} */
       const usedArchivePaths = new Set();
@@ -442,46 +503,51 @@ export class DownloadManager {
 
           let ok = false;
           try {
-            // Media that needs processing (generated blobs) is resolved through
-            // the plugin resolver, same as the individual path; the plugin owns
-            // how its media is resolved. Everything else is fetched here.
+            let dataPayload = null;
+            let bytesForSignature = null;
+
             if (plugin && typeof plugin.resolveMedia === 'function') {
               const artifact = await plugin.resolveMedia(item, {});
               if (artifact && (artifact.kind === 'generated' || artifact.data)) {
-                const addRes = await ArchiveService.addFile(zipPath, artifact.data);
-                if (!addRes || !addRes.ok) {
-                  if (addRes && addRes.reason === 'size_limit') {
-                    sizeLimitHit = true;
-                    break;
-                  }
-                  if (addRes && addRes.reason === 'cancelled') return;
-                  throw new Error(addRes?.reason || 'Offscreen rejected resolved file');
+                dataPayload = artifact.data;
+                if (deduplicate) {
+                  bytesForSignature = artifact.data instanceof Uint8Array ? artifact.data : new Uint8Array(await artifact.data.arrayBuffer());
                 }
-                ok = true;
               } else if (artifact && artifact.kind === 'direct' && artifact.source?.url) {
                 const response = await fetch(artifact.source.url, { mode: 'cors' });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const arrayBuffer = await response.arrayBuffer();
-                const addRes = await ArchiveService.addFile(zipPath, arrayBuffer);
-                if (!addRes || !addRes.ok) {
-                  if (addRes && addRes.reason === 'size_limit') {
-                    sizeLimitHit = true;
-                    break;
-                  }
-                  if (addRes && addRes.reason === 'cancelled') return;
-                  throw new Error(addRes?.reason || 'Offscreen rejected resolved file');
+                dataPayload = await response.arrayBuffer();
+                if (deduplicate) {
+                  bytesForSignature = new Uint8Array(dataPayload);
                 }
-                ok = true;
               } else {
                 throw new Error(`Unsupported artifact kind: ${artifact?.kind || 'unknown'}`);
               }
             } else {
-              let response = await fetch(item.downloadUrl || item.url, { mode: 'cors' });
+              const response = await fetch(item.downloadUrl || item.url, { mode: 'cors' });
               if (!response.ok) throw new Error(`HTTP ${response.status}`);
-              const arrayBuffer = await response.arrayBuffer();
+              dataPayload = await response.arrayBuffer();
+              if (deduplicate) {
+                bytesForSignature = new Uint8Array(dataPayload);
+              }
+            }
 
-              const addRes = await ArchiveService.addFile(zipPath, arrayBuffer);
+            if (deduplicate && bytesForSignature) {
+              const sig = ArchiveService.getSignature(bytesForSignature);
+              if (sessionSignatures.has(sig) || (historicalDedup && (await StorageService.isHistoricallyDownloaded(sig)))) {
+                skippedDuplicates++;
+                if (this.activeJob) {
+                  this.activeJob.skippedDuplicates = skippedDuplicates;
+                }
+                results.set(currentIndex, { ok: true, skipped: true });
+                continue;
+              }
+              sessionSignatures.add(sig);
+              newHistoricalSignatures.push(sig);
+            }
 
+            if (dataPayload) {
+              const addRes = await ArchiveService.addFile(zipPath, dataPayload);
               if (!addRes || !addRes.ok) {
                 if (addRes && addRes.reason === 'size_limit') {
                   sizeLimitHit = true;
@@ -496,18 +562,19 @@ export class DownloadManager {
             this.logger.warn(`Failed to fetch media blob ${item.id || currentIndex}:`, err);
           }
 
-          results.set(currentIndex, ok);
+          results.set(currentIndex, { ok, skipped: false });
 
           if (this.activeJob) {
             let completed = 0;
             let failed = 0;
             for (const r of results.values()) {
-              if (r) completed++; else failed++;
+              if (r.ok && !r.skipped) completed++;
+              else if (!r.ok) failed++;
             }
             this.activeJob.completed = completed;
             this.activeJob.failed = failed;
             this.activeJob.updatedAt = Date.now();
-            this.updateBadge(`${completed}/${items.length}`);
+            this.updateBadge(`${completed + skippedDuplicates}/${items.length}`);
             this.broadcastProgress();
           }
 
@@ -524,9 +591,7 @@ export class DownloadManager {
       const cancelled = !this.activeJob || this.currentJobStatus() === 'CANCELLED';
       if (cancelled) return;
 
-      // Never emit an empty ZIP: if every addFile failed (e.g. a transport bug producing
-      // 22-byte archives), fail the job visibly instead of packaging nothing.
-      if (!sizeLimitHit && this.activeJob.completed === 0) {
+      if (!sizeLimitHit && this.activeJob.completed === 0 && skippedDuplicates === 0) {
         throw new Error('No media could be added to the ZIP archive (all items failed)');
       }
 
@@ -545,13 +610,15 @@ export class DownloadManager {
         throw new Error(finish?.reason || 'ZIP packaging failed');
       }
 
-      // The download id is used by handleDownloadChanged to revoke the blob
-      // URL only after the download completes.
       const zipDownloadId = await this.downloadUrl(finish.objectUrl, zipFilename);
       if (this.activeJob) {
         this.activeJob.receiptDownloadId = zipDownloadId;
       }
       this.blobUrlDownloadIds.set(finish.objectUrl, zipDownloadId);
+
+      if (historicalDedup && newHistoricalSignatures.length > 0) {
+        await StorageService.addHistoricalSignatures(newHistoricalSignatures);
+      }
 
       // Verify the final on-disk name. A competing download manager (IDM) can win
       // the onDeterminingFilename race and rename the ZIP to the blob UUID. The

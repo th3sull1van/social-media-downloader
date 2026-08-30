@@ -265,5 +265,20 @@
   },
   "scanFailed": {
     "message": "Scan failed. The page may have changed — try again."
+  },
+  "dedupExactLabel": {
+    "message": "去重相同媒体"
+  },
+  "dedupExactTooltip": {
+    "message": "使用实时 CRC-32 计算跳过重复的照片和视频"
+  },
+  "dedupHistoricalLabel": {
+    "message": "历史去重"
+  },
+  "dedupHistoricalDesc": {
+    "message": "跳过以往会话中已下载的媒体"
+  },
+  "duplicatesSkipped": {
+    "message": "已跳过 $1 个重复项"
   }
 }

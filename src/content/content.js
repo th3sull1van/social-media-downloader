@@ -1920,15 +1920,29 @@
 
         <!-- Footer -->
         <div class="smd-modal-footer">
-          <div class="smd-segmented" role="radiogroup" aria-label="${t('formatLabel')}">
-            <label class="smd-segment">
-              <input type="radio" name="smd-modal-format" value="zip" checked>
-              <span class="smd-segment-face">${t('formatZip')}</span>
-            </label>
-            <label class="smd-segment">
-              <input type="radio" name="smd-modal-format" value="individual">
-              <span class="smd-segment-face">${t('formatFolders')}</span>
-            </label>
+          <div class="smd-footer-options">
+            <div class="smd-segmented" role="radiogroup" aria-label="${t('formatLabel')}">
+              <label class="smd-segment">
+                <input type="radio" name="smd-modal-format" value="zip" checked>
+                <span class="smd-segment-face">${t('formatZip')}</span>
+              </label>
+              <label class="smd-segment">
+                <input type="radio" name="smd-modal-format" value="individual">
+                <span class="smd-segment-face">${t('formatFolders')}</span>
+              </label>
+            </div>
+            <div class="smd-dedup-options">
+              <label class="smd-checkbox-label" title="${t('dedupExactTooltip')}">
+                <input type="checkbox" id="smd-dedup-toggle">
+                <span>${t('dedupExactLabel')}</span>
+              </label>
+              <div id="smd-historical-dedup-container" class="smd-nested-option" style="display: none;">
+                <label class="smd-checkbox-label" title="${t('dedupHistoricalDesc')}">
+                  <input type="checkbox" id="smd-historical-dedup-toggle">
+                  <span>${t('dedupHistoricalLabel')}</span>
+                </label>
+              </div>
+            </div>
           </div>
           <button id="smd-btn-start-download" class="smd-btn-download" disabled>
             <span id="smd-download-text">${t('downloadBtnDefault')}</span>
@@ -1940,6 +1954,44 @@
     uiShadow.appendChild(floatingModal);
     updateModalTitle();
     updateAvatarUI();
+
+    // Load persisted settings
+    chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (res) => {
+      if (res && res.success && res.settings) {
+        const dedupEl = uiGetById('smd-dedup-toggle');
+        const histEl = uiGetById('smd-historical-dedup-toggle');
+        const histContainer = uiGetById('smd-historical-dedup-container');
+        if (dedupEl) dedupEl.checked = !!res.settings.deduplicate;
+        if (histEl) histEl.checked = !!res.settings.historicalDedup;
+        if (histContainer) histContainer.style.display = res.settings.deduplicate ? 'inline-flex' : 'none';
+      }
+    });
+
+    uiGetById('smd-dedup-toggle')?.addEventListener('change', (e) => {
+      const isChecked = /** @type {HTMLInputElement} */ (e.target).checked;
+      const histContainer = uiGetById('smd-historical-dedup-container');
+      if (histContainer) histContainer.style.display = isChecked ? 'inline-flex' : 'none';
+      const histEl = uiGetById('smd-historical-dedup-toggle');
+      chrome.runtime.sendMessage({
+        type: 'SAVE_SETTINGS',
+        payload: {
+          deduplicate: isChecked,
+          historicalDedup: isChecked && (histEl?.checked || false)
+        }
+      });
+    });
+
+    uiGetById('smd-historical-dedup-toggle')?.addEventListener('change', (e) => {
+      const isHistChecked = /** @type {HTMLInputElement} */ (e.target).checked;
+      const dedupEl = uiGetById('smd-dedup-toggle');
+      chrome.runtime.sendMessage({
+        type: 'SAVE_SETTINGS',
+        payload: {
+          deduplicate: dedupEl?.checked || false,
+          historicalDedup: isHistChecked
+        }
+      });
+    });
 
     // Event listeners
     uiGetById('smd-modal-close')?.addEventListener('click', toggleModal);
@@ -2042,6 +2094,8 @@
     uiGetById('smd-btn-start-download')?.addEventListener('click', () => {
       if (state.isDownloading) return;
       const format = floatingModal.querySelector('input[name="smd-modal-format"]:checked')?.value || 'zip';
+      const deduplicate = uiGetById('smd-dedup-toggle')?.checked || false;
+      const historicalDedup = deduplicate && (uiGetById('smd-historical-dedup-toggle')?.checked || false);
       const selected = Array.from(state.media.values()).filter((m) => state.selectedIds.has(m.id));
       if (!selected.length) return;
 
@@ -2051,7 +2105,8 @@
         platform: state.platform,
         targetName: state.username || state.targetName,
         items: selected,
-        format
+        format,
+        options: { deduplicate, historicalDedup }
       }, (res) => {
         if (chrome.runtime.lastError || !res?.success) {
           state.isDownloading = false;
@@ -2324,9 +2379,13 @@
     // Terminal: COMPLETED or CANCELLED
     state.isDownloading = false;
     if (job.status === 'COMPLETED') {
-      statusText.textContent = job.failed > 0
-        ? `${t('downloadComplete')} (${t('itemsFailedLabel', [String(job.failed)])})`
-        : (job.filenameOverridden ? t('filenameOverriddenWarning') : t('downloadComplete'));
+      const parts = [];
+      if (job.failed > 0) parts.push(t('itemsFailedLabel', [String(job.failed)]));
+      if (typeof job.skippedDuplicates === 'number' && job.skippedDuplicates > 0) {
+        parts.push(t('duplicatesSkipped', [String(job.skippedDuplicates)]));
+      }
+      const suffix = parts.length > 0 ? ` (${parts.join(', ')})` : '';
+      statusText.textContent = job.filenameOverridden ? `${t('filenameOverriddenWarning')}${suffix}` : `${t('downloadComplete')}${suffix}`;
     } else {
       statusText.textContent = t('downloadCancelled');
     }

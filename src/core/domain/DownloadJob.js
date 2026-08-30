@@ -21,6 +21,7 @@
  * @property {number} total
  * @property {number} completed
  * @property {number} failed
+ * @property {number=} skippedDuplicates Number of duplicate media items skipped
  * @property {JobStatus} status
  * @property {number=} zipPercent
  * @property {string=} error
@@ -58,6 +59,7 @@ export class DownloadJobModel {
       total: Math.max(0, total),
       completed: 0,
       failed: 0,
+      skippedDuplicates: 0,
       status: 'QUEUED',
       zipPercent: 0,
       createdAt: now,

@@ -29,6 +29,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
     });
+
+    document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+      const key = el.getAttribute('data-i18n-title');
+      if (key) {
+        const translation = t(key);
+        if (translation && translation !== key) {
+          el.setAttribute('title', translation);
+        }
+      }
+    });
   }
 
   applyI18n();
@@ -497,7 +507,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (isPackaging) {
       progressStatusText.textContent = t('packagingZip');
     } else if (job.status === 'COMPLETED') {
-      progressStatusText.textContent = job.filenameOverridden ? t('filenameOverriddenWarning') : t('downloadComplete');
+      const parts = [];
+      if (job.failed > 0) parts.push(t('itemsFailedLabel', [String(job.failed)]));
+      if (typeof job.skippedDuplicates === 'number' && job.skippedDuplicates > 0) {
+        parts.push(t('duplicatesSkipped', [String(job.skippedDuplicates)]));
+      }
+      const suffix = parts.length > 0 ? ` (${parts.join(', ')})` : '';
+      progressStatusText.textContent = job.filenameOverridden ? `${t('filenameOverriddenWarning')}${suffix}` : `${t('downloadComplete')}${suffix}`;
       setTimeout(() => { progressContainer.style.display = 'none'; }, job.filenameOverridden ? 10000 : 4000);
     } else if (job.status === 'CANCELLED') {
       progressStatusText.textContent = t('downloadCancelled');
@@ -512,6 +528,50 @@ document.addEventListener('DOMContentLoaded', async () => {
       progressStatusText.textContent = t('downloading');
     }
   }
+
+  // Deduplication Settings Bindings
+  const popupDedupToggle = document.getElementById('popup-dedup-toggle');
+  const popupHistoricalDedupToggle = document.getElementById('popup-historical-dedup-toggle');
+  const popupHistoricalContainer = document.getElementById('popup-historical-dedup-container');
+
+  chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (res) => {
+    if (res && res.success && res.settings) {
+      if (popupDedupToggle instanceof HTMLInputElement) {
+        popupDedupToggle.checked = !!res.settings.deduplicate;
+      }
+      if (popupHistoricalDedupToggle instanceof HTMLInputElement) {
+        popupHistoricalDedupToggle.checked = !!res.settings.historicalDedup;
+      }
+      if (popupHistoricalContainer) {
+        popupHistoricalContainer.style.display = res.settings.deduplicate ? 'inline-flex' : 'none';
+      }
+    }
+  });
+
+  popupDedupToggle?.addEventListener('change', (e) => {
+    const isChecked = /** @type {HTMLInputElement} */ (e.target).checked;
+    if (popupHistoricalContainer) {
+      popupHistoricalContainer.style.display = isChecked ? 'inline-flex' : 'none';
+    }
+    chrome.runtime.sendMessage({
+      type: 'SAVE_SETTINGS',
+      payload: {
+        deduplicate: isChecked,
+        historicalDedup: isChecked && (popupHistoricalDedupToggle instanceof HTMLInputElement && popupHistoricalDedupToggle.checked)
+      }
+    });
+  });
+
+  popupHistoricalDedupToggle?.addEventListener('change', (e) => {
+    const isHistChecked = /** @type {HTMLInputElement} */ (e.target).checked;
+    chrome.runtime.sendMessage({
+      type: 'SAVE_SETTINGS',
+      payload: {
+        deduplicate: popupDedupToggle instanceof HTMLInputElement && popupDedupToggle.checked,
+        historicalDedup: isHistChecked
+      }
+    });
+  });
 
   // Filter Tabs
   document.querySelectorAll('.filter-tabs .tab').forEach((tab) => {
@@ -590,13 +650,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!selectedItems.length) return;
 
     const format = /** @type {HTMLInputElement} */ (document.querySelector('input[name="download-format"]:checked'))?.value || 'individual';
+    const deduplicate = popupDedupToggle instanceof HTMLInputElement ? popupDedupToggle.checked : false;
+    const historicalDedup = deduplicate && (popupHistoricalDedupToggle instanceof HTMLInputElement ? popupHistoricalDedupToggle.checked : false);
 
     chrome.runtime.sendMessage({
       type: 'START_DOWNLOAD',
       platform,
       targetName,
       items: selectedItems,
-      format
+      format,
+      options: { deduplicate, historicalDedup }
     }, (response) => {
       if (chrome.runtime.lastError || !response?.success) {
         if (chrome.runtime.lastError) {

@@ -265,5 +265,20 @@
   },
   "scanFailed": {
     "message": "Scan failed. The page may have changed — try again."
+  },
+  "dedupExactLabel": {
+    "message": "Deduplicate identical media"
+  },
+  "dedupExactTooltip": {
+    "message": "Skip duplicate photos and videos using real-time CRC-32 hash"
+  },
+  "dedupHistoricalLabel": {
+    "message": "Historical deduplication"
+  },
+  "dedupHistoricalDesc": {
+    "message": "Skip media previously downloaded in past sessions"
+  },
+  "duplicatesSkipped": {
+    "message": "$1 duplicates skipped"
   }
 }

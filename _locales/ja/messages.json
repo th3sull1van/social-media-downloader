@@ -265,5 +265,20 @@
   },
   "scanFailed": {
     "message": "Scan failed. The page may have changed — try again."
+  },
+  "dedupExactLabel": {
+    "message": "同一メディアの重複排除"
+  },
+  "dedupExactTooltip": {
+    "message": "リアルタイムCRC-32計算により重複した写真や動画をスキップ"
+  },
+  "dedupHistoricalLabel": {
+    "message": "履歴重複排除"
+  },
+  "dedupHistoricalDesc": {
+    "message": "過去のセッションでダウンロード済みのメディアをスキップ"
+  },
+  "duplicatesSkipped": {
+    "message": "$1 件の重複をスキップ"
   }
 }

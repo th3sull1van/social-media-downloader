@@ -8,6 +8,7 @@ import { runDomainTests } from './core/domain.test.js';
 import { runFilenameTests } from './core/filename.test.js';
 import { runLoggingDiagnosticsTests } from './core/logging-diagnostics.test.js';
 import { runDownloadManagerTests } from './core/download-manager.test.js';
+import { runStorageDedupTests } from './core/storage-dedup.test.js';
 import { runContractTests } from './contracts/contracts.test.js';
 import { runInstagramNamingTests } from './contracts/instagram-naming.test.js';
 import { runFacebookNamingTests } from './contracts/facebook-naming.test.js';
@@ -56,6 +57,10 @@ const suites = [
   {
     name: 'Download Manager & chrome.* Stub Tests',
     fn: runDownloadManagerTests
+  },
+  {
+    name: 'Storage & Exact/Historical Deduplication Tests',
+    fn: runStorageDedupTests
   },
   {
     name: 'Reddit Scanner (JSON API) Tests',

@@ -144,4 +144,39 @@ export class ArchiveService {
     }
     return btoa(binary);
   }
+
+  static CRC_TABLE = (() => {
+    const table = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+      let c = i;
+      for (let k = 0; k < 8; k++) {
+        c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      }
+      table[i] = c;
+    }
+    return table;
+  })();
+
+  /**
+   * Computes the 32-bit unsigned CRC-32 checksum of a byte array.
+   * @param {Uint8Array} bytes
+   * @returns {number}
+   */
+  static computeCrc32(bytes) {
+    let crc = 0xFFFFFFFF;
+    const table = ArchiveService.CRC_TABLE;
+    for (let i = 0; i < bytes.length; i++) {
+      crc = (table[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8)) >>> 0;
+    }
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  /**
+   * Generates a unique content signature for exact deduplication.
+   * @param {Uint8Array} bytes
+   * @returns {string}
+   */
+  static getSignature(bytes) {
+    return `${ArchiveService.computeCrc32(bytes)}_${bytes.length}`;
+  }
 }
