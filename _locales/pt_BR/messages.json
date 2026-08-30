@@ -244,5 +244,29 @@
   },
   "scanFeed": {
     "message": "Escanear Feed"
+  },
+  "closeModal": {
+    "message": "Fechar"
+  },
+  "retryBtn": {
+    "message": "Tentar novamente"
+  },
+  "showInFolder": {
+    "message": "Mostrar na pasta"
+  },
+  "filterLabel": {
+    "message": "Filtros de mídia"
+  },
+  "formatLabel": {
+    "message": "Formato de download"
+  },
+  "mediaItemLabel": {
+    "message": "Item de mídia"
+  },
+  "itemsFailedLabel": {
+    "message": "$1 falharam"
+  },
+  "scanFailed": {
+    "message": "Falha ao escanear. A página pode ter mudado — tente novamente."
   }
 }

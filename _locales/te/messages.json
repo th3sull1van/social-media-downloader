@@ -241,5 +241,29 @@
   },
   "scanFeed": {
     "message": "Scan Feed"
+  },
+  "closeModal": {
+    "message": "Close"
+  },
+  "retryBtn": {
+    "message": "Retry"
+  },
+  "showInFolder": {
+    "message": "Show in folder"
+  },
+  "filterLabel": {
+    "message": "Media filters"
+  },
+  "formatLabel": {
+    "message": "Download format"
+  },
+  "mediaItemLabel": {
+    "message": "Media item"
+  },
+  "itemsFailedLabel": {
+    "message": "$1 failed"
+  },
+  "scanFailed": {
+    "message": "Scan failed. The page may have changed — try again."
   }
 }

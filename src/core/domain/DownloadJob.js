@@ -24,6 +24,7 @@
  * @property {JobStatus} status
  * @property {number=} zipPercent
  * @property {string=} error
+ * @property {number=} receiptDownloadId Last successful chrome download id (receipt "show in folder" anchor)
  * @property {boolean=} filenameOverridden Set when a competing download manager renamed the output
  * @property {number} createdAt
  * @property {number} updatedAt

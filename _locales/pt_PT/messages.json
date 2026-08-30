@@ -241,5 +241,29 @@
   },
   "scanFeed": {
     "message": "Analisar Feed"
+  },
+  "closeModal": {
+    "message": "Fechar"
+  },
+  "retryBtn": {
+    "message": "Tentar novamente"
+  },
+  "showInFolder": {
+    "message": "Mostrar na pasta"
+  },
+  "filterLabel": {
+    "message": "Filtros de multimédia"
+  },
+  "formatLabel": {
+    "message": "Formato de transferência"
+  },
+  "mediaItemLabel": {
+    "message": "Item de multimédia"
+  },
+  "itemsFailedLabel": {
+    "message": "$1 falharam"
+  },
+  "scanFailed": {
+    "message": "Falha ao analisar. A página pode ter mudado — tente novamente."
   }
 }

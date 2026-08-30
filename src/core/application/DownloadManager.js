@@ -233,9 +233,8 @@ export class DownloadManager {
    * or via a direct URL. The decision of how to resolve an item is owned by the
    * plugin; Core only executes the resulting DownloadArtifact.
    * @param {any} plugin
-   * @param {any} item
    * @param {string} targetFilename
-   * @returns {Promise<void>}
+   * @returns {Promise<number>} chrome download id
    */
   async downloadItem(plugin, item, targetFilename) {
     // 1. Plugin resolver path — if the plugin provides resolveMedia(), call it and
@@ -243,12 +242,10 @@ export class DownloadManager {
     if (plugin && typeof plugin.resolveMedia === 'function') {
       const artifact = await plugin.resolveMedia(item, {});
       if (artifact && artifact.kind === 'direct' && artifact.source?.url) {
-        await this.downloadUrl(artifact.source.url, targetFilename);
-        return;
+        return this.downloadUrl(artifact.source.url, targetFilename);
       }
       if (artifact && (artifact.kind === 'generated' || artifact.data)) {
-        await this.downloadGeneratedBlob(artifact.data, targetFilename);
-        return;
+        return this.downloadGeneratedBlob(artifact.data, targetFilename);
       }
       throw new Error(`Unsupported artifact kind: ${artifact?.kind || 'unknown'}`);
     }
@@ -258,9 +255,8 @@ export class DownloadManager {
     if (!downloadUrl) {
       throw new Error('Item has no download URL');
     }
-    await this.downloadUrl(downloadUrl, targetFilename);
+    return this.downloadUrl(downloadUrl, targetFilename);
   }
-
   /**
    * Downloads a URL via chrome.downloads and tracks the pending filename.
    * @param {string} url
@@ -299,7 +295,7 @@ export class DownloadManager {
    * The service worker has no URL.createObjectURL; the offscreen document creates it for us.
    * @param {Blob | ArrayBuffer | Uint8Array} data
    * @param {string} targetFilename
-   * @returns {Promise<void>}
+   * @returns {Promise<number>} chrome download id
    */
   async downloadGeneratedBlob(data, targetFilename) {
     const createRes = await ArchiveService.createBlobUrl(data);
@@ -310,6 +306,7 @@ export class DownloadManager {
     this.pendingBlobUrls.add(objectUrl);
     const downloadId = await this.downloadUrl(objectUrl, targetFilename);
     this.blobUrlDownloadIds.set(objectUrl, downloadId);
+    return downloadId;
   }
 
   /**
@@ -346,8 +343,9 @@ export class DownloadManager {
         const targetFilename = this.resolveFilename(plugin, item, targetName, currentIndex);
 
         let ok = false;
+        let downloadId = null;
         try {
-          await this.downloadItem(plugin, item, targetFilename);
+          downloadId = await this.downloadItem(plugin, item, targetFilename);
           ok = true;
         } catch (err) {
           this.logger.warn(`Failed to download item ${item.id || currentIndex}:`, err);
@@ -364,6 +362,9 @@ export class DownloadManager {
           }
           this.activeJob.completed = completed;
           this.activeJob.failed = failed;
+          if (ok && downloadId != null) {
+            this.activeJob.receiptDownloadId = downloadId;
+          }
           this.activeJob.updatedAt = Date.now();
           this.updateBadge(`${completed}/${total}`);
           this.broadcastProgress();
@@ -547,6 +548,9 @@ export class DownloadManager {
       // The download id is used by handleDownloadChanged to revoke the blob
       // URL only after the download completes.
       const zipDownloadId = await this.downloadUrl(finish.objectUrl, zipFilename);
+      if (this.activeJob) {
+        this.activeJob.receiptDownloadId = zipDownloadId;
+      }
       this.blobUrlDownloadIds.set(finish.objectUrl, zipDownloadId);
 
       // Verify the final on-disk name. A competing download manager (IDM) can win
