@@ -313,7 +313,7 @@ social-media-downloader/
 │   ├── content/
 │   ├── offscreen/
 │   ├── popup/
-│   └── types/                  # ambient TypeScript declarations for browser-extension globals (chrome, JSZip, WorkerGlobalScope). Used by `tsc --noEmit` to typecheck JSDoc.
+│   └── types/                  # ambient TypeScript declarations for browser-extension globals (chrome, WorkerGlobalScope). Used by `tsc --noEmit` to typecheck JSDoc.
 │
 ├── tests/
 │   ├── core/

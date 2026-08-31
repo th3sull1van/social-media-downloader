@@ -13,12 +13,6 @@ declare const chrome: any;
  */
 declare const WorkerGlobalScope: any;
 
-/**
- * JSZip vendored global (loaded via <script> in the offscreen document).
- * @type {any}
- */
-declare const JSZip: any;
-
 interface Window {
   /** @type {any} */
   [key: string]: any;

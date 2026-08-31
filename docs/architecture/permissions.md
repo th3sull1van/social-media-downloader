@@ -10,7 +10,7 @@ Per AGENTS §53, every host permission documents its owner plugin, purpose, and 
 | `storage` + `unlimitedStorage` | Reserved for future settings/state (nothing writes `chrome.storage` today). |
 | `activeTab` | Popup requests the active tab URL to detect the platform. |
 | `scripting` | Popup re-injects `src/content/content.js` when the content script is not yet present. |
-| `offscreen` | Creates the offscreen document for ZIP packaging (JSZip, `URL.createObjectURL`). |
+| `offscreen` | Creates the offscreen document for ZIP packaging (hand-written STORE engine in `src/offscreen/offscreen.js`, `URL.createObjectURL`). |
 
 ## Host permissions
 
@@ -38,5 +38,6 @@ Restricted to what page contexts genuinely fetch:
   content script — same boundary as the Reddit dynamic imports).
 - `src/content/inpage_overlay.css` and `assets/icons/icon32.png` (content-script UI).
 
-Removed: `vendor/jszip/jszip.min.js` (only the offscreen document loads it — extension
-context, does not need web accessibility) and `src/offscreen/*` (never fetched by pages).
+Removed: `vendor/jszip/jszip.min.js` (dead vendored ZIP lib — the offscreen
+document hand-writes a STORE engine and never loaded JSZip at runtime) and
+`src/offscreen/*` (never fetched by pages).

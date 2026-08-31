@@ -6,8 +6,7 @@ Accepted
 ## Context
 Manifest V3 Service Workers have a transient execution lifecycle and cannot directly create DOM/Blob object URLs for `chrome.downloads`. Generating large ZIP archives directly in popup memory can cause UI freezing and tab crashes.
 
-## Decision
-Delegate JSZip packaging in `STORE` mode (instant packaging for already-compressed JPEG/MP4 media) to a dedicated Manifest V3 Offscreen document with a 1GB safety ceiling and stream chunks via structured clone/base64.
+Delegate ZIP packaging in `STORE` mode (instant packaging for already-compressed JPEG/MP4 media) to a dedicated Manifest V3 Offscreen document with a 1GB safety ceiling and stream chunks via structured clone/base64 (a hand-written STORE engine in `src/offscreen/offscreen.js` — no external ZIP library).
 
 ## Consequences
 - Prevents UI freezing during large multi-hundred-item downloads.
