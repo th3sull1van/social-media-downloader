@@ -15,12 +15,7 @@
     IG_ProfilePageContent: '28191674790485375',
     IG_ProfilePosts: '26519258537772635',
     IG_ProfilePostsTabContent_connection: '27672504985785333',
-    IG_ProfileStoryHighlightsTray: '26970053832668570',
-    IG_StoriesV3TrayContainer: '27703822975903310',
-    IG_StoriesV3ReelPageStandalone: '28278381141756840',
-    IG_StoriesV3HighlightsPage: '37749672924681160',
-    IG_ProfileReelsTabContent: '28244684488496159',
-    IG_ProfileTaggedTabContent: '29114213308168390'
+    IG_ProfileStoryHighlightsTray: '26970053832668570'
   };
 
   const session = {
@@ -30,8 +25,7 @@
     csrfToken: null,
     lsd: null,
     appId: '936619743392459',
-    asbdId: '359341',
-    wwwClaim: null
+    asbdId: '359341'
   };
 
   let isScanCancelled = false;
@@ -140,9 +134,6 @@
     };
     if (friendlyName) headers['X-FB-Friendly-Name'] = friendlyName;
     if (session.csrfToken) headers['X-CSRFToken'] = session.csrfToken;
-    if (session.wwwClaim) headers['X-IG-WWW-Claim'] = session.wwwClaim;
-
-    console.log(`[SMD IG Injected] Querying ${friendlyName} (doc_id: ${docId})...`);
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -154,9 +145,7 @@
         });
 
         if (response.ok) {
-          const json = await response.json();
-          console.log(`[SMD IG Injected] Query ${friendlyName} succeeded.`);
-          return json;
+          return await response.json();
         }
 
         console.warn(`[SMD IG Injected] Query ${friendlyName} returned HTTP ${response.status} on attempt ${attempt + 1}.`);
@@ -180,7 +169,6 @@
 
   async function fetchProfile(username) {
     refreshSessionTokens();
-    console.log(`[SMD IG Injected] Fetching profile for @${username}...`);
 
     let targetUserId = null;
     let fallbackInfo = null;
@@ -390,7 +378,7 @@
         }
         await new Promise(r => setTimeout(r, 450));
       } else {
-        console.log('[SMD IG Injected] Reached last page of timeline posts.');
+        console.info('[SMD IG Injected] Reached last page of timeline posts.');
         hasNextPage = false;
       }
     }
@@ -401,7 +389,6 @@
   async function fetchStories(userId) {
     if (!userId) return [];
     refreshSessionTokens();
-    console.log(`[SMD IG Injected] Fetching stories for user ID ${userId}...`);
 
     try {
       const url = `https://www.instagram.com/api/v1/feed/reels_media/?reel_ids=${encodeURIComponent(userId)}`;
@@ -418,7 +405,7 @@
         const reels = json.reels || (json.data && json.data.reels);
         const userReel = reels && reels[userId];
         if (userReel && Array.isArray(userReel.items)) {
-          console.log(`[SMD IG Injected] Found ${userReel.items.length} active stories.`);
+          console.info(`[SMD IG Injected] Found ${userReel.items.length} active stories.`);
           return userReel.items;
         }
       }
@@ -431,7 +418,6 @@
   async function fetchHighlights(userId, onBatch = null) {
     if (!userId) return [];
     refreshSessionTokens();
-    console.log(`[SMD IG Injected] Fetching highlights for user ID ${userId}...`);
 
     const allHighlightItems = [];
     try {
@@ -447,11 +433,11 @@
       const edges = highlightsData?.edges || [];
 
       if (!edges.length) {
-        console.log('[SMD IG Injected] No highlight albums found.');
+        console.info('[SMD IG Injected] No highlight albums found.');
         return [];
       }
 
-      console.log(`[SMD IG Injected] Found ${edges.length} highlight albums.`);
+      console.info(`[SMD IG Injected] Found ${edges.length} highlight albums.`);
 
       const highlightIds = edges.map(e => e.node?.id).filter(Boolean);
       const titleFor = (hId) => {
