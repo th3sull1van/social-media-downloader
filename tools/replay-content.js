@@ -304,6 +304,122 @@ export async function replayContentScript(harPath) {
   };
 }
 
+/**
+ * Replays the target-avatar paths in the real classic content script. This is
+ * intentionally separate from the Instagram media replay above: Facebook
+ * receives avatar data through the main-world batch bridge, while Reddit gets
+ * it through the plugin-owned lightweight message.
+ *
+ * @param {{ platform: 'facebook'|'reddit', location: { hostname: string, pathname: string, search?: string, origin: string, href: string }, facebookPayload?: any, redditAvatarUrl?: string }} options
+ * @returns {Promise<{ avatarUrl: string, messages: any[] }>}
+ */
+export async function replayTargetAvatarContentScript(options) {
+  const contentSource = fs.readFileSync(
+    new URL('../src/content/content.js', import.meta.url),
+    'utf8'
+  );
+
+  const onMessageListeners = [];
+  const messageListeners = [];
+  const messages = [];
+  const redditAvatarUrl = options.redditAvatarUrl || '';
+  const chromeStub = {
+    runtime: {
+      getURL: (p) => 'chrome-extension://smd/' + p,
+      lastError: null,
+      sendMessage: (msg, cb) => {
+        messages.push(msg);
+        if (typeof cb === 'function') {
+          if (msg?.type === 'REDDIT_FETCH_AVATAR') {
+            cb({ success: true, avatarUrl: redditAvatarUrl });
+          } else {
+            cb({});
+          }
+        }
+        return Promise.resolve({});
+      },
+      onMessage: {
+        addListener: (fn) => onMessageListeners.push(fn)
+      }
+    },
+    i18n: { getMessage: () => '' }
+  };
+
+  const location = {
+    search: '',
+    ...options.location
+  };
+  const sandbox = {
+    console,
+    Math: { random: () => 0.5, floor: Math.floor, min: Math.min, max: Math.max, round: Math.round, abs: Math.abs },
+    JSON, Promise, Object, Array, String, Number, Boolean, RegExp, Error,
+    Map, Set, URL, URLSearchParams, Uint8Array, ArrayBuffer, Blob,
+    setTimeout: (fn) => setImmediate(() => fn()),
+    clearTimeout: () => {},
+    setInterval: () => 0,
+    clearInterval: () => {},
+    navigator: { userAgent: 'HAR-Replay/1.0' },
+    chrome: chromeStub,
+    location,
+    history: { pushState() {}, replaceState() {}, state: null, length: 1 },
+    document: {
+      readyState: 'complete',
+      head: fakeElement('head'),
+      documentElement: fakeElement('html'),
+      body: fakeElement('body'),
+      title: '',
+      createElement: (tag) => fakeElement(tag),
+      getElementById: () => null,
+      querySelector: () => null,
+      querySelectorAll: () => [],
+      addEventListener() {},
+      removeEventListener() {}
+    }
+  };
+  sandbox.window = sandbox;
+  sandbox.self = sandbox;
+  sandbox.globalThis = sandbox;
+  sandbox.top = sandbox;
+  sandbox.addEventListener = (type, fn) => {
+    if (type === 'message') messageListeners.push(fn);
+  };
+  sandbox.removeEventListener = () => {};
+  sandbox.dispatchEvent = () => true;
+
+  const expectedNonce = 'smd_' + (0.5).toString(36).slice(2, 12);
+  const context = vm.createContext(sandbox);
+  vm.runInContext(contentSource, context, {
+    filename: 'src/content/content.js',
+    importModuleDynamically: (specifier) => {
+      const file = String(specifier).replace('chrome-extension://smd/', '');
+      return import(path.resolve(file));
+    }
+  });
+  const realmGlobal = /** @type {any} */ (vm.runInContext('globalThis', context));
+
+  if (options.platform === 'facebook') {
+    const event = {
+      source: realmGlobal,
+      data: {
+        source: 'SMD_FB_BATCH_PHOTOS',
+        nonce: expectedNonce,
+        payload: { text: JSON.stringify(options.facebookPayload || {}) }
+      },
+      origin: options.location.origin
+    };
+    for (const listener of [...messageListeners]) listener(event);
+  }
+
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+
+  let pageState = /** @type {any} */ (null);
+  for (const listener of onMessageListeners) {
+    listener({ type: 'GET_PAGE_STATE' }, {}, (response) => { pageState = response; });
+  }
+  return { avatarUrl: pageState?.avatarUrl || '', messages };
+}
+
 // CLI mode
 if (process.argv[1] && process.argv[1].endsWith('replay-content.js')) {
   const harPath = process.argv[2];

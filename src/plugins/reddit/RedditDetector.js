@@ -3,11 +3,20 @@
  */
 import { PlatformTargetModel } from '../../core/domain/PlatformTarget.js';
 
+function isHostOnDomain(hostname, domain) {
+  if (typeof hostname !== 'string') return false;
+  const normalized = hostname.toLowerCase().replace(/\.+$/, '');
+  return normalized === domain || normalized.endsWith(`.${domain}`);
+}
+
 export class RedditDetector {
   static matches(context) {
     if (!context) return false;
-    const host = context.hostname || (context.url ? new URL(context.url).hostname : '');
-    return host.includes('reddit.com') || host.includes('redd.it');
+    let host = typeof context.hostname === 'string' ? context.hostname : '';
+    if (!host && typeof context.url === 'string') {
+      try { host = new URL(context.url).hostname; } catch (e) { return false; }
+    }
+    return isHostOnDomain(host, 'reddit.com') || isHostOnDomain(host, 'redd.it');
   }
 
   static detectTarget(context = {}) {

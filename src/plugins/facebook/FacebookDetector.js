@@ -20,11 +20,20 @@ const FB_GENERIC_TERMS = new Set([
   'facebook_media', 'media_collection'
 ]);
 
+function isHostOnDomain(hostname, domain) {
+  if (typeof hostname !== 'string') return false;
+  const normalized = hostname.toLowerCase().replace(/\.+$/, '');
+  return normalized === domain || normalized.endsWith(`.${domain}`);
+}
+
 export class FacebookDetector {
   static matches(context) {
     if (!context) return false;
-    const host = context.hostname || (context.url ? new URL(context.url).hostname : '');
-    return host.includes('facebook.com');
+    let host = typeof context.hostname === 'string' ? context.hostname : '';
+    if (!host && typeof context.url === 'string') {
+      try { host = new URL(context.url).hostname; } catch (e) { return false; }
+    }
+    return isHostOnDomain(host, 'facebook.com');
   }
 
   static isGenericTerm(str) {

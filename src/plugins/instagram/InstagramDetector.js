@@ -5,6 +5,12 @@ import { PlatformTargetModel } from '../../core/domain/PlatformTarget.js';
 
 const IG_NON_PROFILE_ROUTES = ['explore', 'reels', 'stories', 'direct', 'accounts', 'emails', 'your_activity', 'settings'];
 
+function isHostOnDomain(hostname, domain) {
+  if (typeof hostname !== 'string') return false;
+  const normalized = hostname.toLowerCase().replace(/\.+$/, '');
+  return normalized === domain || normalized.endsWith(`.${domain}`);
+}
+
 export class InstagramDetector {
   /**
    * Checks if context matches Instagram.
@@ -15,8 +21,11 @@ export class InstagramDetector {
    */
   static matches(context) {
     if (!context) return false;
-    const host = context.hostname || (context.url ? new URL(context.url).hostname : '');
-    return host.includes('instagram.com');
+    let host = typeof context.hostname === 'string' ? context.hostname : '';
+    if (!host && typeof context.url === 'string') {
+      try { host = new URL(context.url).hostname; } catch (e) { return false; }
+    }
+    return isHostOnDomain(host, 'instagram.com');
   }
 
   /**

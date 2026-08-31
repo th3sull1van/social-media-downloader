@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "bun tests/run-tests.js",
+    "test:serial": "bun tests/run-tests.js",
+    "test:parallel": "bun tools/run-tests-parallel.js",
     "typecheck": "tsc --noEmit",
     "check:dependencies": "bun tools/validation/dependency-rules.js",
     "check:manifest": "bun tools/validation/manifest-check.js",

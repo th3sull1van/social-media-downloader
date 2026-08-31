@@ -16,25 +16,34 @@ export function checkManifestIntegrity() {
     return ['manifest.json not found'];
   }
 
-  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  } catch (err) {
+    return [`manifest.json is invalid JSON: ${err.message}`];
+  }
   const errors = [];
+
+  const checkFile = (relativePath, description) => {
+    if (!relativePath || !fs.existsSync(path.join(rootDir, relativePath))) {
+      errors.push(`${description} missing: ${relativePath || '(empty path)'}`);
+    }
+  };
 
   // Check background service worker
   if (manifest.background?.service_worker) {
-    const swPath = path.join(rootDir, manifest.background.service_worker);
-    if (!fs.existsSync(swPath)) {
-      errors.push(`Background service worker file missing: ${manifest.background.service_worker}`);
-    }
+    checkFile(manifest.background.service_worker, 'Background service worker file');
   } else {
     errors.push('Missing background.service_worker in manifest.json');
   }
 
   // Check action popup
   if (manifest.action?.default_popup) {
-    const popupPath = path.join(rootDir, manifest.action.default_popup);
-    if (!fs.existsSync(popupPath)) {
-      errors.push(`Popup HTML file missing: ${manifest.action.default_popup}`);
-    }
+    checkFile(manifest.action.default_popup, 'Popup HTML file');
+  }
+
+  if (manifest.permissions?.includes('offscreen')) {
+    checkFile('src/offscreen/offscreen.html', 'Offscreen HTML file');
   }
 
   // Check content scripts
@@ -42,16 +51,12 @@ export function checkManifestIntegrity() {
     for (const cs of manifest.content_scripts) {
       if (Array.isArray(cs.js)) {
         for (const js of cs.js) {
-          if (!fs.existsSync(path.join(rootDir, js))) {
-            errors.push(`Content script JS file missing: ${js}`);
-          }
+          checkFile(js, 'Content script JS file');
         }
       }
       if (Array.isArray(cs.css)) {
         for (const css of cs.css) {
-          if (!fs.existsSync(path.join(rootDir, css))) {
-            errors.push(`Content script CSS file missing: ${css}`);
-          }
+          checkFile(css, 'Content script CSS file');
         }
       }
     }
@@ -60,10 +65,39 @@ export function checkManifestIntegrity() {
   // Check icons
   if (manifest.icons) {
     for (const [size, iconPath] of Object.entries(manifest.icons)) {
-      if (!fs.existsSync(path.join(rootDir, iconPath))) {
-        errors.push(`Extension icon (${size}px) missing: ${iconPath}`);
+      if (!iconPath || !fs.existsSync(path.join(rootDir, iconPath))) {
+        errors.push(`Extension icon (${size}px) missing: ${iconPath || '(empty path)'}`);
       }
     }
+  }
+
+  if (manifest.action?.default_icon) {
+    for (const [size, iconPath] of Object.entries(manifest.action.default_icon)) {
+      if (!iconPath || !fs.existsSync(path.join(rootDir, iconPath))) {
+        errors.push(`Action icon (${size}px) missing: ${iconPath || '(empty path)'}`);
+      }
+    }
+  }
+
+  if (manifest.default_locale) {
+    checkFile(`_locales/${manifest.default_locale}/messages.json`, 'Default locale messages file');
+  }
+
+  if (Array.isArray(manifest.web_accessible_resources)) {
+    for (const [index, resourceSet] of manifest.web_accessible_resources.entries()) {
+      if (!Array.isArray(resourceSet.resources) || resourceSet.resources.length === 0) {
+        errors.push(`web_accessible_resources[${index}] must declare at least one resource`);
+      } else {
+        for (const resource of resourceSet.resources) {
+          checkFile(resource, `Web-accessible resource file`);
+        }
+      }
+      if (!Array.isArray(resourceSet.matches) || resourceSet.matches.length === 0) {
+        errors.push(`web_accessible_resources[${index}] must declare at least one match pattern`);
+      }
+    }
+  } else {
+    errors.push('Missing web_accessible_resources in manifest.json');
   }
 
   // Check host permissions

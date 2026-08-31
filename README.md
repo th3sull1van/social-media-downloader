@@ -128,7 +128,7 @@ The repository is guarded by a comprehensive automated test suite and strict arc
 # Install dependencies
 bun install
 
-# Run the complete local validation gate (HAR replays + typecheck + tests + linters)
+# Run the complete local validation gate (HAR replays + typecheck + tests + repository validators)
 bun run validate:local
 
 # Run CI validation gate
