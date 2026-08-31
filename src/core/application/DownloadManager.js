@@ -639,6 +639,9 @@ export class DownloadManager {
 
       if (this.activeJob) {
         this.activeJob.status = 'COMPLETED';
+        this.updateBadge('✓', '#4BB543');
+        setTimeout(() => this.updateBadge(''), 5000);
+        this.broadcastProgress();
       }
     } catch (err) {
       this.logger.error('ZIP job failed:', err);

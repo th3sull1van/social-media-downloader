@@ -155,7 +155,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     case 'ZIP_OFFSCREEN_PROGRESS': {
-      if (downloadManager.activeJob && message.patch) {
+      // The offscreen finishes with { status: 'PACKAGING_ZIP', zipPercent: 100 }
+      // before the FINISH response is processed. That message can arrive AFTER
+      // the job reached a terminal state (COMPLETED/FAILED/CANCELLED), so a blind
+      // Object.assign would regress the status back to PACKAGING_ZIP and leave the
+      // progress UI stuck on "Compactando... 100% Cancelar". Only apply progress
+      // patches while the job is still running.
+      if (downloadManager.activeJob && message.patch &&
+          ['QUEUED', 'DOWNLOADING', 'DOWNLOADING_BLOBS', 'PACKAGING_ZIP'].includes(downloadManager.activeJob.status)) {
         Object.assign(downloadManager.activeJob, message.patch);
         downloadManager.updateBadge(`${downloadManager.activeJob.completed}/${downloadManager.activeJob.total}`);
         downloadManager.broadcastProgress();

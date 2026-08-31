@@ -298,6 +298,18 @@ export async function runDownloadManagerTests() {
     const decoded = Buffer.from(addMsgs[0].dataB64, 'base64');
     assert.strictEqual(decoded.length, 12, 'payload length must survive the round-trip');
     assert.ok(decoded.every((b) => b === 0x41), 'payload bytes must survive the round-trip');
+
+    // Regression (progress-stall): the UI only clears "Compactando arquivo ZIP...
+    // 100% Cancelar" after it receives a COMPLETED broadcast. The ZIP path must emit
+    // a terminal DOWNLOAD_PROGRESS_UPDATE with status COMPLETED (not just set the
+    // field), otherwise the floating widget/popup stays stuck on the final
+    // PACKAGING_ZIP progress from the offscreen.
+    const progressMsgs = recorded.offscreenMessages.filter(
+      (m) => m.type === 'DOWNLOAD_PROGRESS_UPDATE' && m.job?.status === 'COMPLETED'
+    );
+    assert.ok(progressMsgs.length > 0, 'ZIP completion must broadcast a COMPLETED progress update to the UI');
+    assert.ok(recorded.badges.some((b) => b.text === '✓'), 'ZIP completion must set the success badge');
+
     anyFetch.fetch = originalFetch;
     uninstallChromeStub();
   }
