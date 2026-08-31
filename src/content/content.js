@@ -202,6 +202,7 @@
     state.profileInfo = null;
     state.targetAvatarUrl = '';
     facebookFullByPhotoId.clear();
+    facebookDedicatedMediaIds.clear();
     if (!hadState) return;
     updateFloatingWidgetBadge();
     renderModalGrid();
@@ -214,6 +215,10 @@
   // photoId -> full-resolution URL learned from embedded Comet payloads (Photo.viewer_image).
   // The rendered grid tiles only expose thumbnail URLs; the harvest prefers this map.
   const facebookFullByPhotoId = new Map();
+  // Profile-header media is not represented as a regular Photo node. Keep its
+  // IDs separate so the recursive walker does not emit the same cover again
+  // as a generic album item.
+  const facebookDedicatedMediaIds = new Set();
 
   function facebookTargetKey(url = window.location.href) {
     if (!isFacebook) return '';
@@ -518,8 +523,11 @@
         const newIsVideo = (item.type === 'video' || item.isVideo) && !(existing.type === 'video' || existing.isVideo);
         const existingIsDownscaled = isDownscaledRender(existing.downloadUrl || existing.url);
         const newIsNotDownscaled = !isDownscaledRender(item.downloadUrl || item.url);
+        const itemIsProfileHeaderMedia = item.metadata?.source === 'profile_header';
+        const existingIsProfileHeaderMedia = existing.metadata?.source === 'profile_header';
 
-        if (newPixels > oldPixels || newIsVideo || (existingIsDownscaled && newIsNotDownscaled)) {
+        if (itemIsProfileHeaderMedia || (!existingIsProfileHeaderMedia &&
+            (newPixels > oldPixels || newIsVideo || (existingIsDownscaled && newIsNotDownscaled)))) {
           state.media.set(item.id, { ...existing, ...item });
           changedCount++;
         }
@@ -553,6 +561,20 @@
       if (mod?.MetaCdn) metaCdnUpgrade = mod.MetaCdn.upgradeUrl;
     });
     if (metaCdnUpgrade) return metaCdnUpgrade(url, platform);
+    if (platform === 'facebook') {
+      // The first Facebook header payload can arrive before the lazy shared
+      // module resolves. Apply the same safe ctp -> cstp upgrade immediately;
+      // changing ctp is the only rewrite allowed for signed Facebook URLs.
+      try {
+        const parsed = new URL(url);
+        const cstp = /^m?x?(\d+)x(\d+)$/.exec(parsed.searchParams.get('cstp') || '');
+        const ctp = /^s?p?(\d+)x(\d+)$/.exec(parsed.searchParams.get('ctp') || '');
+        if (cstp && (!ctp || Number(ctp[1]) * Number(ctp[2]) < Number(cstp[1]) * Number(cstp[2]))) {
+          parsed.searchParams.set('ctp', `s${cstp[1]}x${cstp[2]}`);
+          return parsed.toString();
+        }
+      } catch (e) {}
+    }
     return url;
   }
   let metaCdnUpgrade = null;
@@ -1278,7 +1300,7 @@
 
   function fbRegisterFullResolution(id, url, width, height) {
     if (!url || typeof url !== 'string') return;
-    const cleanUrl = upgradeCdnUrl(url);
+    const cleanUrl = upgradeCdnUrl(url, 'facebook');
     const record = { url: cleanUrl, width: width || 0, height: height || 0 };
 
     if (id) {
@@ -1432,23 +1454,126 @@
     return objectNames.some((name) => identity.names.has(name));
   }
 
-  function fbProfilePictureUrl(obj) {
-    const profile = obj?.profile_picture || obj?.profilePicture || obj?.profile_pic;
-    const candidates = typeof profile === 'string'
-      ? [profile]
-      : [profile?.uri, profile?.url, profile?.src];
-    for (const candidate of candidates) {
-      const url = String(candidate || '').replace(/&amp;/g, '&').trim();
-      if (/^https?:\/\//i.test(url)) return url;
+  /**
+   * Facebook uses several names for the target profile picture depending on
+   * which header fragment was prefetched. `profile_picture` is present in some
+   * payloads, while the private-profile capture uses `profilePicLarge` and
+   * `profile_picture_for_sticky_bar`. Only inspect these fields on an object
+   * that identifies the current target; otherwise the recursive walk would
+   * turn mutual-friend facepile avatars into downloads.
+   */
+  function fbProfileImageCandidate(obj) {
+    const fields = [
+      ['profilePicLarge', 100],
+      ['profilePic160', 95],
+      ['profile_picture', 90],
+      ['profilePicture', 90],
+      ['profile_pic', 90],
+      ['profile_picture_for_sticky_bar', 35],
+      ['profilePicMedium', 30],
+      ['profilePicSmall', 20],
+      ['profile_photo', 15]
+    ];
+    let best = null;
+
+    for (const [field, score] of fields) {
+      const value = obj?.[field];
+      const values = typeof value === 'string'
+        ? [value]
+        : [value?.uri, value?.url, value?.src];
+      for (const candidate of values) {
+        const rawUrl = String(candidate || '').replace(/&amp;/g, '&').trim();
+        if (!isAllowedMediaUrl(rawUrl)) continue;
+        const url = upgradeCdnUrl(rawUrl, 'facebook');
+        const dimensions = facebookImageDimensions(url);
+        const next = {
+          field,
+          rawUrl,
+          url,
+          score,
+          width: Number(value?.width) || dimensions.width || 0,
+          height: Number(value?.height) || dimensions.height || 0
+        };
+        if (!best || next.score > best.score ||
+            (next.score === best.score && next.width * next.height > best.width * best.height)) {
+          best = next;
+        }
+      }
     }
-    return '';
+
+    return best;
   }
 
-  function fbCaptureProfileAvatar(obj) {
-    const rawUrl = fbProfilePictureUrl(obj);
-    if (!rawUrl || !fbObjectMatchesTarget(obj)) return;
-    const url = rememberTargetAvatar(upgradeCdnUrl(rawUrl, 'facebook'));
-    if (url) updateAvatarUI();
+  function fbTargetMediaKey(obj, fallback = 'target') {
+    const raw = obj?.id || obj?.profile_id || obj?.user_id || obj?.page_id || fallback;
+    return String(raw).replace(/[^a-zA-Z0-9_-]/g, '_') || fallback;
+  }
+
+  function fbCaptureProfileMedia(obj, collectedItems) {
+    if (!fbObjectMatchesTarget(obj)) return;
+
+    const identity = fbTargetIdentity();
+    const identityFallback = [...identity.ids][0] || [...identity.names][0] || 'target';
+    const targetKey = fbTargetMediaKey(obj, identityFallback);
+    const profile = fbProfileImageCandidate(obj);
+    if (profile) {
+      const profileId = `facebook_profile_picture_${targetKey}`;
+      facebookDedicatedMediaIds.add(profileId);
+      collectedItems.push({
+        id: profileId,
+        platform: 'facebook',
+        type: 'image',
+        sourceType: 'facebook_profile_picture',
+        url: profile.url,
+        downloadUrl: profile.url,
+        thumbnailUrl: profile.rawUrl,
+        width: profile.width || undefined,
+        height: profile.height || undefined,
+        category: 'facebook_profile_picture',
+        metadata: {
+          category: 'facebook_profile_picture',
+          profileId: obj?.id || obj?.profile_id || obj?.user_id || '',
+          source: 'profile_header',
+          sourceField: profile.field
+        }
+      });
+
+      // The same best candidate drives the header preview, so the UI and the
+      // downloadable item cannot disagree about which person is targeted.
+      const avatar = rememberTargetAvatar(profile.url);
+      if (avatar) updateAvatarUI();
+    }
+
+    const cover = obj?.cover_photo?.photo || obj?.coverPhoto?.photo || obj?.coverPhoto;
+    const coverValue = cover?.image || cover?.viewer_image;
+    const coverRawUrl = [coverValue?.uri, coverValue?.url, coverValue?.src]
+      .map((value) => String(value || '').replace(/&amp;/g, '&').trim())
+      .find((value) => isAllowedMediaUrl(value)) || '';
+    if (!coverRawUrl) return;
+
+    const coverId = String(cover?.id || fbStablePhotoId(coverRawUrl, cover?.url) || `facebook_cover_photo_${targetKey}`);
+    facebookDedicatedMediaIds.add(coverId);
+    const coverUrl = upgradeCdnUrl(coverRawUrl, 'facebook');
+    const coverWidth = Number(coverValue?.width) || facebookImageDimensions(coverUrl).width || 0;
+    const coverHeight = Number(coverValue?.height) || facebookImageDimensions(coverUrl).height || 0;
+    collectedItems.push({
+      id: coverId,
+      platform: 'facebook',
+      type: 'image',
+      sourceType: 'facebook_cover_photo',
+      url: coverUrl,
+      downloadUrl: coverUrl,
+      thumbnailUrl: coverRawUrl,
+      width: coverWidth || undefined,
+      height: coverHeight || undefined,
+      category: 'facebook_cover_photo',
+      metadata: {
+        category: 'facebook_cover_photo',
+        photoId: cover?.id || '',
+        profileId: obj?.id || obj?.profile_id || obj?.user_id || '',
+        source: 'profile_header'
+      }
+    });
   }
 
   function fbWalkAndHarvest(obj, collectedItems, depth = 0, videoAncestor = false) {
@@ -1471,8 +1596,9 @@
     const hasImage = !!(obj.image?.uri);
     const hasId = !!(obj.id || obj.photo_id);
     const hasProfilePicture = !!(obj.profile_picture || obj.profilePicture || obj.profile_pic);
-    if (hasProfilePicture) fbCaptureProfileAvatar(obj);
-    if (!isCollectionTile && !inVideoSubtree && !hasProfilePicture) {
+    fbCaptureProfileMedia(obj, collectedItems);
+    const isDedicatedMedia = hasId && facebookDedicatedMediaIds.has(String(obj.id || obj.photo_id));
+    if (!isCollectionTile && !inVideoSubtree && !hasProfilePicture && !isDedicatedMedia) {
       if (hasViewerImage && hasId) {
         const id = String(obj.id || obj.photo_id);
         const cleanUrl = upgradeCdnUrl(obj.viewer_image.uri, 'facebook');

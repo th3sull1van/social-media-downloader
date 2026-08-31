@@ -310,8 +310,8 @@ export async function replayContentScript(harPath) {
  * receives avatar data through the main-world batch bridge, while Reddit gets
  * it through the plugin-owned lightweight message.
  *
- * @param {{ platform: 'facebook'|'reddit', location: { hostname: string, pathname: string, search?: string, origin: string, href: string }, facebookPayload?: any, redditAvatarUrl?: string }} options
- * @returns {Promise<{ avatarUrl: string, messages: any[] }>}
+ * @param {{ platform: 'facebook'|'reddit', location: { hostname: string, pathname: string, search?: string, origin: string, href: string }, facebookPayload?: any, facebookPayloads?: any[], redditAvatarUrl?: string }} options
+ * @returns {Promise<{ avatarUrl: string, media: any[], messages: any[] }>}
  */
 export async function replayTargetAvatarContentScript(options) {
   const contentSource = fs.readFileSync(
@@ -398,16 +398,21 @@ export async function replayTargetAvatarContentScript(options) {
   const realmGlobal = /** @type {any} */ (vm.runInContext('globalThis', context));
 
   if (options.platform === 'facebook') {
-    const event = {
-      source: realmGlobal,
-      data: {
-        source: 'SMD_FB_BATCH_PHOTOS',
-        nonce: expectedNonce,
-        payload: { text: JSON.stringify(options.facebookPayload || {}) }
-      },
-      origin: options.location.origin
-    };
-    for (const listener of [...messageListeners]) listener(event);
+    const payloads = Array.isArray(options.facebookPayloads)
+      ? options.facebookPayloads
+      : [options.facebookPayload || {}];
+    for (const facebookPayload of payloads) {
+      const event = {
+        source: realmGlobal,
+        data: {
+          source: 'SMD_FB_BATCH_PHOTOS',
+          nonce: expectedNonce,
+          payload: { text: JSON.stringify(facebookPayload) }
+        },
+        origin: options.location.origin
+      };
+      for (const listener of [...messageListeners]) listener(event);
+    }
   }
 
   await new Promise((resolve) => setImmediate(resolve));
@@ -417,7 +422,7 @@ export async function replayTargetAvatarContentScript(options) {
   for (const listener of onMessageListeners) {
     listener({ type: 'GET_PAGE_STATE' }, {}, (response) => { pageState = response; });
   }
-  return { avatarUrl: pageState?.avatarUrl || '', messages };
+  return { avatarUrl: pageState?.avatarUrl || '', media: pageState?.media || [], messages };
 }
 
 // CLI mode

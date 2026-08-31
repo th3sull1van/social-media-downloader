@@ -56,7 +56,43 @@ export async function runAvatarReplayTests() {
       profile_picture: { uri: facebookAvatar, width: 200, height: 200 }
     }
   });
-  assert.strictEqual(facebook.avatarUrl, facebookAvatar, 'Facebook profile_picture.uri must reach content state');
+  assert.strictEqual(
+    new URL(facebook.avatarUrl).pathname,
+    new URL(facebookAvatar).pathname,
+    'Facebook profile_picture.uri must reach content state'
+  );
+
+  // 2. Private-profile header shape captured on 2026-08-31: Facebook does
+  // not expose the target image as `profile_picture`; it sends
+  // `profilePicLarge` plus `cover_photo.photo.image`. Both must become
+  // downloadable items, while the facepile friend must remain excluded.
+  const privateHeaderFixture = JSON.parse(fs.readFileSync(
+    path.resolve('tests/fixtures/facebook/private-profile-header.json'),
+    'utf8'
+  ));
+  const privateHeaderUser = privateHeaderFixture.data.user.profile_header_renderer.user;
+  const privateHeader = await replayTargetAvatarContentScript({
+    platform: 'facebook',
+    location: {
+      hostname: 'www.facebook.com',
+      pathname: '/example.private.user/photos',
+      origin: 'https://www.facebook.com',
+      href: 'https://www.facebook.com/example.private.user/photos'
+    },
+    facebookPayloads: [
+      // Simulate a generic Photo node arriving before the profile header. The
+      // dedicated header item must win and retain its category.
+      { data: { node: { id: '425404418603025', image: privateHeaderUser.cover_photo.photo.image } } },
+      privateHeaderFixture
+    ]
+  });
+  const profileItem = privateHeader.media.find((item) => item.category === 'facebook_profile_picture');
+  const coverItem = privateHeader.media.find((item) => item.category === 'facebook_cover_photo');
+  assert.ok(profileItem, 'private Facebook profile header must yield a profile-picture download item');
+  assert.ok(coverItem, 'private Facebook profile header must yield a cover-photo download item');
+  assert.ok(profileItem.downloadUrl.includes('ctp=s1080x1080'), 'profilePicLarge must use the signed max render');
+  assert.strictEqual(privateHeader.avatarUrl, profileItem.downloadUrl, 'header preview and profile download must use the same URL');
+  assert.strictEqual(privateHeader.media.some((item) => item.id === '100000000000002'), false, 'friend facepile avatar must not leak into downloads');
 
   let redditAvatar = 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_3.png';
   const redditHar = path.resolve('fixtures-private/reddit-private-profile.har');

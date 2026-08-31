@@ -4,7 +4,15 @@
   (sanitized) plus expected output in `tests/fixtures/har/expected/`.
 - **Private captures:** `fixtures-private/` (git-ignored).
 - **Replay tests:** `tests/integration/har-replay-platforms.test.js`,
-  `tests/integration/fb-fullres.test.js`.
+  `tests/integration/fb-fullres.test.js`,
+  `tests/integration/avatar-replay.test.js`.
+- **Private profile-header regression (2026-08-31):** a user-supplied private
+  Facebook capture exposed the target image as `profilePicLarge` and the cover
+  as `cover_photo.photo.image` inside `profile_header_renderer.user`. The raw
+  capture remains outside the repository; a sanitized API fixture is committed
+  at `tests/fixtures/facebook/private-profile-header.json`. The replay now
+  yields exactly one target profile-picture item and one cover-photo item and
+  excludes facepile avatars.
 - **Naming guards:** `tests/contracts/facebook-naming.test.js` (authentic CDN
   basenames).
 

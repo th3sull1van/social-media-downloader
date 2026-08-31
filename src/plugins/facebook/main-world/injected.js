@@ -16,7 +16,8 @@
 
   function broadcastMediaBatch(text) {
     if (!text || !session.nonce) return;
-    if (text.includes('viewer_image') || text.includes('"Photo"') || text.includes('TimelineAppCollectionItem') || text.includes('profile_picture')) {
+    if (text.includes('viewer_image') || text.includes('"Photo"') || text.includes('TimelineAppCollectionItem') ||
+        text.includes('profile_picture') || text.includes('profilePicLarge') || text.includes('cover_photo')) {
       window.postMessage({
         source: 'SMD_FB_BATCH_PHOTOS',
         nonce: session.nonce,
