@@ -6,7 +6,7 @@
 - **Replay tests:** `tests/integration/har-replay-platforms.test.js`,
   `tests/integration/fb-fullres.test.js`.
 - **Naming guards:** `tests/contracts/facebook-naming.test.js` (authentic CDN
-  basenames) and `tools/replay-facebook.js`.
+  basenames).
 
 Fixtures follow Capture → Sanitize → Validate → Commit and never contain real
 credentials (SPEC §79, §125).

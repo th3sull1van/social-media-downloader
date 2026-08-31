@@ -9,8 +9,7 @@
   (JSON API + DOM + pagination + dedup).
 - **Media pipeline tests:** `tests/reddit/muxer-redgifs.test.js`
   (muxing + RedGifs resolver).
-- **Tooling:** `tools/replay-reddit.js`, `tools/gen-reddit-gallery-fixture.js`,
-  `tools/replay-canonical.js`.
+- **Tooling:** `tools/gen-reddit-gallery-fixture.js`.
 
 Fixtures follow Capture → Sanitize → Validate → Commit and never contain real
 credentials (SPEC §79, §125).

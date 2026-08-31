@@ -7,7 +7,7 @@ import { RedditNormalizer } from './RedditNormalizer.js';
 export class RedditScanner {
   /**
    * Extracts media from a shreddit-post DOM element.
-   * @param {{ getAttribute: (name: string) => string | null, hasAttribute: (name: string) => boolean, querySelector: (sel: string) => any, querySelectorAll: (sel: string) => any[], shadowRoot?: any }} postEl
+   * @param {{ getAttribute: (name: string) => string | null, hasAttribute: (name: string) => boolean, querySelector: (sel: string) => any, querySelectorAll: (sel: string) => any[] }} postEl
    * @returns {Object | null}
    */
   /**
