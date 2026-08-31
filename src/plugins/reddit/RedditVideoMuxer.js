@@ -73,26 +73,56 @@ export class RedditVideoMuxer {
       return await res.arrayBuffer();
     }
 
-    const chunks = [];
+    // When the payload size is known up-front, write straight into a pre-sized
+    // buffer instead of collecting chunk copies (avoids a ~2x transient peak).
+    // `received` still comes from actual bytes so a wrong content-length can't
+    // over-read; only the pre-sized array is returned when sizes agree.
     let received = 0;
+    let totalBuffer = total > 0 ? new Uint8Array(total) : null;
+    const chunks = totalBuffer ? null : [];
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      received += value.length;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (totalBuffer) {
+          if (received + value.length > totalBuffer.length) {
+            // Content-length lied (payload larger than announced). Fall back to
+            // collecting chunks instead of overflowing the pre-sized buffer.
+            chunks.push(totalBuffer.subarray(0, received));
+            totalBuffer = null;
+            chunks.push(value);
+          } else {
+            totalBuffer.set(value, received);
+          }
+        } else {
+          chunks.push(value);
+        }
+        received += value.length;
 
-      if (total && onProgress) {
-        const pct = startPct + (received / total) * weightPct;
-        onProgress(Math.min(99, Math.round(pct)), `Downloading... ${Math.round(received / 1024)} KB`);
+        if (total && onProgress) {
+          const pct = Math.min(99, Math.round(startPct + (received / total) * weightPct));
+          onProgress(pct, `Downloading... ${Math.round(received / 1024)} KB`);
+        }
       }
+    } catch (err) {
+      // Release the stream reader so an aborted/failed fetch does not leak the
+      // underlying resource (AGENTS §96 cancellation propagation).
+      reader.cancel().catch(() => {});
+      throw err;
     }
 
-    const totalBuffer = new Uint8Array(received);
-    let position = 0;
-    for (const chunk of chunks) {
-      totalBuffer.set(chunk, position);
-      position += chunk.length;
+    if (!totalBuffer) {
+      totalBuffer = new Uint8Array(received);
+      let position = 0;
+      for (const chunk of chunks) {
+        totalBuffer.set(chunk, position);
+        position += chunk.length;
+      }
+    } else if (received < totalBuffer.length) {
+      // Content-length overstated the payload (truncated body). Return only the
+      // bytes actually streamed, discarding the zero-filled tail.
+      totalBuffer = totalBuffer.subarray(0, received);
     }
 
     return totalBuffer.buffer;
@@ -132,12 +162,6 @@ export class RedditVideoMuxer {
     }
   }
 
-  /**
-   * Merges MP4 moov and mdat boxes from separate video and audio streams.
-   * @param {ArrayBuffer} videoArrayBuffer
-   * @param {ArrayBuffer} audioArrayBuffer
-   * @returns {Promise<Blob>}
-   */
   /**
    * Merges MP4 moov and mdat boxes from separate video and audio streams.
    *
@@ -320,31 +344,14 @@ export class RedditVideoMuxer {
     let offset = 0;
     const boxes = {};
 
-    while (offset < bytes.length - 8) {
+    while (offset + 8 < bytes.length) {
       const size = view.getUint32(offset);
       const type = String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7]);
-      if (size <= 0 || offset + size > bytes.length + 8) break;
+      if (size < 8 || offset + size > bytes.length) break;
 
       boxes[type] = { start: offset, end: offset + size, size };
       offset += size;
     }
     return boxes;
-  }
-
-  static findBox(bytes, start, end, targetType) {
-    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    let offset = start;
-
-    while (offset < end - 8) {
-      const size = view.getUint32(offset);
-      const type = String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7]);
-      if (size <= 0 || offset + size > end) break;
-
-      if (type === targetType) {
-        return { start: offset, end: offset + size, size };
-      }
-      offset += size;
-    }
-    return null;
   }
 }
