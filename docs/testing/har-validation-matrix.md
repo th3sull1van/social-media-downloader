@@ -55,7 +55,7 @@ representative subset, not the full surface.
 | Reddit gallery | Yes (`reddit-gallery.har` slide URLs upgrade preview→i) | Yes | Yes | Partial | Yes | Yes | Yes | N/A | Host/path, icon-exclusion |
 | Reddit video (DASH muxing) | Partial (v.redd.it baseUrl set) | Yes | Yes | Partial | N/A | Yes | Partial | N/A | Host/path |
 | Content-script bridge | N/A | Yes | N/A | Yes | Yes | Yes | Yes | N/A | Nonce spoof rejection |
-| ZIP/offscreen transport | N/A | N/A | N/A | N/A | N/A | N/A | N/A | Yes | JSON/base64 round-trip, empty ZIP guard |
+| ZIP/offscreen transport | N/A | N/A | N/A | N/A | N/A | N/A | N/A | Yes | OPFS-only ZIP, bounded base64 chunks, data descriptors, empty ZIP guard |
 
 ## Required evidence by change class
 

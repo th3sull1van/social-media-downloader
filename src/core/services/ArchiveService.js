@@ -4,6 +4,9 @@
  */
 
 export class ArchiveService {
+  static CHUNK_BYTES = 512 * 1024;
+  static entryQueue = Promise.resolve();
+
   /**
    * Sends a structured message to the active offscreen document.
    * @param {Object} message
@@ -27,44 +30,182 @@ export class ArchiveService {
 
   /**
    * Initializes a new ZIP packaging session in the offscreen document.
-   * @returns {Promise<boolean>}
+   * @returns {Promise<{ ok: boolean, reason?: string, storage?: string, maxBytes?: number }>}
    */
   static async begin() {
     const res = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_BEGIN_ZIP' });
-    return !!(res && res.ok);
+    ArchiveService.entryQueue = Promise.resolve();
+    return res || { ok: false, reason: 'no_response' };
   }
 
   /**
-   * Appends a single file entry into the offscreen ZIP buffer.
+   * Serializes complete entry transactions while allowing the DownloadManager
+   * to fetch several media responses concurrently. ZIP bytes cannot interleave
+   * entries, so only one begin/chunk/end sequence may be active at a time.
+   * @param {() => Promise<any>} operation
+   * @returns {Promise<any>}
+   */
+  static async withEntryLock(operation) {
+    const previous = ArchiveService.entryQueue;
+    let release = () => {};
+    ArchiveService.entryQueue = new Promise((resolve) => { release = resolve; });
+    await previous;
+    try {
+      return await operation();
+    } finally {
+      release();
+    }
+  }
+
+  /**
+   * Starts one ZIP entry using a data descriptor. The payload is then delivered
+   * through bounded OFFSCREEN_WRITE_CHUNK messages.
+   * @param {string} name
+   * @returns {Promise<{ ok: boolean, entryId?: string, reason?: string }>}
+   */
+  static async beginEntry(name) {
+    const res = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_BEGIN_ENTRY', name });
+    return res || { ok: false, reason: 'no_response' };
+  }
+
+  /**
+   * Writes one bounded binary chunk to an active entry.
+   * @param {string} entryId
+   * @param {Uint8Array} bytes
+   * @returns {Promise<{ ok: boolean, reason?: string, jobBytes?: number }>}
+   */
+  static async writeChunk(entryId, bytes) {
+    if (!(bytes instanceof Uint8Array)) return { ok: false, reason: 'invalid_data' };
+    const res = await ArchiveService.sendToOffscreen({
+      type: 'OFFSCREEN_WRITE_CHUNK',
+      entryId,
+      dataB64: ArchiveService.bytesToBase64(bytes)
+    });
+    return res || { ok: false, reason: 'no_response' };
+  }
+
+  /**
+   * Rolls back the current entry after a failed network/read operation.
+   * @param {string} entryId
+   * @returns {Promise<{ ok: boolean, reason?: string }>}
+   */
+  static async abortEntry(entryId) {
+    const res = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_ABORT_ENTRY', entryId });
+    return res || { ok: false, reason: 'no_response' };
+  }
+
+  /**
+   * Finishes an active entry transaction.
+   * @param {string} entryId
+   * @returns {Promise<{ ok: boolean, reason?: string, size?: number, crc32?: number }>}
+   */
+  static async endEntry(entryId) {
+    const res = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_END_ENTRY', entryId });
+    return res || { ok: false, reason: 'no_response' };
+  }
+
+  /**
+   * Streams a binary source into one ZIP entry. Response/ReadableStream/Blob
+   * sources are consumed incrementally; ArrayBuffer-like values are chunked
+   * before transport. The lock keeps ZIP entry bytes ordered and the ack after
+   * every chunk provides backpressure.
    *
-   * Transport note: chrome.runtime.sendMessage JSON-serializes messages (structured
-   * clone is opt-in from Chrome 148). Raw ArrayBuffer/Uint8Array/Blob would arrive
-   * as {} on the offscreen side, silently producing an empty 22-byte ZIP. Binary
-   * data MUST be base64-encoded in the service worker before messaging.
+   * @param {string} name
+   * @param {Response | ReadableStream | Blob | ArrayBuffer | ArrayBufferView | string} source
+   * @returns {Promise<{ ok: boolean, reason?: string, jobBytes?: number, size?: number }>}
+   */
+  static async addFileStream(name, source) {
+    return ArchiveService.withEntryLock(async () => {
+      const begin = await ArchiveService.beginEntry(name);
+      if (!begin?.ok || !begin.entryId) return begin || { ok: false, reason: 'no_response' };
+
+      const entryId = begin.entryId;
+      try {
+        const reader = ArchiveService.getReader(source);
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value instanceof Uint8Array && value.byteLength > 0) {
+              const result = await ArchiveService.writeChunked(entryId, value);
+              if (!result.ok) throw Object.assign(new Error(result.reason || 'chunk_write_failed'), { reason: result.reason });
+            }
+          }
+        } else {
+          const bytes = await ArchiveService.toBytes(source);
+          if (!bytes) throw new Error('invalid_data');
+          const result = await ArchiveService.writeChunked(entryId, bytes);
+          if (!result.ok) throw Object.assign(new Error(result.reason || 'chunk_write_failed'), { reason: result.reason });
+        }
+
+        const end = await ArchiveService.endEntry(entryId);
+        if (!end?.ok) {
+          await ArchiveService.abortEntry(entryId);
+        }
+        return end || { ok: false, reason: 'no_response' };
+      } catch (error) {
+        await ArchiveService.abortEntry(entryId);
+        return { ok: false, reason: error?.reason || error?.message || 'stream_failed' };
+      }
+    });
+  }
+
+  /**
+   * Compatibility wrapper for callers that already hold a complete payload.
+   * New ZIP code should use addFileStream with a Response or Blob stream.
    * @param {string} name - Relative path within the ZIP archive
    * @param {string | ArrayBuffer | Uint8Array | Blob} data - Base64 string or raw binary
    * @returns {Promise<{ ok: boolean, reason?: string, jobBytes?: number }>}
    */
   static async addFile(name, data) {
-    let payload;
     if (typeof data === 'string') {
-      payload = { type: 'OFFSCREEN_ADD_FILE', name, dataB64: data };
-    } else {
-      let bytes = null;
-      if (typeof Blob !== 'undefined' && data instanceof Blob) {
-        bytes = new Uint8Array(await data.arrayBuffer());
-      } else if (data instanceof ArrayBuffer) {
-        bytes = new Uint8Array(data);
-      } else if (data && typeof data === 'object' && ArrayBuffer.isView(data)) {
-        bytes = /** @type {Uint8Array} */ (data);
-      }
-      if (!bytes) {
+      try {
+        data = ArchiveService.base64ToBytes(data);
+      } catch (error) {
         return { ok: false, reason: 'invalid_data' };
       }
-      payload = { type: 'OFFSCREEN_ADD_FILE', name, dataB64: ArchiveService.bytesToBase64(bytes) };
     }
-    const res = await ArchiveService.sendToOffscreen(payload);
-    return res || { ok: false, reason: 'no_response' };
+    return ArchiveService.addFileStream(name, data);
+  }
+
+  static getReader(source) {
+    if (source && source.body && typeof source.body.getReader === 'function') return source.body.getReader();
+    if (source && typeof source.getReader === 'function') return source.getReader();
+    if (typeof Blob !== 'undefined' && source instanceof Blob && typeof source.stream === 'function') {
+      return source.stream().getReader();
+    }
+    return null;
+  }
+
+  static async toBytes(data) {
+    if (data instanceof Uint8Array) return data;
+    if (data instanceof ArrayBuffer) return new Uint8Array(data);
+    if (data && typeof data === 'object' && ArrayBuffer.isView(data)) {
+      return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+    }
+    if (typeof Blob !== 'undefined' && data instanceof Blob) {
+      return new Uint8Array(await data.arrayBuffer());
+    }
+    if (data && typeof data.arrayBuffer === 'function') {
+      return new Uint8Array(await data.arrayBuffer());
+    }
+    return null;
+  }
+
+  static async writeChunked(entryId, bytes) {
+    for (let offset = 0; offset < bytes.byteLength; offset += ArchiveService.CHUNK_BYTES) {
+      const chunk = bytes.subarray(offset, Math.min(offset + ArchiveService.CHUNK_BYTES, bytes.byteLength));
+      const result = await ArchiveService.writeChunk(entryId, chunk);
+      if (!result?.ok) return result || { ok: false, reason: 'no_response' };
+    }
+    return { ok: true };
+  }
+
+  static base64ToBytes(b64) {
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
   }
 
   /**
@@ -107,7 +248,7 @@ export class ArchiveService {
     } else if (data instanceof ArrayBuffer) {
       bytes = new Uint8Array(data);
     } else if (data && typeof data === 'object' && ArrayBuffer.isView(data)) {
-      bytes = /** @type {Uint8Array} */ (data);
+      bytes = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
     }
     if (!bytes) {
       return { ok: false, reason: 'invalid_data' };

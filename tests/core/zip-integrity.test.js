@@ -93,6 +93,7 @@ class ZipValidator {
 
       assert.strictEqual(versionNeeded, 20, 'Version needed to extract must be 20 (2.0)');
       assert.strictEqual(flags & 0x0800, 0x0800, 'UTF-8 flag (bit 11) must be set in Central Directory');
+      assert.strictEqual(flags & 0x0008, 0x0008, 'Data descriptor flag (bit 3) must be set in Central Directory');
       assert.strictEqual(method, 0, 'Compression method must be 0 (STORE)');
       assert.strictEqual(compressedSize, uncompressedSize, 'Compressed and uncompressed size must match in STORE method');
       assert.strictEqual(diskStart, 0, 'Disk start must be 0');
@@ -147,9 +148,11 @@ class ZipValidator {
       assert.strictEqual(localVersion, 20, 'Local version must be 20');
       assert.strictEqual(localFlags & 0x0800, 0x0800, 'Local UTF-8 flag must be set');
       assert.strictEqual(localMethod, 0, 'Local method must be 0 (STORE)');
-      assert.strictEqual(localCrc32, cdEntry.crc32, `Local CRC-32 must match Central Directory CRC-32 for "${cdEntry.filename}"`);
-      assert.strictEqual(localUncompSize, cdEntry.size, `Local size must match Central Directory size for "${cdEntry.filename}"`);
-      assert.strictEqual(localCompSize, cdEntry.size, `Local compressed size must match Central Directory size for "${cdEntry.filename}"`);
+      if (!(localFlags & 0x0008)) {
+        assert.strictEqual(localCrc32, cdEntry.crc32, `Local CRC-32 must match Central Directory CRC-32 for "${cdEntry.filename}"`);
+        assert.strictEqual(localUncompSize, cdEntry.size, `Local size must match Central Directory size for "${cdEntry.filename}"`);
+        assert.strictEqual(localCompSize, cdEntry.size, `Local compressed size must match Central Directory size for "${cdEntry.filename}"`);
+      }
 
       const localNameBytes = this.bytes.subarray(offset + 30, offset + 30 + localNameLength);
       const localFilename = new TextDecoder().decode(localNameBytes);
@@ -163,6 +166,17 @@ class ZipValidator {
       const payload = this.bytes.subarray(payloadStart, payloadEnd);
       const actualCrc = ArchiveService.computeCrc32(payload);
       assert.strictEqual(actualCrc, cdEntry.crc32, `Payload CRC-32 mismatch for "${cdEntry.filename}": calculated ${actualCrc}, expected ${cdEntry.crc32}`);
+
+      if (localFlags & 0x0008) {
+        assert.strictEqual(localCrc32, 0, 'Data-descriptor local header CRC must be zero');
+        assert.strictEqual(localCompSize, 0, 'Data-descriptor local compressed size must be zero');
+        assert.strictEqual(localUncompSize, 0, 'Data-descriptor local uncompressed size must be zero');
+        const descriptorOffset = payloadEnd;
+        assert.strictEqual(this.view.getUint32(descriptorOffset, true), 0x08074b50, 'Data descriptor signature must be present');
+        assert.strictEqual(this.view.getUint32(descriptorOffset + 4, true), cdEntry.crc32, 'Data descriptor CRC must match Central Directory');
+        assert.strictEqual(this.view.getUint32(descriptorOffset + 8, true), cdEntry.size, 'Data descriptor compressed size must match Central Directory');
+        assert.strictEqual(this.view.getUint32(descriptorOffset + 12, true), cdEntry.size, 'Data descriptor uncompressed size must match Central Directory');
+      }
 
       extracted.set(cdEntry.filename, payload);
     }
@@ -197,16 +211,26 @@ class MockOffscreenZipEngine {
     const view = new DataView(buf.buffer);
     view.setUint32(0, 0x04034b50, true);
     view.setUint16(4, 20, true);
-    view.setUint16(6, 0x0800, true);
+    view.setUint16(6, 0x0808, true);
     view.setUint16(8, 0, true);
     view.setUint16(10, dosTime, true);
     view.setUint16(12, dosDate, true);
-    view.setUint32(14, crc32, true);
-    view.setUint32(18, size, true);
-    view.setUint32(22, size, true);
+    view.setUint32(14, 0, true);
+    view.setUint32(18, 0, true);
+    view.setUint32(22, 0, true);
     view.setUint16(26, nameBytes.length, true);
     view.setUint16(28, 0, true);
     buf.set(nameBytes, 30);
+    return buf;
+  }
+
+  createDataDescriptor(crc32, size) {
+    const buf = new Uint8Array(16);
+    const view = new DataView(buf.buffer);
+    view.setUint32(0, 0x08074b50, true);
+    view.setUint32(4, crc32, true);
+    view.setUint32(8, size, true);
+    view.setUint32(12, size, true);
     return buf;
   }
 
@@ -216,7 +240,7 @@ class MockOffscreenZipEngine {
     view.setUint32(0, 0x02014b50, true);
     view.setUint16(4, 20, true);
     view.setUint16(6, 20, true);
-    view.setUint16(8, 0x0800, true);
+    view.setUint16(8, 0x0808, true);
     view.setUint16(10, 0, true);
     view.setUint16(12, entry.dosTime, true);
     view.setUint16(14, entry.dosDate, true);
@@ -262,6 +286,7 @@ class MockOffscreenZipEngine {
 
       this.memoryChunks.push(localHeader);
       this.memoryChunks.push(bytes);
+      this.memoryChunks.push(this.createDataDescriptor(crc32, bytes.length));
 
       this.entries.push({
         nameBytes,
@@ -272,7 +297,7 @@ class MockOffscreenZipEngine {
         dosDate
       });
 
-      this.currentOffset += localHeader.byteLength + bytes.length;
+      this.currentOffset += localHeader.byteLength + bytes.length + 16;
       this.completed++;
       return { ok: true, jobBytes: this.currentOffset };
     };

@@ -280,5 +280,8 @@
   },
   "duplicatesSkipped": {
     "message": "已跳过 $1 个重复项"
+  },
+  "zipStorageUnavailable": {
+    "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
   }
 }

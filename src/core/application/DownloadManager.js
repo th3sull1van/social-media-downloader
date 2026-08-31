@@ -29,11 +29,8 @@ export class DownloadManager {
     /** @type {Set<string>} */
     this.pendingBlobUrls = new Set();
 
-    /** @type {Map<number, string>} Download ID -> filename we want Chrome to use */
-    this.desiredFilenames = new Map();
-
-    /** @type {boolean} */
-    this.filenameGuardsRegistered = false;
+    /** @type {ReturnType<typeof setTimeout> | null} */
+    this.badgeClearTimer = null;
   }
 
   /**
@@ -91,30 +88,6 @@ export class DownloadManager {
     return this.activeJob ? /** @type {string} */ (this.activeJob.status) : null;
   }
 
-  // onDeterminingFilename guard: downloads we start register their filename in
-  // desiredFilenames (downloadUrl), and this listener re-asserts it. Required
-  // because competing download managers (e.g. IDM Integration Module) register
-  // their own onDeterminingFilename and rename blob downloads to the blob URL's
-  // UUID basename (user report 2026-08-29: ZIPs landing as "<uuid>.zip").
-  // Chrome honors the FIRST suggest() call, so background.js registers this
-  // guard at SW startup — racing every competing listener for our downloads.
-  // It only suggests filenames we explicitly set, so downloads from other
-  // extensions/sources pass through untouched (suggest not called).
-  registerFilenameGuards() {
-    if (typeof chrome === 'undefined' || !chrome.downloads?.onDeterminingFilename || this.filenameGuardsRegistered) {
-      return;
-    }
-    this.filenameGuardsRegistered = true;
-    chrome.downloads.onDeterminingFilename.addListener((downloadItem, suggest) => {
-      const desired = this.desiredFilenames.get(downloadItem.id);
-      if (desired) {
-        suggest({ filename: desired, conflictAction: 'uniquify' });
-        return true;
-      }
-      return false;
-    });
-  }
-
   /**
    * Keeps active download IDs synchronized and releases blob URLs when their
    * download reaches a terminal state (revoke on completion, not eagerly).
@@ -122,13 +95,14 @@ export class DownloadManager {
    */
   handleDownloadChanged(delta) {
     if (delta && delta.state && (delta.state.current === 'complete' || delta.state.current === 'interrupted')) {
-      this.desiredFilenames.delete(delta.id);
       this.activeDownloadIds.delete(delta.id);
       const blobUrl = [...this.blobUrlDownloadIds.entries()].find(([, id]) => id === delta.id)?.[0];
       if (blobUrl) {
         this.blobUrlDownloadIds.delete(blobUrl);
         this.pendingBlobUrls.delete(blobUrl);
-        ArchiveService.revokeBlobUrls([blobUrl]);
+        void ArchiveService.revokeBlobUrls([blobUrl]).catch((err) => {
+          this.logger.warn('Failed to revoke completed download blob URL:', err);
+        });
       }
     }
   }
@@ -157,6 +131,11 @@ export class DownloadManager {
     const plugin = this.registry.get(platform);
     const safeTargetName = FilenameService.sanitize(targetName || 'Media_Collection', 80, 'Media_Collection');
 
+    if (this.badgeClearTimer) {
+      clearTimeout(this.badgeClearTimer);
+      this.badgeClearTimer = null;
+    }
+
     const settings = await StorageService.getSettings();
     const deduplicate = options && typeof options.deduplicate === 'boolean' ? options.deduplicate : settings.deduplicate;
     const historicalDedup = deduplicate && (options && typeof options.historicalDedup === 'boolean' ? options.historicalDedup : settings.historicalDedup);
@@ -183,12 +162,15 @@ export class DownloadManager {
    * @returns {string}
    */
   resolveFilename(plugin, item, targetName, index) {
+    let filename;
     if (plugin && typeof plugin.getFilename === 'function') {
-      return plugin.getFilename(item, { targetName, index: index + 1 });
+      filename = plugin.getFilename(item, { targetName, index: index + 1 });
+    } else {
+      const baseName = item.filename || item.id || `media_${index + 1}`;
+      const ext = item.extension || (item.type === 'video' ? 'mp4' : 'jpg');
+      filename = `SMD/${targetName}/${FilenameService.sanitize(baseName)}.${ext}`;
     }
-    const baseName = item.filename || item.id || `media_${index + 1}`;
-    const ext = item.extension || (item.type === 'video' ? 'mp4' : 'jpg');
-    return `SMD/${targetName}/${FilenameService.sanitize(baseName)}.${ext}`;
+    return FilenameService.sanitizePath(filename, `SMD/${targetName}/media_${index + 1}.bin`);
   }
 
   /**
@@ -228,12 +210,41 @@ export class DownloadManager {
    * @returns {string}
    */
   resolveArchivePath(plugin, item, targetName, index) {
+    let archivePath;
     if (plugin && typeof plugin.getArchivePath === 'function') {
-      return plugin.getArchivePath(item, { targetName, index: index + 1 });
+      archivePath = plugin.getArchivePath(item, { targetName, index: index + 1 });
+    } else {
+      const baseName = item.filename || item.id || `media_${index + 1}`;
+      const ext = item.extension || (item.type === 'video' ? 'mp4' : 'jpg');
+      archivePath = `${targetName}/${FilenameService.sanitize(baseName)}.${ext}`;
     }
-    const baseName = item.filename || item.id || `media_${index + 1}`;
-    const ext = item.extension || (item.type === 'video' ? 'mp4' : 'jpg');
-    return `${targetName}/${FilenameService.sanitize(baseName)}.${ext}`;
+    return FilenameService.sanitizePath(archivePath, `${targetName}/media_${index + 1}.bin`);
+  }
+
+  /**
+   * Normalizes binary resolver output before deduplication. Resolvers may
+   * return any supported binary view, not only Uint8Array.
+   * @param {unknown} data
+   * @returns {Promise<Uint8Array | null>}
+   */
+  static async toUint8Array(data) {
+    if (data instanceof Uint8Array) return data;
+    if (data instanceof ArrayBuffer) return new Uint8Array(data);
+    if (data && typeof data === 'object' && ArrayBuffer.isView(data)) {
+      return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+    }
+    if (typeof Blob !== 'undefined' && data instanceof Blob) {
+      return new Uint8Array(await data.arrayBuffer());
+    }
+    return null;
+  }
+
+  scheduleBadgeClear(job) {
+    if (this.badgeClearTimer) clearTimeout(this.badgeClearTimer);
+    this.badgeClearTimer = setTimeout(() => {
+      this.badgeClearTimer = null;
+      if (this.activeJob === job) this.updateBadge('');
+    }, 5000);
   }
 
   /**
@@ -266,13 +277,12 @@ export class DownloadManager {
     return this.downloadUrl(downloadUrl, targetFilename);
   }
   /**
-   * Downloads a URL via chrome.downloads and tracks the pending filename.
+   * Downloads a URL via chrome.downloads using the requested filename.
    * @param {string} url
    * @param {string} targetFilename
    * @returns {Promise<number>}
    */
   downloadUrl(url, targetFilename) {
-    this.registerFilenameGuards();
     return new Promise((resolve, reject) => {
       if (typeof chrome === 'undefined' || !chrome.downloads) {
         reject(new Error('chrome.downloads unavailable'));
@@ -287,9 +297,6 @@ export class DownloadManager {
         if (chrome.runtime.lastError || !downloadId) {
           reject(new Error(chrome.runtime.lastError?.message || 'Download failed'));
         } else {
-          // Re-asserted by our onDeterminingFilename guard in case a competing
-          // download manager (IDM) renames blob downloads to their UUID basename.
-          this.desiredFilenames.set(downloadId, targetFilename);
           this.activeDownloadIds.add(downloadId);
           resolve(downloadId);
         }
@@ -312,9 +319,19 @@ export class DownloadManager {
     }
     const objectUrl = createRes.objectUrl;
     this.pendingBlobUrls.add(objectUrl);
-    const downloadId = await this.downloadUrl(objectUrl, targetFilename);
-    this.blobUrlDownloadIds.set(objectUrl, downloadId);
-    return downloadId;
+    try {
+      const downloadId = await this.downloadUrl(objectUrl, targetFilename);
+      this.blobUrlDownloadIds.set(objectUrl, downloadId);
+      return downloadId;
+    } catch (err) {
+      this.pendingBlobUrls.delete(objectUrl);
+      try {
+        await ArchiveService.revokeBlobUrls([objectUrl]);
+      } catch (revokeErr) {
+        this.logger.warn('Failed to revoke generated blob URL after download failure:', revokeErr);
+      }
+      throw err;
+    }
   }
 
   /**
@@ -354,17 +371,17 @@ export class DownloadManager {
         if (!this.activeJob || this.currentJobStatus() === 'CANCELLED') break;
         const currentIndex = index++;
         const item = items[currentIndex];
-        const targetFilename = this.resolveFilename(plugin, item, targetName, currentIndex);
 
         let ok = false;
         let downloadId = null;
         try {
+          const targetFilename = this.resolveFilename(plugin, item, targetName, currentIndex);
           if (deduplicate) {
             let bytes = null;
             if (plugin && typeof plugin.resolveMedia === 'function') {
               const artifact = await plugin.resolveMedia(item, {});
               if (artifact && (artifact.kind === 'generated' || artifact.data)) {
-                bytes = artifact.data instanceof Uint8Array ? artifact.data : new Uint8Array(await artifact.data.arrayBuffer());
+                bytes = await DownloadManager.toUint8Array(artifact.data);
               } else if (artifact && artifact.kind === 'direct' && artifact.source?.url) {
                 const response = await fetch(artifact.source.url, { mode: 'cors' });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -434,7 +451,13 @@ export class DownloadManager {
     await Promise.all(workers);
 
     const individualStatus = this.currentJobStatus();
-    if (this.activeJob && individualStatus !== 'CANCELLED') {
+    if (individualStatus === 'CANCELLED') {
+      this.updateBadge('');
+      this.broadcastProgress();
+      return;
+    }
+
+    if (this.activeJob) {
       this.activeJob.status = 'COMPLETED';
       if (historicalDedup && newHistoricalSignatures.length > 0) {
         await StorageService.addHistoricalSignatures(newHistoricalSignatures);
@@ -442,15 +465,16 @@ export class DownloadManager {
     }
 
     this.updateBadge('✓', '#4BB543');
-    setTimeout(() => this.updateBadge(''), 5000);
+    this.scheduleBadgeClear(this.activeJob);
     this.broadcastProgress();
   }
 
   /**
-   * Processes ZIP archive downloads via offscreen document.
-   * Buffers are base64-encoded in the service worker before messaging (see ArchiveService):
-   * chrome.runtime.sendMessage JSON-serializes, so a raw ArrayBuffer would arrive as {}
-   * on the offscreen side and produce a 22-byte empty ZIP. This is the reverted F-07 fix.
+   * Processes ZIP archive downloads via the offscreen OPFS writer.
+   * Direct responses are consumed as streams and sent in bounded chunks. Generated
+   * artifacts that already exist as binary values are also chunked at the transport
+   * boundary; deduplication may still materialize them because it needs a signature
+   * before deciding whether to add the entry.
    * @param {any} plugin
    * @param {string} platform
    * @param {string} targetName
@@ -479,7 +503,12 @@ export class DownloadManager {
     this.broadcastProgress();
 
     try {
-      await ArchiveService.begin();
+      const begin = await ArchiveService.begin();
+      if (!begin?.ok) {
+        throw Object.assign(new Error(`Offscreen ZIP packaging unavailable: ${begin?.reason || 'unknown'}`), {
+          code: begin?.reason || 'opfs_unavailable'
+        });
+      }
 
       const concurrency = 6;
       let index = 0;
@@ -496,14 +525,15 @@ export class DownloadManager {
 
           const currentIndex = index++;
           const item = items[currentIndex];
-          const zipPath = DownloadManager.uniquifyArchivePath(
-            this.resolveArchivePath(plugin, item, targetName, currentIndex),
-            usedArchivePaths
-          );
 
           let ok = false;
           try {
+            const zipPath = DownloadManager.uniquifyArchivePath(
+              this.resolveArchivePath(plugin, item, targetName, currentIndex),
+              usedArchivePaths
+            );
             let dataPayload = null;
+            let streamSource = null;
             let bytesForSignature = null;
 
             if (plugin && typeof plugin.resolveMedia === 'function') {
@@ -511,14 +541,16 @@ export class DownloadManager {
               if (artifact && (artifact.kind === 'generated' || artifact.data)) {
                 dataPayload = artifact.data;
                 if (deduplicate) {
-                  bytesForSignature = artifact.data instanceof Uint8Array ? artifact.data : new Uint8Array(await artifact.data.arrayBuffer());
+                  bytesForSignature = await DownloadManager.toUint8Array(artifact.data);
                 }
               } else if (artifact && artifact.kind === 'direct' && artifact.source?.url) {
                 const response = await fetch(artifact.source.url, { mode: 'cors' });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                dataPayload = await response.arrayBuffer();
                 if (deduplicate) {
+                  dataPayload = await response.arrayBuffer();
                   bytesForSignature = new Uint8Array(dataPayload);
+                } else {
+                  streamSource = response;
                 }
               } else {
                 throw new Error(`Unsupported artifact kind: ${artifact?.kind || 'unknown'}`);
@@ -526,9 +558,11 @@ export class DownloadManager {
             } else {
               const response = await fetch(item.downloadUrl || item.url, { mode: 'cors' });
               if (!response.ok) throw new Error(`HTTP ${response.status}`);
-              dataPayload = await response.arrayBuffer();
               if (deduplicate) {
+                dataPayload = await response.arrayBuffer();
                 bytesForSignature = new Uint8Array(dataPayload);
+              } else {
+                streamSource = response;
               }
             }
 
@@ -546,8 +580,8 @@ export class DownloadManager {
               newHistoricalSignatures.push(sig);
             }
 
-            if (dataPayload) {
-              const addRes = await ArchiveService.addFile(zipPath, dataPayload);
+            if (streamSource || dataPayload) {
+              const addRes = await ArchiveService.addFileStream(zipPath, streamSource || dataPayload);
               if (!addRes || !addRes.ok) {
                 if (addRes && addRes.reason === 'size_limit') {
                   sizeLimitHit = true;
@@ -578,7 +612,6 @@ export class DownloadManager {
             this.broadcastProgress();
           }
 
-          await new Promise((r) => setTimeout(r, 40));
         }
       };
 
@@ -601,6 +634,14 @@ export class DownloadManager {
 
       if (sizeLimitHit) {
         this.activeJob.status = 'FAILED_SIZE';
+        this.updateBadge('ERR', '#FF0000');
+        this.broadcastProgress();
+        return;
+      }
+
+      if (finish?.reason === 'size_limit') {
+        this.activeJob.status = 'FAILED_SIZE';
+        this.activeJob.error = 'zip_size_limit';
         this.updateBadge('ERR', '#FF0000');
         this.broadcastProgress();
         return;
@@ -640,7 +681,7 @@ export class DownloadManager {
       if (this.activeJob) {
         this.activeJob.status = 'COMPLETED';
         this.updateBadge('✓', '#4BB543');
-        setTimeout(() => this.updateBadge(''), 5000);
+        this.scheduleBadgeClear(this.activeJob);
         this.broadcastProgress();
       }
     } catch (err) {
@@ -648,6 +689,7 @@ export class DownloadManager {
       const status = this.currentJobStatus();
       if (this.activeJob && (status === 'DOWNLOADING_BLOBS' || status === 'PACKAGING_ZIP')) {
         this.activeJob.status = 'FAILED';
+        this.activeJob.error = err?.code || 'zip_failed';
       }
       this.updateBadge('ERR', '#FF0000');
       this.broadcastProgress();

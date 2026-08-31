@@ -280,5 +280,8 @@
   },
   "duplicatesSkipped": {
     "message": "Пропущено дубликатов: $1"
+  },
+  "zipStorageUnavailable": {
+    "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
   }
 }

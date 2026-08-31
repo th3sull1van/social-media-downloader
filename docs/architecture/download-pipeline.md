@@ -36,7 +36,9 @@ inspects `metadata.isRedGifs` / `sourceType` / `baseUrl` to decide behavior.
   - `kind === 'generated'` → create an offscreen blob URL, then download.
   - otherwise → direct download of `downloadUrl || url`.
 - `processZipDownload()`: stream each item into `ArchiveService` (offscreen ZIP),
-  respecting a size limit and per-item failure isolation.
+  respecting a size limit and per-item failure isolation. Direct `Response`
+  bodies are transferred in bounded chunks; ZIP entry order is serialized by
+  `ArchiveService` while the network fetch workers remain concurrent.
 - `processIndividualDownloads()`: concurrency limits (default 6), per-item
   progress, cancellation-aware worker pool.
 - Cancellation propagates from `CANCEL_DOWNLOAD` to the job status and is never
@@ -46,9 +48,11 @@ inspects `metadata.isRedGifs` / `sourceType` / `baseUrl` to decide behavior.
 ## Offscreen packaging (`src/offscreen/offscreen.js`)
 
 The service worker has no `URL.createObjectURL`; the offscreen document performs
-ZIP assembly and blob-URL creation (`reasons: ['BLOBS']`, ADR-007). Base64
-boundary: binary data is base64-ed in the service worker before messaging
-because `chrome.runtime.sendMessage` JSON-serializes.
+ZIP assembly and blob-URL creation (`reasons: ['BLOBS']`, ADR-007). OPFS is
+mandatory for ZIP packaging: there is no in-memory archive fallback. Binary
+payloads cross the JSON message boundary as bounded base64 chunks because
+`chrome.runtime.sendMessage` JSON-serializes messages. Local headers use ZIP
+data descriptors, allowing CRC and sizes to be computed incrementally.
 
 ## Archive safety
 

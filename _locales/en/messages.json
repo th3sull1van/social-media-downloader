@@ -137,6 +137,9 @@
   "zipTooLarge": {
     "message": "Selection too large for ZIP. Use Folders mode or select fewer items."
   },
+  "zipStorageUnavailable": {
+    "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
+  },
   "cancelBtn": {
     "message": "Cancel"
   },

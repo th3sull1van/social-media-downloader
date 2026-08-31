@@ -140,6 +140,9 @@
   "zipTooLarge": {
     "message": "Seleção grande demais para ZIP. Use o modo Pastas ou selecione menos itens."
   },
+  "zipStorageUnavailable": {
+    "message": "A compactação ZIP não está disponível porque o cache em disco local não é compatível ou a cota de armazenamento foi excedida."
+  },
   "cancelBtn": {
     "message": "Cancelar"
   },

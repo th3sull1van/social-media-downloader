@@ -54,6 +54,14 @@ function installChromeStub({ downloadImpl, offscreenReply } = {}) {
       sendMessage: () => Promise.resolve()
     },
     downloads: {
+      // Registering this event would make SMD compete with IDM and other
+      // download managers for the final filename. The production code must
+      // rely on the filename passed to downloads.download() instead.
+      onDeterminingFilename: {
+        addListener: () => {
+          throw new Error('DownloadManager must not register onDeterminingFilename');
+        }
+      },
       download: downloadImpl || ((options, cb) => {
         recorded.downloads.push(options);
         cb(recorded.downloads.length);
@@ -204,6 +212,9 @@ export async function runDownloadManagerTests() {
     await dm.cancelDownload();
     assert.strictEqual(dm.activeJob.status, 'CANCELLED');
     assert.ok(recorded.cancelled.length > 0, 'in-flight downloads should be cancelled');
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    assert.strictEqual(dm.activeJob.status, 'CANCELLED', 'cancelled jobs must not transition to COMPLETED');
+    assert.ok(!recorded.badges.some((b) => b.text === '✓'), 'cancelled jobs must not show a success badge');
     uninstallChromeStub();
   }
 
@@ -254,13 +265,21 @@ export async function runDownloadManagerTests() {
     uninstallChromeStub();
   }
 
-  // 11. ZIP transport fidelity (22-byte empty ZIP regression): every OFFSCREEN_ADD_FILE
-  //     must carry a base64 STRING. JSON round-trip in the stub guarantees a raw
-  //     ArrayBuffer/Blob would have arrived as {} on the offscreen side.
+  // 11. ZIP transport fidelity (22-byte empty ZIP regression): payloads arrive as
+  //     bounded base64 chunks inside an entry transaction. JSON round-trip in the
+  //     stub guarantees raw binary is never sent through runtime.sendMessage.
   {
+    let entryNumber = 0;
     const recorded = installChromeStub({
       offscreenReply: (msg) => {
-        if (msg.type === 'OFFSCREEN_ADD_FILE') {
+        if (msg.type === 'OFFSCREEN_BEGIN_ENTRY') {
+          entryNumber++;
+          return { ok: true, entryId: `stub-entry-${entryNumber}`, jobBytes: 100 };
+        }
+        if (msg.type === 'OFFSCREEN_WRITE_CHUNK') {
+          return { ok: true, jobBytes: 100 };
+        }
+        if (msg.type === 'OFFSCREEN_END_ENTRY') {
           return { ok: true, jobBytes: 100 };
         }
         if (msg.type === 'OFFSCREEN_FINISH_ZIP') {
@@ -287,15 +306,19 @@ export async function runDownloadManagerTests() {
       check();
     });
 
-    const addMsgs = recorded.offscreenMessages.filter((m) => m.type === 'OFFSCREEN_ADD_FILE');
-    assert.strictEqual(addMsgs.length, 3, 'all 3 items must reach the offscreen document');
-    for (const msg of addMsgs) {
+    const beginMsgs = recorded.offscreenMessages.filter((m) => m.type === 'OFFSCREEN_BEGIN_ENTRY');
+    const writeMsgs = recorded.offscreenMessages.filter((m) => m.type === 'OFFSCREEN_WRITE_CHUNK');
+    const endMsgs = recorded.offscreenMessages.filter((m) => m.type === 'OFFSCREEN_END_ENTRY');
+    assert.strictEqual(beginMsgs.length, 3, 'all 3 items must start an offscreen entry');
+    assert.strictEqual(writeMsgs.length, 3, 'all 3 items must reach the offscreen writer');
+    assert.strictEqual(endMsgs.length, 3, 'all 3 entries must be finalized');
+    for (const msg of writeMsgs) {
       assert.strictEqual(typeof msg.dataB64, 'string', 'ZIP payload must be a base64 string, not a binary object');
       assert.ok(msg.dataB64.length > 0, 'ZIP payload must not be empty');
       assert.ok(!('buffer' in msg) && !('data' in msg), 'no raw binary fields may be sent');
     }
     // Verify round-trip fidelity of the base64 payload for the first item.
-    const decoded = Buffer.from(addMsgs[0].dataB64, 'base64');
+    const decoded = Buffer.from(writeMsgs[0].dataB64, 'base64');
     assert.strictEqual(decoded.length, 12, 'payload length must survive the round-trip');
     assert.ok(decoded.every((b) => b === 0x41), 'payload bytes must survive the round-trip');
 
@@ -314,12 +337,17 @@ export async function runDownloadManagerTests() {
     uninstallChromeStub();
   }
 
-  // 12. Empty-ZIP guard: when every addFile fails, the job must FAIL — never emit
+  // 12. Empty-ZIP guard: when every streamed entry fails, the job must FAIL — never emit
   //     a 22-byte empty archive.
   {
+    let entryNumber = 0;
     installChromeStub({
       offscreenReply: (msg) => {
-        if (msg.type === 'OFFSCREEN_ADD_FILE') {
+        if (msg.type === 'OFFSCREEN_BEGIN_ENTRY') {
+          entryNumber++;
+          return { ok: true, entryId: `failed-entry-${entryNumber}` };
+        }
+        if (msg.type === 'OFFSCREEN_WRITE_CHUNK') {
           return { ok: false, reason: 'invalid_data' };
         }
         return { ok: true };
@@ -379,5 +407,39 @@ export async function runDownloadManagerTests() {
     const roundTrip = Buffer.from(b64, 'base64');
     assert.strictEqual(roundTrip.length, 100_000);
     assert.ok(roundTrip.every((b) => b === 0x5A));
+  }
+
+  // 16. Binary resolver outputs may be ArrayBuffer/DataView, not just Uint8Array.
+  {
+    const viewBuffer = new ArrayBuffer(4);
+    new Uint8Array(viewBuffer).set([9, 8, 7, 6]);
+    assert.deepStrictEqual([...await DownloadManager.toUint8Array(viewBuffer)], [9, 8, 7, 6]);
+    assert.deepStrictEqual([...await DownloadManager.toUint8Array(new DataView(viewBuffer, 1, 2))], [8, 7]);
+  }
+
+  // 17. Failed generated downloads revoke the offscreen object URL immediately.
+  {
+    let revokeCalled = false;
+    const originalRevoke = ArchiveService.revokeBlobUrls;
+    ArchiveService.revokeBlobUrls = async (urls) => {
+      revokeCalled = urls.length === 1 && urls[0] === 'blob:failed';
+    };
+    const recorded = installChromeStub({
+      offscreenReply: (msg) => msg.type === 'OFFSCREEN_CREATE_BLOB_URL'
+        ? { ok: true, objectUrl: 'blob:failed' }
+        : { ok: true },
+      downloadImpl: (_options, cb) => {
+        chromeRef.chrome.runtime.lastError = { message: 'download denied' };
+        cb(undefined);
+        chromeRef.chrome.runtime.lastError = null;
+      }
+    });
+    const dm = new DownloadManager(registry);
+    await assert.rejects(dm.downloadGeneratedBlob(new Uint8Array([1]), 'SMD/Test/fail.bin'));
+    assert.strictEqual(revokeCalled, true);
+    assert.strictEqual(dm.pendingBlobUrls.size, 0);
+    ArchiveService.revokeBlobUrls = originalRevoke;
+    uninstallChromeStub();
+    void recorded;
   }
 };

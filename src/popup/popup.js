@@ -89,8 +89,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   let dedupActive = true;
   let isScanning = false;
   let subredditFilterEnabled = false;
-  let pluginCaps = {};
   let pluginFilters = [];
+  let progressHideTimer = null;
+  let displayedProgressJob = null;
 
   const MEDIA_HOST_SUFFIXES = [
     'instagram.com', 'cdninstagram.com', 'fbcdn.net',
@@ -132,7 +133,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     currentTabId = tab.id;
     platform = info.id;
-    pluginCaps = info.capabilities || {};
     pluginFilters = info.filters || [];
 
     applyPluginExtras(info);
@@ -283,10 +283,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     targetTitle.textContent = targetName;
     targetTitle.title = targetName;
 
-    allMedia = pageState.media || [];
+    allMedia = Array.isArray(pageState.media) ? pageState.media : [];
     mediaCounter.textContent = String(allMedia.length);
     isScanning = !!pageState.isScanning;
 
+    const currentIds = new Set(allMedia.map((m) => m?.id).filter(Boolean));
+    for (const id of selectedIds) {
+      if (!currentIds.has(id)) selectedIds.delete(id);
+    }
     allMedia.forEach((m) => {
       if (m?.id) selectedIds.add(m.id);
     });
@@ -487,6 +491,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function updateProgressUI(job) {
+    if (progressHideTimer) {
+      clearTimeout(progressHideTimer);
+      progressHideTimer = null;
+    }
+    displayedProgressJob = job || null;
+
     if (!job) {
       progressContainer.style.display = 'none';
       return;
@@ -514,16 +524,34 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       const suffix = parts.length > 0 ? ` (${parts.join(', ')})` : '';
       progressStatusText.textContent = job.filenameOverridden ? `${t('filenameOverriddenWarning')}${suffix}` : `${t('downloadComplete')}${suffix}`;
-      setTimeout(() => { progressContainer.style.display = 'none'; }, job.filenameOverridden ? 10000 : 4000);
+      const displayedJob = job;
+      progressHideTimer = setTimeout(() => {
+        progressHideTimer = null;
+        if (displayedProgressJob === displayedJob) progressContainer.style.display = 'none';
+      }, job.filenameOverridden ? 10000 : 4000);
     } else if (job.status === 'CANCELLED') {
       progressStatusText.textContent = t('downloadCancelled');
-      setTimeout(() => { progressContainer.style.display = 'none'; }, 4000);
+      const displayedJob = job;
+      progressHideTimer = setTimeout(() => {
+        progressHideTimer = null;
+        if (displayedProgressJob === displayedJob) progressContainer.style.display = 'none';
+      }, 4000);
     } else if (job.status === 'FAILED_SIZE') {
       progressStatusText.textContent = t('zipTooLarge');
-      setTimeout(() => { progressContainer.style.display = 'none'; }, 8000);
+      const displayedJob = job;
+      progressHideTimer = setTimeout(() => {
+        progressHideTimer = null;
+        if (displayedProgressJob === displayedJob) progressContainer.style.display = 'none';
+      }, 8000);
     } else if (job.status === 'FAILED') {
-      progressStatusText.textContent = t('errorDownloading');
-      setTimeout(() => { progressContainer.style.display = 'none'; }, 6000);
+      progressStatusText.textContent = job.error === 'opfs_unavailable' || job.error === 'opfs_quota_exceeded'
+        ? t('zipStorageUnavailable')
+        : t('errorDownloading');
+      const displayedJob = job;
+      progressHideTimer = setTimeout(() => {
+        progressHideTimer = null;
+        if (displayedProgressJob === displayedJob) progressContainer.style.display = 'none';
+      }, 6000);
     } else {
       progressStatusText.textContent = t('downloading');
     }

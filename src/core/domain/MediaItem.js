@@ -34,6 +34,7 @@
 
 /**
  * @typedef {Object} MediaItem
+ * @property {1} schemaVersion
  * @property {string} id
  * @property {string} platform
  * @property {MediaType} type
@@ -82,6 +83,7 @@ export class MediaItemModel {
     const ext = data.extension || (data.type === 'video' ? 'mp4' : (data.type === 'audio' ? 'mp3' : 'jpg'));
 
     return {
+      schemaVersion: 1,
       id: String(data.id),
       platform: String(data.platform).toLowerCase(),
       type: data.type,
@@ -90,7 +92,7 @@ export class MediaItemModel {
       downloadUrl: data.downloadUrl || data.url || '',
       thumbnailUrl: data.thumbnailUrl || data.url || '',
       filename: data.filename || '',
-      extension: ext.toLowerCase().replace(/^\./, ''),
+      extension: String(ext).toLowerCase().replace(/^\./, ''),
       mimeType: data.mimeType || (data.type === 'video' ? 'video/mp4' : (data.type === 'audio' ? 'audio/mpeg' : 'image/jpeg')),
       width: typeof data.width === 'number' ? data.width : undefined,
       height: typeof data.height === 'number' ? data.height : undefined,
@@ -126,7 +128,9 @@ export class MediaItemModel {
       ['image', 'video', 'audio', 'file'].includes(m.type) &&
       typeof m.sourceType === 'string' &&
       typeof m.metadata === 'object' &&
-      typeof m.capabilities === 'object'
+      m.metadata !== null &&
+      typeof m.capabilities === 'object' &&
+      m.capabilities !== null
     );
   }
 }

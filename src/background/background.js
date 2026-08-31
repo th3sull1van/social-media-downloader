@@ -61,15 +61,10 @@ async function ensureOffscreenDocument() {
 }
 
 // 4. Register Chrome Download Listeners
-// The onDeterminingFilename guard below re-asserts the filename we pass to
-// chrome.downloads.download(). Competing download managers (e.g. IDM Integration
-// Module) register their own listener and rename blob downloads to the blob URL's
-// UUID basename (user report 2026-08-29: ZIPs landed as "<uuid>.zip"). Chrome
-// honors the FIRST suggest() call, so the guard registers at SW startup — before
-// any competing listener can act on our downloads. It suggests ONLY the filename
-// we already chose (desiredFilenames map), so it never fights neutral listeners.
+// Keep filename selection inside chrome.downloads.download({ filename }). Do not
+// register onDeterminingFilename: competing download managers such as IDM may
+// register the same event, and multiple filename suggestions produce a conflict.
 if (typeof chrome !== 'undefined') {
-  downloadManager.registerFilenameGuards();
   if (chrome.downloads?.onChanged) {
     chrome.downloads.onChanged.addListener((delta) => {
       downloadManager.handleDownloadChanged(delta);

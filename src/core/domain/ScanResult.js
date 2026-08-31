@@ -49,15 +49,16 @@ export class ScanResultModel {
     if (!platform) throw new TypeError('ScanResult requires platform');
     if (!target) throw new TypeError('ScanResult requires target');
 
+    const normalizedItems = Array.isArray(items) ? [...items] : [];
     let finalStatus = status;
-    if (status === 'success' && items.length === 0 && !hasMore) {
+    if (status === 'success' && normalizedItems.length === 0 && !hasMore) {
       finalStatus = 'empty';
     }
 
     return {
       platform: platform.toLowerCase(),
       target,
-      items: Array.isArray(items) ? [...items] : [],
+      items: normalizedItems,
       hasMore: !!hasMore,
       nextCursor: nextCursor || undefined,
       status: finalStatus,

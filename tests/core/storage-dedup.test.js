@@ -93,7 +93,9 @@ export async function runStorageDedupTests() {
         sendMessage: (msg, cb) => {
           recordedOffscreen.push(msg);
           if (msg.type === 'OFFSCREEN_BEGIN_ZIP') cb?.({ ok: true });
-          else if (msg.type === 'OFFSCREEN_ADD_FILE') cb?.({ ok: true });
+          else if (msg.type === 'OFFSCREEN_BEGIN_ENTRY') cb?.({ ok: true, entryId: `entry-${recordedOffscreen.length}` });
+          else if (msg.type === 'OFFSCREEN_WRITE_CHUNK') cb?.({ ok: true });
+          else if (msg.type === 'OFFSCREEN_END_ENTRY') cb?.({ ok: true });
           else if (msg.type === 'OFFSCREEN_FINISH_ZIP') cb?.({ ok: true, objectUrl: 'blob:test-zip' });
           else cb?.({ ok: true });
         }
@@ -137,7 +139,7 @@ export async function runStorageDedupTests() {
 
     await dm.processZipDownload(mockPlugin, 'mock', 'TestTarget', items, { deduplicate: true });
 
-    const addFileMsgs = recordedOffscreen.filter(m => m.type === 'OFFSCREEN_ADD_FILE');
+    const addFileMsgs = recordedOffscreen.filter(m => m.type === 'OFFSCREEN_END_ENTRY');
     // item_2 is identical to item_1, so only 2 files should be added
     assert.strictEqual(addFileMsgs.length, 2, 'Duplicate file must not be added to ZIP');
     assert.strictEqual(dm.activeJob?.skippedDuplicates, 1, 'skippedDuplicates must equal 1');
@@ -168,7 +170,9 @@ export async function runStorageDedupTests() {
         sendMessage: (msg, cb) => {
           recordedOffscreen.push(msg);
           if (msg.type === 'OFFSCREEN_BEGIN_ZIP') cb?.({ ok: true });
-          else if (msg.type === 'OFFSCREEN_ADD_FILE') cb?.({ ok: true });
+          else if (msg.type === 'OFFSCREEN_BEGIN_ENTRY') cb?.({ ok: true, entryId: `entry-${recordedOffscreen.length}` });
+          else if (msg.type === 'OFFSCREEN_WRITE_CHUNK') cb?.({ ok: true });
+          else if (msg.type === 'OFFSCREEN_END_ENTRY') cb?.({ ok: true });
           else if (msg.type === 'OFFSCREEN_FINISH_ZIP') cb?.({ ok: true, objectUrl: 'blob:test-zip' });
           else cb?.({ ok: true });
         }
@@ -207,7 +211,7 @@ export async function runStorageDedupTests() {
 
     await dm.processZipDownload(mockPlugin, 'mock', 'TestTarget', items, { deduplicate: true, historicalDedup: true });
 
-    const addFileMsgs = recordedOffscreen.filter(m => m.type === 'OFFSCREEN_ADD_FILE');
+    const addFileMsgs = recordedOffscreen.filter(m => m.type === 'OFFSCREEN_END_ENTRY');
     assert.strictEqual(addFileMsgs.length, 1, 'Historically downloaded item must be skipped');
     assert.strictEqual(dm.activeJob?.skippedDuplicates, 1, 'skippedDuplicates must equal 1');
 

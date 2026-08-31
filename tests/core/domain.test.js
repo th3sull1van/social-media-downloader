@@ -25,8 +25,11 @@ export async function runDomainTests() {
   assert.strictEqual(item.id, 'post_123');
   assert.strictEqual(item.platform, 'instagram');
   assert.strictEqual(item.type, 'image');
+  assert.strictEqual(item.schemaVersion, 1);
   assert.strictEqual(item.extension, 'jpg');
   assert.strictEqual(MediaItemModel.isValid(item), true);
+  assert.strictEqual(MediaItemModel.isValid({ ...item, metadata: null }), false);
+  assert.strictEqual(MediaItemModel.isValid({ ...item, capabilities: null }), false);
 
   // Invalid item should throw
   assert.throws(() => MediaItemModel.create(/** @type {any} */ ({ id: '' })), TypeError);
@@ -58,6 +61,14 @@ export async function runDomainTests() {
     items: []
   });
   assert.strictEqual(emptyScan.status, 'empty');
+
+  const malformedScanItems = ScanResultModel.create({
+    platform: 'instagram',
+    target,
+    items: null
+  });
+  assert.deepStrictEqual(malformedScanItems.items, []);
+  assert.strictEqual(malformedScanItems.status, 'empty');
 
   // 4. DownloadArtifactModel
   const directArtifact = DownloadArtifactModel.direct('https://example.com/file.mp4', 'SMD/file.mp4');
