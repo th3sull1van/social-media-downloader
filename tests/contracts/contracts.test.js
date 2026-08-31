@@ -56,6 +56,7 @@ export async function runContractTests() {
   //     are owned by the Reddit plugin, not by Core (AGENTS §27).
   assert.strictEqual(typeof RedditPlugin.handleMessage, 'function', 'RedditPlugin must implement handleMessage()');
   assert.strictEqual(RedditMessages.REDDIT_SCAN, 'REDDIT_SCAN');
+  assert.strictEqual(RedditMessages.REDDIT_FETCH_AVATAR, 'REDDIT_FETCH_AVATAR');
   assert.strictEqual(RedditMessages.RESOLVE_REDGIFS, 'RESOLVE_REDGIFS');
   assert.strictEqual(RedditMessages.TRIGGER_SCAN_REDGIFS, 'TRIGGER_SCAN_REDGIFS');
 
@@ -83,7 +84,14 @@ export async function runContractTests() {
   const redditDetected = defaultRegistry.detect({ hostname: 'www.reddit.com' });
   assert.strictEqual(redditDetected, RedditPlugin);
 
+  // Host matching must not accept spoofed suffixes or throw on malformed URLs.
+  assert.strictEqual(InstagramPlugin.matches({ hostname: 'evilinstagram.com' }), false);
+  assert.strictEqual(FacebookPlugin.matches({ hostname: 'facebook.com.evil.test' }), false);
+  assert.strictEqual(RedditPlugin.matches({ hostname: 'reddit.com.evil.test' }), false);
+  assert.strictEqual(InstagramPlugin.matches({ url: 'not a URL' }), false);
+  assert.strictEqual(FacebookPlugin.matches({ url: 'https://WWW.FACEBOOK.COM./x' }), true);
+  assert.strictEqual(RedditPlugin.matches({ url: 'https://old.redd.it./x' }), true);
+
   const unknownDetected = defaultRegistry.detect({ hostname: 'www.twitter.com' });
   assert.strictEqual(unknownDetected, null);
 }
-

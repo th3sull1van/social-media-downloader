@@ -222,9 +222,34 @@ export async function runRedditScannerTests() {
       const result = await RedditScanner.fetchSubredditPosts('private', {});
       assert.strictEqual(result.items.length, 0);
       assert.strictEqual(result.totalPosts, 0);
+      assert.strictEqual(result.status, 'network_failure');
+      assert.strictEqual(result.errorCode, 'REDDIT_API_HTTP_ERROR');
     }
 
-    // 11. Subreddit/community/user icon style assets must NOT become media items.
+    // 11. Profile/community avatars come from the target about endpoint and
+    // are distinct from post media (the DOM may expose them as SVG <image>).
+    {
+      const requestedUrls = [];
+      anyFetch.fetch = async (url) => {
+        requestedUrls.push(String(url));
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              snoovatar_img: '',
+              icon_img: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_3.png'
+            }
+          })
+        };
+      };
+
+      const avatar = await RedditScanner.fetchTargetAvatar('user', 'avatar_user');
+      assert.strictEqual(avatar, 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_3.png');
+      assert.ok(requestedUrls[0].includes('/user/avatar_user/about.json?raw_json=1'));
+      assert.strictEqual(await RedditScanner.fetchTargetAvatar(/** @type {any} */ ('post'), 'abc'), '');
+    }
+
+    // 12. Subreddit/community/user icon style assets must NOT become media items.
     //     These leak into `img[src*=redditmedia.com]` DOM queries and would otherwise
     //     be downloaded as decorative avatars (see HAR analysis of reddit-feed fixtures).
     {
@@ -251,12 +276,18 @@ export async function runRedditScannerTests() {
       assert.strictEqual(data.mediaItems.length, 0, 'profile icon must not become a media item');
     }
 
-    // 12. Platform message delegation: RedditPlugin.handleMessage routes
+    // 13. Platform message delegation: RedditPlugin.handleMessage routes
     //     REDDIT_SCAN / RESOLVE_REDGIFS and returns undefined for generic types,
     //     so the service worker can delegate instead of routing on platform internals.
     {
       anyFetch.fetch = async (url) => {
         const u = String(url);
+        if (u.includes('/about.json')) {
+          return {
+            ok: true,
+            json: async () => ({ data: { icon_img: 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_4.png' } })
+          };
+        }
         if (u.includes('/gifs/')) {
           return {
             ok: true,
@@ -272,7 +303,9 @@ export async function runRedditScannerTests() {
       const scan = await RedditPlugin.handleMessage(RedditMessages.REDDIT_SCAN, { payload: { kind: 'subreddit', id: 's' } });
       assert.strictEqual(scan.handled, true, 'REDDIT_SCAN must be handled by RedditPlugin');
       assert.strictEqual(scan.response.success, true);
+      assert.strictEqual(scan.response.status, 'success');
       assert.strictEqual(scan.response.items.length, 1);
+      assert.strictEqual(scan.response.avatarUrl, 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_4.png');
 
       const rg = await RedditPlugin.handleMessage(RedditMessages.RESOLVE_REDGIFS, { url: 'https://www.redgifs.com/watch/somegif' });
       assert.strictEqual(rg.handled, true, 'RESOLVE_REDGIFS must be handled by RedditPlugin');

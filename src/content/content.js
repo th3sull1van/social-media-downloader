@@ -17,16 +17,17 @@
   if (window.__SOCIAL_MEDIA_DOWNLOADER_CONTENT__) return;
   window.__SOCIAL_MEDIA_DOWNLOADER_CONTENT__ = true;
 
-  const hostname = window.location.hostname;
-  const isInstagram = hostname.includes('instagram.com');
-  const isFacebook = hostname.includes('facebook.com');
-  const isReddit = hostname.includes('reddit.com') || hostname.includes('redd.it');
+  const hostname = window.location.hostname.toLowerCase().replace(/\.+$/, '');
+  const isHostOnDomain = (host, domain) => host === domain || host.endsWith('.' + domain);
+  const isInstagram = isHostOnDomain(hostname, 'instagram.com');
+  const isFacebook = isHostOnDomain(hostname, 'facebook.com');
+  const isReddit = isHostOnDomain(hostname, 'reddit.com') || isHostOnDomain(hostname, 'redd.it');
   const platform = isInstagram ? 'instagram' : (isFacebook ? 'facebook' : (isReddit ? 'reddit' : 'unknown'));
 
   // Host allowlist for any URL that ends up in chrome.downloads or <img src>.
   const DOWNLOAD_URL_HOST_SUFFIXES = [
     'instagram.com', 'cdninstagram.com', 'fbcdn.net',
-    'reddit.com', 'redd.it', 'redditmedia.com', 'redgifs.com', 'imgur.com'
+    'reddit.com', 'redd.it', 'redditmedia.com', 'redditstatic.com', 'redgifs.com', 'imgur.com'
   ];
 
   function isAllowedMediaUrl(rawUrl) {
@@ -45,6 +46,7 @@
     targetName: 'Media_Collection',
     username: '',
     profileInfo: null,
+    targetAvatarUrl: '',
     media: new Map(),
     selectedIds: new Set(),
     activeFilter: 'all',
@@ -116,7 +118,6 @@
     injectMainWorldScript('src/plugins/instagram/main-world/injected.js');
   } else if (isFacebook) {
     injectMainWorldScript('src/plugins/facebook/main-world/injected.js');
-    sendToInjected('PING').catch(() => {});
   }
 
   // 2. Main-World Bridge (nonce-verified).
@@ -178,16 +179,30 @@
     }
   });
 
+  // The main-world script is injected asynchronously. The old handshake was
+  // sent before the content listener above existed, so it could be lost and
+  // prevent all later Facebook GraphQL batches (including profile_picture)
+  // from reaching the isolated world. Handshake only after both listeners are
+  // installed; the injected script is already loaded by document_end in the
+  // normal path.
+  if (isFacebook) {
+    setTimeout(() => sendToInjected('PING').catch(() => {}), 0);
+  }
+
   // 3. Target Detection + SPA navigation tracking.
   function currentNavigationKey() {
     return platform + '::' + window.location.pathname + '::' + window.location.search;
   }
 
   function resetMediaState(reason) {
-    if (state.media.size === 0 && state.selectedIds.size === 0) return;
+    const hadState = state.media.size > 0 || state.selectedIds.size > 0 || state.profileInfo !== null
+      || state.targetAvatarUrl !== '' || facebookFullByPhotoId.size > 0;
     state.media.clear();
     state.selectedIds.clear();
     state.profileInfo = null;
+    state.targetAvatarUrl = '';
+    facebookFullByPhotoId.clear();
+    if (!hadState) return;
     updateFloatingWidgetBadge();
     renderModalGrid();
     console.log(`[SMD Content] Media state reset (${reason || 'navigation'}).`);
@@ -210,6 +225,10 @@
       : null;
     if (profileId) return `profile:${profileId}`;
     const parts = pathname.split('/').filter(Boolean);
+    if (parts[0]?.toLowerCase() === 'pages') {
+      if (/^\d+$/.test(parts[2] || '')) return `profile:${parts[2]}`;
+      if (parts[1]) return `profile:${parts[1].toLowerCase()}`;
+    }
     const reserved = new Set(['photos', 'photos_by', 'photos_of', 'photos_albums', 'media', 'albums', 'reels', 'videos']);
     const profileSlug = parts.find((part) => !reserved.has(part.toLowerCase()));
     return profileSlug ? `profile:${profileSlug.toLowerCase()}` : '';
@@ -238,6 +257,7 @@
         ? true
         : changedFacebookProfile && !state.isScanning;
       if (shouldReset) resetMediaState('target changed');
+      scheduleTargetAvatarRefresh();
     }
   }
 
@@ -482,15 +502,15 @@
 
   function addMediaItems(items) {
     if (!Array.isArray(items)) return;
-    let addedCount = 0;
+    let changedCount = 0;
 
     for (const item of items) {
       if (!item || !item.id || !item.url) continue;
-      if (!isAllowedMediaUrl(item.url)) continue;
+      if (!isAllowedMediaUrl(item.url) || !isAllowedMediaUrl(item.downloadUrl || item.url)) continue;
       if (!state.media.has(item.id)) {
         state.media.set(item.id, item);
         if (state.autoSelectAll) state.selectedIds.add(item.id);
-        addedCount++;
+        changedCount++;
       } else {
         const existing = state.media.get(item.id);
         const newPixels = (item.width || 0) * (item.height || 0);
@@ -501,11 +521,12 @@
 
         if (newPixels > oldPixels || newIsVideo || (existingIsDownscaled && newIsNotDownscaled)) {
           state.media.set(item.id, { ...existing, ...item });
+          changedCount++;
         }
       }
     }
 
-    if (addedCount > 0) {
+    if (changedCount > 0) {
       updateFloatingWidgetBadge();
       scheduleModalGridRender();
     }
@@ -742,24 +763,60 @@
     }]);
   }
 
+  function readImageSource(element) {
+    if (!element) return '';
+
+    for (const property of ['currentSrc', 'src', 'href']) {
+      const value = element[property];
+      if (typeof value === 'string' && value.trim()) return value.trim();
+    }
+
+    for (const attribute of ['src', 'href', 'xlink:href', 'data-src', 'data-lazy-src', 'content']) {
+      const value = element.getAttribute?.(attribute);
+      if (value && value.trim()) return value.trim();
+    }
+
+    const srcset = element.getAttribute?.('srcset');
+    if (srcset) {
+      const first = srcset.split(',')[0]?.trim().split(/\s+/)[0];
+      if (first) return first;
+    }
+
+    return '';
+  }
+
+  function rememberTargetAvatar(rawUrl) {
+    const url = String(rawUrl || '').replace(/&amp;/g, '&').trim();
+    if (!isAllowedMediaUrl(url)) return '';
+    state.targetAvatarUrl = url;
+    return url;
+  }
+
+  function elementAccessibleText(element) {
+    const values = [];
+    let current = element;
+    for (let depth = 0; current && depth < 5; depth++, current = current.parentElement) {
+      for (const attribute of ['alt', 'aria-label', 'title', 'data-testid']) {
+        const value = current.getAttribute?.(attribute);
+        if (value) values.push(value);
+      }
+    }
+    return values.join(' ').toLowerCase();
+  }
+
   function getAvatarUrl() {
     const fallbackIcon = chrome.runtime.getURL('assets/icons/icon32.png');
-    if (state.profileInfo?.hdProfilePicUrl) return state.profileInfo.hdProfilePicUrl;
-    if (state.profileInfo?.profilePicUrl) return state.profileInfo.profilePicUrl;
+    if (isAllowedMediaUrl(state.targetAvatarUrl)) return state.targetAvatarUrl;
+    if (isAllowedMediaUrl(state.profileInfo?.hdProfilePicUrl)) return state.profileInfo.hdProfilePicUrl;
+    if (isAllowedMediaUrl(state.profileInfo?.profilePicUrl)) return state.profileInfo.profilePicUrl;
+
     if (isInstagram) {
       const igAvatar = document.querySelector('header img[alt*="profile"], header img[alt*="perfil"], header img')?.src;
-      if (igAvatar) return igAvatar;
+      if (isAllowedMediaUrl(igAvatar)) return rememberTargetAvatar(igAvatar);
     } else if (isFacebook) {
-      const fbAvatar = document.querySelector('svg[aria-label] image, div[role="main"] image')?.getAttribute('xlink:href');
-      if (fbAvatar) return fbAvatar;
+      return getFacebookTargetAvatarUrl();
     } else if (isReddit) {
-      // Scope to header element to avoid whole-document DOM query on infinite-scroll pages
-      const headerScope = document.querySelector('shreddit-profile-header, header, [slot="header"], #profile-header') || document.body;
-      const redditAvatar = headerScope?.querySelector(
-        'img[src*="profileIcon"], img[src*="communityIcon"], img[src*="useravatar"], img[alt*="avatar" i]'
-      );
-      const redditSrc = redditAvatar ? (redditAvatar.src || '').split('?')[0] : '';
-      if (redditSrc) return redditSrc;
+      return getRedditTargetAvatarUrl();
     }
     return fallbackIcon;
   }
@@ -769,46 +826,131 @@
     if (avatarEl) {
       avatarEl.src = isFacebook ? getFacebookTargetAvatarUrl() : getAvatarUrl();
       avatarEl.onerror = function () {
+        this.onerror = null;
         this.src = chrome.runtime.getURL('assets/icons/icon32.png');
       };
     }
   }
 
-  function getFacebookTargetAvatarUrl() {
-    const fallbackIcon = chrome.runtime.getURL('assets/icons/icon32.png');
-    const main = document.querySelector('div[role="main"]') || document.body;
-    const images = main.querySelectorAll('img[src*="fbcdn.net"], image[xlink\\:href*="fbcdn.net"], image[href*="fbcdn.net"]');
-    // The first fbcdn image on a profile page is the COVER photo (wide, often
-    // aria-hidden). The profile avatar is circular (border-radius) and its
-    // accessible name mentions "foto de perfil"/"profile picture" (user report
-    // 2026-08-29: cover thumbnail was being shown instead of the avatar).
-    let bestCircularSrc = '';
-    let bestCircularWidth = 0;
-    for (const image of images) {
-      const src = image.currentSrc || image.getAttribute('src') || image.getAttribute('xlink:href') || image.getAttribute('href') || '';
-      if (!src || !isAllowedMediaUrl(src) || src.includes('emoji.php')) continue;
-
-      // Decorative cover/banners advertise themselves as aria-hidden.
-      if (image.getAttribute('aria-hidden') === 'true') continue;
-
-      const accessibleName = (image.getAttribute('alt') || '')
-        + ' ' + (image.closest('[role="img"], [aria-label]')?.getAttribute('aria-label') || '');
-      if (/foto de perfil|profile picture|photo de profil/i.test(accessibleName)) {
-        return src;
-      }
-
-      // Circular render => profile avatar candidate (keep the widest).
-      const rect = image.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0 && rect.width / rect.height < 1.2) {
-        const radius = getComputedStyle(image).borderRadius;
-        const circular = radius === '50%' || radius === '9999px' || radius === '9999px 9999px 9999px 9999px';
-        if (circular && rect.width > bestCircularWidth) {
-          bestCircularWidth = rect.width;
-          bestCircularSrc = src;
-        }
+  function scheduleTargetAvatarRefresh() {
+    if (!isFacebook && !isReddit) return;
+    if (isReddit && !state.targetAvatarUrl) {
+      const target = redditTargetInfo();
+      if (target.kind === 'user' || target.kind === 'subreddit') {
+        chrome.runtime.sendMessage({
+          type: 'REDDIT_FETCH_AVATAR',
+          payload: { kind: target.kind, id: target.id }
+        }, (response) => {
+          if (chrome.runtime.lastError) return;
+          const url = rememberTargetAvatar(response?.avatarUrl);
+          if (url) updateAvatarUI();
+        });
       }
     }
-    if (bestCircularSrc) return bestCircularSrc;
+    for (const delay of [250, 1000, 2500]) {
+      setTimeout(() => updateAvatarUI(), delay);
+    }
+  }
+
+  function getFacebookTargetAvatarUrl() {
+    const fallbackIcon = chrome.runtime.getURL('assets/icons/icon32.png');
+    if (isAllowedMediaUrl(state.targetAvatarUrl)) return state.targetAvatarUrl;
+    const main = document.querySelector('div[role="main"]') || document.body;
+    const images = main?.querySelectorAll?.('img, image') || [];
+    const profileWords = /profile\s*(?:picture|photo|image)|foto\s*(?:de|do)\s*perfil|imagem\s*(?:de|do)\s*perfil|photo\s*de\s*profil|profil(?:bild|foto)|avatar/i;
+    const identity = fbTargetIdentity();
+    let best = { score: 0, url: '' };
+
+    for (const image of images) {
+      const src = readImageSource(image);
+      if (!src || !isAllowedMediaUrl(src) || /(?:emoji\.php|rsrc\.php)/i.test(src)) continue;
+
+      let score = 0;
+      const accessibleName = elementAccessibleText(image);
+      if (profileWords.test(accessibleName)) score += 100;
+
+      const profileLink = image.closest?.('a[href]')?.getAttribute?.('href') || '';
+      if (profileLink && fbObjectMatchesTarget({ url: profileLink }, identity)) score += 80;
+      if ([...identity.names].some((name) => accessibleName.includes(name))) score += 45;
+
+      try {
+        if (image.closest?.('header, [role="banner"], [data-pagelet*="profile" i], [data-testid*="profile" i]')) score += 30;
+      } catch (e) {}
+
+      const rect = image.getBoundingClientRect?.();
+      if (rect && rect.width > 0 && rect.height > 0) {
+        const ratio = rect.width / rect.height;
+        if (ratio >= 0.75 && ratio <= 1.25) score += 24;
+        if (ratio > 1.5) score -= 35;
+      }
+
+      const clipPath = image.getAttribute?.('clip-path') || image.parentElement?.getAttribute?.('clip-path');
+      if (clipPath) score += 25;
+      try {
+        const radius = typeof getComputedStyle === 'function' ? getComputedStyle(image).borderRadius : '';
+        if (radius === '50%' || radius.includes('9999px')) score += 25;
+      } catch (e) {}
+
+      // Facebook profile-picture CDN paths use a `-1` rendition marker. This
+      // helps when the current DOM has no accessible label or layout geometry.
+      if (/\/v\/t[^/]+-1\//i.test(src)) score += 8;
+      if (image.getAttribute?.('aria-hidden') === 'true') score -= 35;
+
+      if (score > best.score) best = { score, url: src };
+    }
+
+    if (best.url && best.score >= 25) return rememberTargetAvatar(best.url);
+    return fallbackIcon;
+  }
+
+  function getRedditTargetAvatarUrl() {
+    const fallbackIcon = chrome.runtime.getURL('assets/icons/icon32.png');
+    if (isAllowedMediaUrl(state.targetAvatarUrl)) return state.targetAvatarUrl;
+
+    const target = redditTargetInfo();
+    const scopes = [];
+    for (const selector of [
+      'shreddit-profile-header',
+      'shreddit-profile-page',
+      '[data-testid="profile-header"]',
+      '[slot="profile-header"]',
+      '#profile-header'
+    ]) {
+      const scope = document.querySelector(selector);
+      if (scope && !scopes.includes(scope)) scopes.push(scope);
+    }
+    const main = document.querySelector('main') || document.body;
+    if (main && !scopes.includes(main)) scopes.push(main);
+    if (scopes.length === 0 && document.body) scopes.push(document.body);
+
+    const isCommunity = (url) => /communityIcon/i.test(url);
+    const isUserAvatar = (url) => /profileIcon|snoovatar|useravatar|redditstatic\.com\/avatars\//i.test(url);
+    let best = { score: 0, url: '' };
+
+    for (const scope of scopes) {
+      const elements = scope.querySelectorAll?.('img, image') || [];
+      for (const image of elements) {
+        const src = readImageSource(image);
+        if (!src || !isAllowedMediaUrl(src)) continue;
+
+        const community = isCommunity(src);
+        const userAvatar = isUserAvatar(src);
+        if (target.kind === 'user' && community) continue;
+        if (target.kind === 'subreddit' && !community && !userAvatar) continue;
+        if (target.kind === 'post') continue;
+
+        let score = scope !== document.body ? 35 : 0;
+        const accessibleName = elementAccessibleText(image);
+        if (/avatar|profile|usu[áa]rio|user|community|comunidade|subreddit/i.test(accessibleName)) score += 20;
+        if (userAvatar) score += 80;
+        if (community) score += target.kind === 'subreddit' ? 90 : 0;
+        if (image.getAttribute?.('aria-hidden') === 'true' && target.kind !== 'subreddit') score -= 20;
+
+        if (score > best.score) best = { score, url: src };
+      }
+    }
+
+    if (best.url && best.score >= 35) return rememberTargetAvatar(best.url);
     return fallbackIcon;
   }
 
@@ -1215,6 +1357,100 @@
     return null;
   }
 
+  function fbNormalizeIdentity(value) {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  function fbTargetIdentity(href = window.location.href) {
+    const identity = { ids: new Set(), names: new Set() };
+    const addId = (value) => {
+      const id = String(value || '').trim();
+      if (/^\d{5,}$/.test(id)) identity.ids.add(id);
+    };
+    const addName = (value) => {
+      const name = fbNormalizeIdentity(value);
+      if (!name || fbIsGenericTerm(name)) return;
+      if (/^profile \d+$/.test(name)) return;
+      identity.names.add(name);
+    };
+
+    try {
+      const url = new URL(href, window.location.origin);
+      addId(url.searchParams.get('id'));
+      const setParts = String(url.searchParams.get('set') || '').split('.');
+      if (/^(?:pb|t)$/i.test(setParts[0] || '')) addId(setParts[1]);
+
+      const parts = url.pathname.split('/').filter(Boolean);
+      const first = String(parts[0] || '').toLowerCase();
+      if (first === 'pages') {
+        addName(parts[1]);
+        addId(parts[2]);
+      } else if (first === 'people') {
+        addName(parts[1]);
+      } else if (parts[0] && !new Set([
+        'home.php', 'watch', 'gaming', 'marketplace', 'groups', 'events', 'saved',
+        'memories', 'ads', 'messages', 'notifications', 'friends', 'bookmarks',
+        'settings', 'help', 'login', 'recover', 'stories', 'reels', 'share',
+        'photo', 'photos', 'media', 'permalink.php', 'story.php', 'search',
+        'photo.php', 'profile.php'
+      ]).has(first)) {
+        addName(parts[0].replace(/\.\d+$/, '').replace(/[._+-]+/g, ' '));
+      }
+    } catch (e) {}
+
+    addName(state.targetName);
+    addName(state.username);
+    return identity;
+  }
+
+  function fbObjectMatchesTarget(obj, identity = fbTargetIdentity()) {
+    if (!obj || typeof obj !== 'object') return false;
+
+    const objectIds = [
+      obj.id, obj.page_id, obj.profile_id, obj.user_id,
+      obj.owner?.id, obj.page?.id, obj.profile?.id, obj.user?.id
+    ].map((value) => String(value || '').trim());
+    if (objectIds.some((id) => id && identity.ids.has(id))) return true;
+
+    const objectUrls = [obj.url, obj.profile_url, obj.permalink_url, obj.link, obj.href];
+    for (const rawUrl of objectUrls) {
+      if (!rawUrl) continue;
+      const value = String(rawUrl);
+      if ([...identity.ids].some((id) => value.includes(id))) return true;
+      const normalizedUrl = fbNormalizeIdentity(value.replace(/^https?:\/\/[^/]+/i, '').replace(/[/?#=&]+/g, ' '));
+      if (normalizedUrl && [...identity.names].some((name) => normalizedUrl.includes(name))) return true;
+    }
+
+    const objectNames = [obj.name, obj.title, obj.display_name, obj.username, obj.short_name]
+      .map(fbNormalizeIdentity)
+      .filter(Boolean);
+    return objectNames.some((name) => identity.names.has(name));
+  }
+
+  function fbProfilePictureUrl(obj) {
+    const profile = obj?.profile_picture || obj?.profilePicture || obj?.profile_pic;
+    const candidates = typeof profile === 'string'
+      ? [profile]
+      : [profile?.uri, profile?.url, profile?.src];
+    for (const candidate of candidates) {
+      const url = String(candidate || '').replace(/&amp;/g, '&').trim();
+      if (/^https?:\/\//i.test(url)) return url;
+    }
+    return '';
+  }
+
+  function fbCaptureProfileAvatar(obj) {
+    const rawUrl = fbProfilePictureUrl(obj);
+    if (!rawUrl || !fbObjectMatchesTarget(obj)) return;
+    const url = rememberTargetAvatar(upgradeCdnUrl(rawUrl, 'facebook'));
+    if (url) updateAvatarUI();
+  }
+
   function fbWalkAndHarvest(obj, collectedItems, depth = 0, videoAncestor = false) {
     if (!obj || typeof obj !== 'object' || depth > 40) return;
     if (Array.isArray(obj)) {
@@ -1234,7 +1470,9 @@
     const hasViewerImage = !!(obj.viewer_image?.uri);
     const hasImage = !!(obj.image?.uri);
     const hasId = !!(obj.id || obj.photo_id);
-    if (!isCollectionTile && !inVideoSubtree && !obj.profile_picture) {
+    const hasProfilePicture = !!(obj.profile_picture || obj.profilePicture || obj.profile_pic);
+    if (hasProfilePicture) fbCaptureProfileAvatar(obj);
+    if (!isCollectionTile && !inVideoSubtree && !hasProfilePicture) {
       if (hasViewerImage && hasId) {
         const id = String(obj.id || obj.photo_id);
         const cleanUrl = upgradeCdnUrl(obj.viewer_image.uri, 'facebook');
@@ -1696,6 +1934,9 @@
         });
       });
 
+      const responseAvatar = rememberTargetAvatar(res?.avatarUrl);
+      if (responseAvatar) updateAvatarUI();
+
       const items = res.success && Array.isArray(res.items) ? res.items : [];
 
       if (items.length > 0) {
@@ -1708,6 +1949,10 @@
       try {
         let pageItems = [];
         const { RedditScanner: sc } = await import(chrome.runtime.getURL('src/plugins/reddit/RedditScanner.js'));
+        if (!state.targetAvatarUrl && (target.kind === 'user' || target.kind === 'subreddit')) {
+          const pageAvatar = await sc.fetchTargetAvatar(target.kind, target.id);
+          if (rememberTargetAvatar(pageAvatar)) updateAvatarUI();
+        }
         if (target.kind === 'user') {
           const userUrl = `https://www.reddit.com/user/${encodeURIComponent(target.id)}/submitted.json?limit=100&raw_json=1`;
           const uRes = await fetch(userUrl, { headers: { 'Accept': 'application/json' } });
@@ -1743,6 +1988,7 @@
 
       // Fallback: extract media from the server-rendered shreddit HTML.
       const domCount = await redditDomFallback();
+      if (!state.targetAvatarUrl) updateAvatarUI();
       if (domCount === 0) {
         console.warn('[SMD Content] Reddit scan returned 0 items (empty, private, or quarantined target).');
       }
@@ -2413,24 +2659,25 @@
     const box = uiGetById('smd-download-progress-box');
     const statusText = uiGetById('smd-progress-status-text');
 
-    if (typeof job.receiptDownloadId === 'number') {
-      state.lastReceiptDownloadId = job.receiptDownloadId;
-    }
     const percentage = uiGetById('smd-progress-percentage');
     const fill = uiGetById('smd-progress-bar-fill');
     const btnCancel = uiGetById('smd-btn-cancel-download');
     const btnRetry = uiGetById('smd-btn-retry-download');
     const receiptActions = uiGetById('smd-receipt-actions');
 
-    if (!box || !statusText || !percentage || !fill) return;
-
     if (!job) {
-      box.style.display = 'none';
+      if (box) box.style.display = 'none';
       state.isDownloading = false;
       if (btnRetry) btnRetry.style.display = 'none';
       if (receiptActions) receiptActions.style.display = 'none';
       return;
     }
+
+    if (typeof job.receiptDownloadId === 'number') {
+      state.lastReceiptDownloadId = job.receiptDownloadId;
+    }
+
+    if (!box || !statusText || !percentage || !fill) return;
 
     box.style.display = 'block';
     const isPackaging = job.status === 'PACKAGING_ZIP';
@@ -2460,7 +2707,9 @@
       state.isDownloading = false;
       statusText.textContent = job.status === 'FAILED_SIZE'
         ? t('zipTooLarge')
-        : (job.error ? `${t('errorDownloading')} (${job.error})` : t('errorDownloading'));
+        : (job.error === 'opfs_unavailable' || job.error === 'opfs_quota_exceeded'
+          ? t('zipStorageUnavailable')
+          : (job.error ? `${t('errorDownloading')} (${job.error})` : t('errorDownloading')));
       return;
     }
 
@@ -2488,10 +2737,12 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       createFloatingUI();
+      scheduleTargetAvatarRefresh();
       if (isInstagram && state.username) scanProfileAvatar();
     });
   } else {
     createFloatingUI();
+    scheduleTargetAvatarRefresh();
     if (isInstagram && state.username) scanProfileAvatar();
   }
 
@@ -2514,6 +2765,7 @@
           platform: state.platform,
           targetName: state.targetName,
           username: state.username,
+          avatarUrl: isAllowedMediaUrl(state.targetAvatarUrl) ? state.targetAvatarUrl : '',
           isScanning: state.isScanning,
           media: Array.from(state.media.values())
         });

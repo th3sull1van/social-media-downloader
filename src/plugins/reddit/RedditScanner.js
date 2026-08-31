@@ -163,6 +163,47 @@ export class RedditScanner {
   }
 
   /**
+   * Fetches the target user's or subreddit's avatar from the public about
+   * endpoint. The page DOM can render avatars inside SVG <image> nodes or
+   * after the initial content script run, so this is the stable fallback for
+   * the in-page target header.
+   * @param {'user'|'subreddit'} kind
+   * @param {string} id
+   * @returns {Promise<string>}
+   */
+  static async fetchTargetAvatar(kind, id) {
+    if (!id || !['user', 'subreddit'].includes(kind)) return '';
+
+    const encodedId = encodeURIComponent(id);
+    const endpoint = kind === 'user'
+      ? `https://www.reddit.com/user/${encodedId}/about.json?raw_json=1`
+      : `https://www.reddit.com/r/${encodedId}/about.json?raw_json=1`;
+    const response = await fetch(endpoint);
+    if (!response.ok) return '';
+
+    const json = await response.json();
+    const data = json?.data || {};
+    const candidates = kind === 'user'
+      ? [data.snoovatar_img, data.icon_img, data.profile_image, data.avatar]
+      : [data.icon_img, data.community_icon, data.profile_image, data.avatar];
+
+    for (const candidate of candidates) {
+      const url = String(candidate || '').replace(/&amp;/g, '&').trim();
+      if (!/^https?:\/\//i.test(url)) continue;
+      try {
+        const host = new URL(url).hostname.toLowerCase();
+        if (['reddit.com', 'redditmedia.com', 'redditstatic.com', 'redd.it']
+          .some((suffix) => host === suffix || host.endsWith(`.${suffix}`))) {
+          return url;
+        }
+      } catch {
+        // Ignore malformed avatar fields and try the next API candidate.
+      }
+    }
+    return '';
+  }
+
+  /**
    * Parses public Reddit JSON API post object into normalized media items.
    * @param {any} postData
    * @returns {import('../../core/domain/MediaItem.js').MediaItem[]}
@@ -268,7 +309,7 @@ export class RedditScanner {
    * Scans user submissions from public Reddit JSON API.
    * @param {string} username
    * @param {Object} [options]
-   * @returns {Promise<{ mediaItems: import('../../core/domain/MediaItem.js').MediaItem[], totalPosts: number }>}
+   * @returns {Promise<{ mediaItems: import('../../core/domain/MediaItem.js').MediaItem[], totalPosts: number, status: 'success' | 'partial' | 'empty' | 'network_failure', errorCode?: string }>}
    */
   static async fetchUserSubmissions(username, options = {}) {
     const limit = options.limit || 500;
@@ -276,6 +317,7 @@ export class RedditScanner {
     const seenPostIds = new Set();
     let after = null;
     let totalPosts = 0;
+    let hadNetworkFailure = false;
 
     const processChildren = (children) => {
       for (const child of children) {
@@ -289,9 +331,12 @@ export class RedditScanner {
     };
 
     while (totalPosts < limit) {
-      const url = `https://www.reddit.com/user/${encodeURIComponent(username)}/submitted.json?limit=100&raw_json=1${after ? `&after=${after}` : ''}`;
+      const url = `https://www.reddit.com/user/${encodeURIComponent(username)}/submitted.json?limit=100&raw_json=1${after ? `&after=${encodeURIComponent(after)}` : ''}`;
       const res = await fetch(url);
-      if (!res.ok) break;
+      if (!res.ok) {
+        hadNetworkFailure = true;
+        break;
+      }
 
       const json = await res.json();
       const children = json.data?.children || [];
@@ -312,7 +357,10 @@ export class RedditScanner {
       searchPages++;
       const searchUrl = `https://www.reddit.com/search.json?q=author%3A${encodeURIComponent(username)}&sort=new&limit=100&include_over_18=on&raw_json=1${searchAfter ? `&after=${encodeURIComponent(searchAfter)}` : ''}`;
       const searchRes = await fetch(searchUrl);
-      if (!searchRes.ok) break;
+      if (!searchRes.ok) {
+        hadNetworkFailure = true;
+        break;
+      }
       const searchJson = await searchRes.json();
       const searchChildren = searchJson.data?.children || [];
       if (searchChildren.length === 0) break;
@@ -322,7 +370,15 @@ export class RedditScanner {
       await new Promise(r => setTimeout(r, 400));
     }
 
-    return { mediaItems: allItems, totalPosts };
+    const status = hadNetworkFailure
+      ? (allItems.length > 0 ? 'partial' : 'network_failure')
+      : (allItems.length > 0 ? 'success' : 'empty');
+    return {
+      mediaItems: allItems,
+      totalPosts,
+      status,
+      ...(hadNetworkFailure ? { errorCode: 'REDDIT_API_HTTP_ERROR' } : {})
+    };
   }
 
   /**
@@ -331,25 +387,33 @@ export class RedditScanner {
    * @param {Object} [options]
    * @param {number} [options.limit=300]
    * @param {"hot"|"new"|"top"} [options.sort="hot"]
-   * @returns {Promise<{ items: import('../../core/domain/MediaItem.js').MediaItem[], totalPosts: number }>}
+   * @returns {Promise<{ items: import('../../core/domain/MediaItem.js').MediaItem[], totalPosts: number, status: 'success' | 'partial' | 'empty' | 'network_failure', errorCode?: string }>}
    */
   static async fetchSubredditPosts(subreddit, options = {}) {
     const limit = options.limit || 300;
-    const sort = options.sort || 'hot';
+    const sort = ['hot', 'new', 'top'].includes(options.sort) ? options.sort : 'hot';
     const allItems = [];
+    const seenPostIds = new Set();
     let after = null;
     let totalPosts = 0;
+    let hadNetworkFailure = false;
 
     while (totalPosts < limit) {
       const url = `https://www.reddit.com/r/${encodeURIComponent(subreddit)}/${sort}.json?limit=100&raw_json=1${after ? `&after=${after}` : ''}`;
       const res = await fetch(url);
-      if (!res.ok) break;
+      if (!res.ok) {
+        hadNetworkFailure = true;
+        break;
+      }
 
       const json = await res.json();
       const children = json.data?.children || [];
       if (children.length === 0) break;
 
       for (const child of children) {
+        const postId = String(child?.data?.id || '').replace(/^t3_/, '');
+        if (!postId || seenPostIds.has(postId)) continue;
+        seenPostIds.add(postId);
         totalPosts++;
         allItems.push(...RedditScanner.parseApiPostObject(child.data));
       }
@@ -359,7 +423,15 @@ export class RedditScanner {
       await new Promise(r => setTimeout(r, 400));
     }
 
-    return { items: allItems, totalPosts };
+    const status = hadNetworkFailure
+      ? (allItems.length > 0 ? 'partial' : 'network_failure')
+      : (allItems.length > 0 ? 'success' : 'empty');
+    return {
+      items: allItems,
+      totalPosts,
+      status,
+      ...(hadNetworkFailure ? { errorCode: 'REDDIT_API_HTTP_ERROR' } : {})
+    };
   }
 
   /**

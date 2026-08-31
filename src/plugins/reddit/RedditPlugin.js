@@ -114,19 +114,57 @@ export class RedditPlugin {
    * @returns {Promise<{ handled: boolean, response: any } | undefined>}
    */
   static async handleMessage(type, message = {}) {
-    if (type === RedditMessages.REDDIT_SCAN) {
-      const { kind, id } = message.payload || message;
+    if (type === RedditMessages.REDDIT_FETCH_AVATAR) {
+      const { kind, id } = message?.payload || message || {};
+      if (!id || !['user', 'subreddit'].includes(kind)) {
+        return { handled: true, response: { success: false, error: 'Unsupported Reddit avatar target' } };
+      }
       try {
+        const avatarUrl = await RedditScanner.fetchTargetAvatar(kind, id);
+        return { handled: true, response: { success: true, avatarUrl } };
+      } catch (err) {
+        return { handled: true, response: { success: false, error: err.message } };
+      }
+    }
+
+    if (type === RedditMessages.REDDIT_SCAN) {
+      const { kind, id } = message?.payload || message || {};
+      try {
+        if (!id || !['post', 'user', 'subreddit'].includes(kind)) {
+          throw new Error('Unsupported Reddit scan target');
+        }
+        /** @type {{ items: import('../../core/domain/MediaItem.js').MediaItem[], totalPosts?: number, status?: string, errorCode?: string }} */
         let result;
         if (kind === 'post') {
           result = await RedditScanner.fetchPostById(id);
         } else if (kind === 'user') {
           const r = await RedditScanner.fetchUserSubmissions(id, { limit: 200 });
-          result = { items: r.mediaItems, totalPosts: r.totalPosts };
+          result = { items: r.mediaItems, totalPosts: r.totalPosts, status: r.status, errorCode: r.errorCode };
         } else {
           result = await RedditScanner.fetchSubredditPosts(id, { limit: 300 });
         }
-        return { handled: true, response: { success: true, items: (result && result.items) || [] } };
+        let avatarUrl = '';
+        if (kind === 'user' || kind === 'subreddit') {
+          try {
+            avatarUrl = await RedditScanner.fetchTargetAvatar(kind, id);
+          } catch {
+            // Avatar lookup is auxiliary: a profile can still be scanned when
+            // its about endpoint is unavailable or rate-limited.
+          }
+        }
+        const status = result?.status || ((result?.items || []).length > 0 ? 'success' : 'empty');
+        const success = status !== 'network_failure';
+        return {
+          handled: true,
+          response: {
+            success,
+            status,
+            items: (result && result.items) || [],
+            ...(avatarUrl ? { avatarUrl } : {}),
+            ...(result?.errorCode ? { errorCode: result.errorCode } : {}),
+            ...(success ? {} : { error: 'Reddit API request failed' })
+          }
+        };
       } catch (err) {
         return { handled: true, response: { success: false, error: err.message } };
       }

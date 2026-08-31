@@ -48,6 +48,18 @@ export async function runRedditMessageRoutingTests() {
     );
   }
 
+  // 3b. Target avatar lookup is a separate lightweight operation, so opening
+  // the popup does not require running a full profile/feed scan first.
+  {
+    const result = await RedditPlugin.handleMessage(RedditMessages.REDDIT_FETCH_AVATAR, {
+      payload: { kind: 'post', id: 'post_without_avatar' }
+    });
+    assert.ok(result, 'REDDIT_FETCH_AVATAR must be claimed');
+    assert.strictEqual(result.handled, true);
+    assert.ok(typeof result.response === 'object', 'avatar response must be an object');
+    assert.ok('success' in result.response, 'avatar response must contain a success flag');
+  }
+
   // 4. RESOLVE_REDGIFS is recognized and returns a handled envelope shape.
   {
     const result = await RedditPlugin.handleMessage(RedditMessages.RESOLVE_REDGIFS, {

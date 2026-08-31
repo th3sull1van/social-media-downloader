@@ -65,6 +65,23 @@ function hostAllowed(url, suffixes) {
   }
 }
 
+function collectFacebookProfileAvatarUris(root, result = new Set(), depth = 0) {
+  if (!root || typeof root !== 'object' || depth > 40) return result;
+  if (Array.isArray(root)) {
+    for (const value of root) collectFacebookProfileAvatarUris(value, result, depth + 1);
+    return result;
+  }
+
+  const profile = root.profile_picture || root.profilePicture || root.profile_pic;
+  const uri = typeof profile === 'string' ? profile : profile?.uri || profile?.url || profile?.src;
+  if (typeof uri === 'string' && /^https?:\/\/[^/]+\.fbcdn\.net\//i.test(uri)) result.add(uri);
+
+  for (const value of Object.values(root)) {
+    collectFacebookProfileAvatarUris(value, result, depth + 1);
+  }
+  return result;
+}
+
 /**
  * True when a Facebook CDN URL requests a render SMALLER than the maximum the CDN
  * declares for it — i.e. a thumbnail, not the photo.
@@ -183,7 +200,7 @@ function replayFacebook(harPath, { auditCollisions = true } = {}) {
   // Real captures may also collide (two photo ids can reference one CDN asset); the
   // ZIP flow uniquifies those, so the audit must not treat them as violations.
   const { graphqlBodies, jsonScripts, htmlPages } = extractFacebookData(harPath);
-  const stats = { graphqlResponses: 0, items: 0, uniqueItems: 0, signedUrls: 0, jsonSweepItems: 0, domAnchorItems: 0, collisions: 0, violations: [] };
+  const stats = { graphqlResponses: 0, items: 0, uniqueItems: 0, signedUrls: 0, profileAvatars: 0, jsonSweepItems: 0, domAnchorItems: 0, collisions: 0, violations: [] };
   const allById = new Map();
   /** @type {Array<{ path: string }>} */
   const archivePaths = [];
@@ -192,6 +209,7 @@ function replayFacebook(harPath, { auditCollisions = true } = {}) {
   const usedArchivePaths = new Set();
 
   for (const body of graphqlBodies) {
+    stats.profileAvatars += collectFacebookProfileAvatarUris(body).size;
     let items;
     try {
       items = FacebookNormalizer.extractPhotosFromGraphQL(body);
@@ -350,6 +368,7 @@ export async function runHarPlatformReplayTests() {
       assert.ok(primaryStats.items >= 500, `expected substantial photo yield, got ${primaryStats.items}`);
       assert.ok(primaryStats.uniqueItems >= 400, `expected unique photos after dedup, got ${primaryStats.uniqueItems}`);
       assert.ok(primaryStats.signedUrls >= 400, 'captured Facebook media must keep signed URLs verbatim');
+      assert.ok(primaryStats.profileAvatars > 0, 'captured Facebook GraphQL must expose a target profile_picture.uri');
     }
     // Album-cover tiles must not leak page URLs as downloads (regression guard).
   }
@@ -359,6 +378,11 @@ export async function runHarPlatformReplayTests() {
     const har = JSON.parse(fs.readFileSync(privateProfileHar, 'utf8'));
     const submitted = har.log.entries.find((entry) => entry.request?.url?.includes('/submitted.json'));
     const search = har.log.entries.find((entry) => entry.request?.url?.includes('/search.json'));
+    const about = har.log.entries.find((entry) => entry.request?.url?.includes('/about.json'));
+    assert.ok(about, 'private Reddit profile HAR must include the about endpoint used for avatar capture');
+    const aboutData = JSON.parse(about.response.content.text);
+    const fixtureAvatar = aboutData?.data?.icon_img || aboutData?.data?.snoovatar_img || '';
+    assert.ok(hostAllowed(fixtureAvatar, [...REDDIT_HOSTS, 'redditstatic.com']), 'private Reddit profile HAR must expose an allowed avatar URL');
     const originalFetch = globalThis.fetch;
     try {
       globalThis.fetch = /** @type {any} */ (async (url) => {
