@@ -5,10 +5,11 @@ import { validateFixtureSet } from './har-validation.js';
 
 const rootDir = process.cwd();
 const requirePublic = process.argv.includes('--require-public');
+const includePrivate = process.argv.includes('--private');
 const reportPath = process.argv.find((arg) => arg.startsWith('--report='))?.slice('--report='.length);
 
 try {
-  const report = validateFixtureSet(rootDir, { requirePublic });
+  const report = validateFixtureSet(rootDir, { requirePublic, includePrivate });
   const output = JSON.stringify(report, null, 2);
   if (reportPath) {
     fs.mkdirSync(path.dirname(path.resolve(reportPath)), { recursive: true });
@@ -21,5 +22,4 @@ try {
   console.error(`HAR fixture validation failed: ${error.message}`);
   process.exitCode = 1;
 }
-
 

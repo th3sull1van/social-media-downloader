@@ -9,5 +9,6 @@
 - **Multi-tab behavior:** the content script tracks album/collection tabs and
   keeps source-tab identity across navigations.
 
-Credentials/cookies are never committed or logged; captures go through the
-sanitized HAR workflow only (SPEC §79).
+Credentials/cookies are never committed or logged. Raw captures go through the
+sanitized HAR workflow; routine tests consume compact projections under
+`tests/fixtures/extracted/facebook/` (SPEC §79–§80).

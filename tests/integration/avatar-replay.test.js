@@ -6,7 +6,7 @@
 import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
-import { extractFacebookData } from '../../tools/har-replay.js';
+import { readCompactFixture } from '../../tools/fixture-replay.js';
 import { replayTargetAvatarContentScript } from '../../tools/replay-content.js';
 
 function findFacebookProfilePictureOwner(root, depth = 0) {
@@ -28,11 +28,11 @@ function findFacebookProfilePictureOwner(root, depth = 0) {
 }
 
 export async function runAvatarReplayTests() {
-  const facebookHar = path.resolve('fixtures-private/facebook-profile.har');
+  const facebookFixturePath = path.resolve('tests/fixtures/extracted/facebook/facebook-profile.json');
   let facebookOwner = null;
-  if (fs.existsSync(facebookHar)) {
-    const { graphqlBodies } = extractFacebookData(facebookHar);
-    for (const body of graphqlBodies) {
+  if (fs.existsSync(facebookFixturePath)) {
+    const { graphqlBodies } = readCompactFixture(facebookFixturePath);
+    for (const body of graphqlBodies || []) {
       facebookOwner = findFacebookProfilePictureOwner(body);
       if (facebookOwner) break;
     }
@@ -96,11 +96,9 @@ export async function runAvatarReplayTests() {
   assert.strictEqual(privateHeader.media.some((item) => item.id === '100000000000002'), false, 'friend facepile avatar must not leak into downloads');
 
   let redditAvatar = 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_3.png';
-  const redditHar = path.resolve('fixtures-private/reddit-private-profile.har');
-  if (fs.existsSync(redditHar)) {
-    const har = JSON.parse(fs.readFileSync(redditHar, 'utf8'));
-    const about = har.log.entries.find((entry) => String(entry.request?.url || '').includes('/about.json'));
-    const aboutJson = about ? JSON.parse(about.response.content.text) : null;
+  const redditFixturePath = path.resolve('tests/fixtures/extracted/reddit/reddit-private-profile.json');
+  if (fs.existsSync(redditFixturePath)) {
+    const aboutJson = readCompactFixture(redditFixturePath).about;
     redditAvatar = aboutJson?.data?.icon_img || aboutJson?.data?.snoovatar_img || redditAvatar;
   }
   const reddit = await replayTargetAvatarContentScript({

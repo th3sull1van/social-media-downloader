@@ -62,6 +62,29 @@ function fakeElement(tag = 'div') {
 export async function replayContentScript(harPath) {
   const { nodes } = extractTimelineNodes(harPath);
   const { storyItems } = extractStoryItems(harPath);
+  return replayContentScriptData({ nodes, storyItems, sourcePath: harPath });
+}
+
+/**
+ * Replays a compact sanitized fixture through the real content script.
+ * @param {string} fixturePath
+ * @returns {Promise<Object>} replay results
+ */
+export async function replayContentFixture(fixturePath) {
+  const fixture = JSON.parse(fs.readFileSync(fixturePath, 'utf8'));
+  return replayContentScriptData({
+    nodes: Array.isArray(fixture.nodes) ? fixture.nodes : [],
+    storyItems: Array.isArray(fixture.storyItems) ? fixture.storyItems : [],
+    sourcePath: fixturePath
+  });
+}
+
+/**
+ * Runs the real content script against already extracted replay data.
+ * @param {{ nodes: any[], storyItems: any[], sourcePath?: string }} input
+ * @returns {Promise<Object>} replay results
+ */
+export async function replayContentScriptData({ nodes, storyItems, sourcePath = 'compact-fixture' }) {
 
   const contentSource = fs.readFileSync(
     new URL('../src/content/content.js', import.meta.url),
@@ -289,7 +312,7 @@ export async function replayContentScript(harPath) {
   }
 
   return {
-    harPath,
+    harPath: sourcePath,
     nodes: nodes.length,
     storyItems: storyItems.length,
     sizeAfterInit,

@@ -4,9 +4,11 @@
  * global fetch, and cleanMediaUrl preview upgrade.
  */
 import assert from 'node:assert';
+import path from 'node:path';
 import { RedditScanner } from '../../src/plugins/reddit/RedditScanner.js';
 import { RedditPlugin } from '../../src/plugins/reddit/RedditPlugin.js';
 import { RedditMessages } from '../../src/plugins/reddit/RedditMessages.js';
+import { readCompactFixture } from '../../tools/fixture-replay.js';
 
 /** Alias for installing test fetch doubles without fighting lib.dom typings. */
 const anyFetch = /** @type {any} */ (globalThis);
@@ -198,22 +200,19 @@ export async function runRedditScannerTests() {
 
     // 9. A profile with empty submitted.json still discovers indexed author posts.
     {
-      const fs = await import('node:fs');
-      const har = JSON.parse(fs.readFileSync('fixtures-private/reddit-private-profile.har', 'utf8'));
-      const submitted = har.log.entries.find((entry) => entry.request?.url?.includes('/submitted.json'));
-      const search = har.log.entries.find((entry) => entry.request?.url?.includes('/search.json'));
+      const fixture = readCompactFixture(path.resolve('tests/fixtures/extracted/reddit/reddit-private-profile.json'));
       const requestedUrls = [];
       anyFetch.fetch = async (url) => {
         requestedUrls.push(String(url));
-        const entry = String(url).includes('/search.json') ? search : submitted;
-        return { ok: true, json: async () => JSON.parse(entry.response.content.text) };
+        const listing = String(url).includes('/search.json') ? fixture.search : fixture.submitted;
+        return { ok: true, json: async () => listing };
       };
 
-      const result = await RedditScanner.fetchUserSubmissions('Suitable-Way-8181', { limit: 200 });
-      assert.strictEqual(result.totalPosts, 4);
-      assert.strictEqual(result.mediaItems.length, 4);
-      assert.ok(requestedUrls.some((url) => url.includes('/search.json?q=author%3ASuitable-Way-8181')));
-      assert.deepStrictEqual(result.mediaItems.map((item) => item.metadata.postId), ['1w0epn0', '1w0epes', '1v9gpl9', '1v9gmfr']);
+      const result = await RedditScanner.fetchUserSubmissions(fixture.username, { limit: 200 });
+      assert.strictEqual(result.totalPosts, fixture.expected.totalPosts);
+      assert.strictEqual(result.mediaItems.length, fixture.expected.totalPosts);
+      assert.ok(requestedUrls.some((url) => url.includes(`/search.json?q=author%3A${fixture.username}`)));
+      assert.deepStrictEqual(result.mediaItems.map((item) => item.metadata.postId), fixture.expected.postIds);
     }
 
     // 10. Network failure is not silently treated as success

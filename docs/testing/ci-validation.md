@@ -2,31 +2,64 @@
 
 CI runs `bun install --frozen-lockfile` followed by `bun run validate`.
 
-The CI gate intentionally requires at least one sanitized, versioned HAR under `tests/fixtures/har/`. Private captures in `fixtures-private/` are ignored by Git and are evidence for local development only. They cannot be used to make CI appear covered.
+The routine CI gate is fixture-first: it validates the compact, sanitized
+fixtures under `tests/fixtures/extracted/` and never requires private captures
+or repeatedly parses large account HARs. The committed HARs under
+`tests/fixtures/har/` remain sanitized source/network evidence; they are not
+the default input for the full test suite.
 
 ## Required CI checks
 
-- sanitized HAR fixture discovery and validation;
+- compact fixture discovery, metadata validation, and secret scanning;
+- public HAR inventory and sanitization checks;
 - TypeScript check;
 - complete test runner;
 - manifest integrity;
 - architectural dependency rules;
 - locale parity;
-- replay suites included by `tests/run-tests.js` when their fixtures are present.
+- compact replay suites included by `tests/run-tests.js`;
 
 ## Local validation
 
-When private captures are available locally:
+The normal local gate is:
 
 ```bash
 bun run validate:local
-bun run har:report
 ```
 
-`validate:local` includes private fixture inventory but marks those captures as private and does not claim they are safe to publish. `har:report` writes `.artifacts/har-report.json`, which is ignored by Git.
+`validate:local` writes `.artifacts/har-report.json`, which is ignored by Git.
+It uses compact fixtures for tests and only scans the committed public HAR
+inventory.
 
-When CI reports that no public fixture exists, add a real sanitized HAR under `tests/fixtures/har/<platform>/` and update `docs/testing/har-validation-matrix.md`. The current repository includes one sanitized fixture for each platform. Do not copy a private capture unchanged and do not replace the HAR with a synthetic JSON object.
+When a behavior is not represented, extract a minimal fixture from a local raw
+capture with:
+
+```bash
+bun run fixtures:extract
+bun run check:fixtures
+```
+
+The extractor is allowlist-based and deterministic. Do not copy a private
+capture unchanged or add real account data to version control.
+
+## Raw evidence gate
+
+Changes to network extraction, parsers, normalizers, scanners, resolvers,
+fixture tooling, or sanitization also require the explicit raw gate when the
+relevant local captures are available:
+
+```bash
+bun run validate:raw
+```
+
+This gate reads `fixtures-private/`, compares raw replay behavior, and is
+intentionally separate from routine CI so that large captures do not dominate
+every test run. If the relevant raw capture is unavailable, report raw
+validation as `UNVERIFIED`; the compact gate must still pass.
 
 ## What HAR replay does not prove
 
-HAR replay validates captured parser and normalization behavior. It does not prove Chrome extension loading, CSP, popup rendering, service-worker lifecycle, real downloads, or host-page CSS isolation. Browser smoke coverage must remain a separate opt-in layer until a supported browser runner is added.
+Compact and raw replay validate captured parser and normalization behavior. They
+do not prove Chrome extension loading, CSP, popup rendering, service-worker
+lifecycle, real downloads, or host-page CSS isolation. Browser smoke coverage
+must remain a separate opt-in layer until a supported browser runner is added.

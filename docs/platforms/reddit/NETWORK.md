@@ -11,5 +11,6 @@
   `api.redgifs.com/v2/gifs/<id>` for the HD/SD direct MP4.
 - **Host permissions:** `*://*.reddit.com/*`, `*://*.redd.it/*`,
   `*://*.redgifs.com/*`.
-Credentials/cookies are never committed; captures only via the sanitized HAR
-workflow (SPEC §79).
+Credentials/cookies are never committed. Raw captures stay under
+`fixtures-private/`; routine tests use the compact sanitized projections under
+`tests/fixtures/extracted/reddit/` (SPEC §79–§80).

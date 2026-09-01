@@ -1,0 +1,657 @@
+{
+  "fixtureVersion": 1,
+  "fixtureType": "reddit-replay",
+  "extractionVersion": 1,
+  "sanitizationVersion": 1,
+  "platform": "reddit",
+  "scenario": "reddit-feed",
+  "sourceCaptureId": "reddit-feed",
+  "capturedAt": "2026-08-31",
+  "browser": "Chrome",
+  "sanitized": true,
+  "source": "local-har-extraction",
+  "purpose": "Offline Reddit DOM scanner and media classification regression",
+  "posts": [
+    {
+      "attrs": {
+        "id": "t3_post_001",
+        "post-type": "link",
+        "post-title": "Fixture Reddit Post 1",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "www.redgifs.com",
+        "permalink": "/comments/post_001/fixture-post/",
+        "score": "1",
+        "created-timestamp": "1700000000",
+        "content-href": "https://www.redgifs.com/watch/gif_002"
+      },
+      "html": "<shreddit-post id=\"t3_post_001\" post-type=\"link\" post-title=\"Fixture Reddit Post 1\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"www.redgifs.com\" permalink=\"/comments/post_001/fixture-post/\" score=\"1\" created-timestamp=\"1700000000\" content-href=\"https://www.redgifs.com/watch/gif_002\"><a slot=\"title\" href=\"/comments/post_001/fixture-post/\">Fixture Reddit Post 1</a></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_002",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 2",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_002/fixture-post/",
+        "score": "265",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset002.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_002\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 2\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_002/fixture-post/\" score=\"265\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset002.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_002/fixture-post/\">Fixture Reddit Post 2</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset002.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset003.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_003",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 3",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_003/fixture-post/",
+        "score": "543",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset004.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_003\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 3\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_003/fixture-post/\" score=\"543\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset004.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_003/fixture-post/\">Fixture Reddit Post 3</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset004.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset005.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_004",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 4",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_004/fixture-post/",
+        "score": "240",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset006.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_004\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 4\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_004/fixture-post/\" score=\"240\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset006.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_004/fixture-post/\">Fixture Reddit Post 4</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset006.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset007.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset008.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_005",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 5",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_005/fixture-post/",
+        "score": "2",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset009.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_005\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 5\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_005/fixture-post/\" score=\"2\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset009.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_005/fixture-post/\">Fixture Reddit Post 5</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset009.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset010.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset011.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset012.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_006",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 6",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_006/fixture-post/",
+        "score": "243",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset013.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_006\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 6\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_006/fixture-post/\" score=\"243\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset013.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_006/fixture-post/\">Fixture Reddit Post 6</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset013.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset014.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_007",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 7",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_007/fixture-post/",
+        "score": "516",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset015.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_007\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 7\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_007/fixture-post/\" score=\"516\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset015.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_007/fixture-post/\">Fixture Reddit Post 7</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset015.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset016.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset017.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset018.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset019.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_008",
+        "post-type": "image",
+        "post-title": "Fixture Reddit Post 8",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_008/fixture-post/",
+        "score": "1",
+        "created-timestamp": "1700000000",
+        "content-href": "https://i.redd.it/fixture/asset020.jpeg"
+      },
+      "html": "<shreddit-post id=\"t3_post_008\" post-type=\"image\" post-title=\"Fixture Reddit Post 8\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_008/fixture-post/\" score=\"1\" created-timestamp=\"1700000000\" content-href=\"https://i.redd.it/fixture/asset020.jpeg\"><a slot=\"title\" href=\"/comments/post_008/fixture-post/\">Fixture Reddit Post 8</a><img src=\"https://i.redd.it/fixture/asset020.jpeg\"></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_009",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 9",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_009/fixture-post/",
+        "score": "82",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset022.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_009\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 9\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_009/fixture-post/\" score=\"82\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset022.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_009/fixture-post/\">Fixture Reddit Post 9</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset022.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset023.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_010",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 10",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_010/fixture-post/",
+        "score": "4",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset024.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_010\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 10\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_010/fixture-post/\" score=\"4\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset024.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_010/fixture-post/\">Fixture Reddit Post 10</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset024.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset025.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_011",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 11",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_011/fixture-post/",
+        "score": "96",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset026.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_011\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 11\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_011/fixture-post/\" score=\"96\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset026.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_011/fixture-post/\">Fixture Reddit Post 11</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset026.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset027.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_012",
+        "post-type": "link",
+        "post-title": "Fixture Reddit Post 12",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "www.redgifs.com",
+        "permalink": "/comments/post_012/fixture-post/",
+        "score": "37",
+        "created-timestamp": "1700000000",
+        "content-href": "https://www.redgifs.com/watch/gif_004"
+      },
+      "html": "<shreddit-post id=\"t3_post_012\" post-type=\"link\" post-title=\"Fixture Reddit Post 12\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"www.redgifs.com\" permalink=\"/comments/post_012/fixture-post/\" score=\"37\" created-timestamp=\"1700000000\" content-href=\"https://www.redgifs.com/watch/gif_004\"><a slot=\"title\" href=\"/comments/post_012/fixture-post/\">Fixture Reddit Post 12</a></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_013",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 13",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_013/fixture-post/",
+        "score": "1",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset029.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_013\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 13\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_013/fixture-post/\" score=\"1\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset029.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_013/fixture-post/\">Fixture Reddit Post 13</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset029.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset030.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset031.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_014",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 14",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_014/fixture-post/",
+        "score": "66",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset032.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_014\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 14\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_014/fixture-post/\" score=\"66\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset032.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_014/fixture-post/\">Fixture Reddit Post 14</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset032.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset033.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset034.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset035.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset036.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_015",
+        "post-type": "image",
+        "post-title": "Fixture Reddit Post 15",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_015/fixture-post/",
+        "score": "41",
+        "created-timestamp": "1700000000",
+        "content-href": "https://i.redd.it/fixture/asset037.png"
+      },
+      "html": "<shreddit-post id=\"t3_post_015\" post-type=\"image\" post-title=\"Fixture Reddit Post 15\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_015/fixture-post/\" score=\"41\" created-timestamp=\"1700000000\" content-href=\"https://i.redd.it/fixture/asset037.png\"><a slot=\"title\" href=\"/comments/post_015/fixture-post/\">Fixture Reddit Post 15</a><img src=\"https://i.redd.it/fixture/asset037.png\"></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_016",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 16",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_016/fixture-post/",
+        "score": "2",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset039.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_016\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 16\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_016/fixture-post/\" score=\"2\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset039.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_016/fixture-post/\">Fixture Reddit Post 16</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset039.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset040.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset041.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset042.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset043.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset044.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_017",
+        "post-type": "image",
+        "post-title": "Fixture Reddit Post 17",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_017/fixture-post/",
+        "score": "1",
+        "created-timestamp": "1700000000",
+        "content-href": "https://i.redd.it/fixture/asset045.jpeg"
+      },
+      "html": "<shreddit-post id=\"t3_post_017\" post-type=\"image\" post-title=\"Fixture Reddit Post 17\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_017/fixture-post/\" score=\"1\" created-timestamp=\"1700000000\" content-href=\"https://i.redd.it/fixture/asset045.jpeg\"><a slot=\"title\" href=\"/comments/post_017/fixture-post/\">Fixture Reddit Post 17</a><img src=\"https://i.redd.it/fixture/asset045.jpeg\"></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_018",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 18",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_018/fixture-post/",
+        "score": "2",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset047.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_018\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 18\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_018/fixture-post/\" score=\"2\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset047.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_018/fixture-post/\">Fixture Reddit Post 18</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset047.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset048.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_019",
+        "post-type": "image",
+        "post-title": "Fixture Reddit Post 19",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_019/fixture-post/",
+        "score": "75",
+        "created-timestamp": "1700000000",
+        "content-href": "https://i.redd.it/fixture/asset049.jpeg"
+      },
+      "html": "<shreddit-post id=\"t3_post_019\" post-type=\"image\" post-title=\"Fixture Reddit Post 19\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_019/fixture-post/\" score=\"75\" created-timestamp=\"1700000000\" content-href=\"https://i.redd.it/fixture/asset049.jpeg\"><a slot=\"title\" href=\"/comments/post_019/fixture-post/\">Fixture Reddit Post 19</a><img src=\"https://i.redd.it/fixture/asset049.jpeg\"></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_020",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 20",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_020/fixture-post/",
+        "score": "40",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset051.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_020\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 20\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_020/fixture-post/\" score=\"40\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset051.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_020/fixture-post/\">Fixture Reddit Post 20</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset051.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset052.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset053.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_021",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 21",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_021/fixture-post/",
+        "score": "1",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset054.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_021\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 21\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_021/fixture-post/\" score=\"1\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset054.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_021/fixture-post/\">Fixture Reddit Post 21</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset054.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset055.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset056.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_022",
+        "post-type": "image",
+        "post-title": "Fixture Reddit Post 22",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_022/fixture-post/",
+        "score": "1",
+        "created-timestamp": "1700000000",
+        "content-href": "https://i.redd.it/fixture/asset057.jpeg"
+      },
+      "html": "<shreddit-post id=\"t3_post_022\" post-type=\"image\" post-title=\"Fixture Reddit Post 22\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_022/fixture-post/\" score=\"1\" created-timestamp=\"1700000000\" content-href=\"https://i.redd.it/fixture/asset057.jpeg\"><a slot=\"title\" href=\"/comments/post_022/fixture-post/\">Fixture Reddit Post 22</a><img src=\"https://i.redd.it/fixture/asset057.jpeg\"></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_023",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 23",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_023/fixture-post/",
+        "score": "50",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset058.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_023\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 23\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_023/fixture-post/\" score=\"50\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset058.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_023/fixture-post/\">Fixture Reddit Post 23</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset058.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset059.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_024",
+        "post-type": "image",
+        "post-title": "Fixture Reddit Post 24",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_024/fixture-post/",
+        "score": "1",
+        "created-timestamp": "1700000000",
+        "content-href": "https://i.redd.it/fixture/asset060.jpeg"
+      },
+      "html": "<shreddit-post id=\"t3_post_024\" post-type=\"image\" post-title=\"Fixture Reddit Post 24\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_024/fixture-post/\" score=\"1\" created-timestamp=\"1700000000\" content-href=\"https://i.redd.it/fixture/asset060.jpeg\"><a slot=\"title\" href=\"/comments/post_024/fixture-post/\">Fixture Reddit Post 24</a><img src=\"https://i.redd.it/fixture/asset060.jpeg\"></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_025",
+        "post-type": "image",
+        "post-title": "Fixture Reddit Post 25",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_025/fixture-post/",
+        "score": "157",
+        "created-timestamp": "1700000000",
+        "content-href": "https://i.redd.it/fixture/asset062.jpeg"
+      },
+      "html": "<shreddit-post id=\"t3_post_025\" post-type=\"image\" post-title=\"Fixture Reddit Post 25\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_025/fixture-post/\" score=\"157\" created-timestamp=\"1700000000\" content-href=\"https://i.redd.it/fixture/asset062.jpeg\"><a slot=\"title\" href=\"/comments/post_025/fixture-post/\">Fixture Reddit Post 25</a><img src=\"https://i.redd.it/fixture/asset062.jpeg\"></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_026",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 26",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_026/fixture-post/",
+        "score": "1026",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset064.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_026\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 26\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_026/fixture-post/\" score=\"1026\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset064.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_026/fixture-post/\">Fixture Reddit Post 26</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset064.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset065.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset066.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset067.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset068.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_027",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 27",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_027/fixture-post/",
+        "score": "149",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset069.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_027\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 27\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_027/fixture-post/\" score=\"149\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset069.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_027/fixture-post/\">Fixture Reddit Post 27</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset069.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset070.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset071.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_028",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 28",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_028/fixture-post/",
+        "score": "3",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset072.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_028\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 28\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_028/fixture-post/\" score=\"3\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset072.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_028/fixture-post/\">Fixture Reddit Post 28</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset072.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset073.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_029",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 29",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_029/fixture-post/",
+        "score": "121",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset074.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_029\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 29\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_029/fixture-post/\" score=\"121\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset074.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_029/fixture-post/\">Fixture Reddit Post 29</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset074.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset075.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_030",
+        "post-type": "image",
+        "post-title": "Fixture Reddit Post 30",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_030/fixture-post/",
+        "score": "12",
+        "created-timestamp": "1700000000",
+        "content-href": "https://i.redd.it/fixture/asset076.jpeg"
+      },
+      "html": "<shreddit-post id=\"t3_post_030\" post-type=\"image\" post-title=\"Fixture Reddit Post 30\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_030/fixture-post/\" score=\"12\" created-timestamp=\"1700000000\" content-href=\"https://i.redd.it/fixture/asset076.jpeg\"><a slot=\"title\" href=\"/comments/post_030/fixture-post/\">Fixture Reddit Post 30</a><img src=\"https://i.redd.it/fixture/asset076.jpeg\"></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_031",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 31",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_031/fixture-post/",
+        "score": "13",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset078.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_031\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 31\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_031/fixture-post/\" score=\"13\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset078.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_031/fixture-post/\">Fixture Reddit Post 31</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset078.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset079.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset080.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_032",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 32",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_032/fixture-post/",
+        "score": "30",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset078.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_032\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 32\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_032/fixture-post/\" score=\"30\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset078.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_032/fixture-post/\">Fixture Reddit Post 32</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset078.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset079.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset080.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_033",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 33",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_033/fixture-post/",
+        "score": "1022",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset081.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_033\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 33\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_033/fixture-post/\" score=\"1022\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset081.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_033/fixture-post/\">Fixture Reddit Post 33</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset081.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset082.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_034",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 34",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_034/fixture-post/",
+        "score": "12",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset083.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_034\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 34\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_034/fixture-post/\" score=\"12\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset083.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_034/fixture-post/\">Fixture Reddit Post 34</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset083.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset084.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_035",
+        "post-type": "image",
+        "post-title": "Fixture Reddit Post 35",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_035/fixture-post/",
+        "score": "1",
+        "created-timestamp": "1700000000"
+      },
+      "html": "<shreddit-post id=\"t3_post_035\" post-type=\"image\" post-title=\"Fixture Reddit Post 35\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_035/fixture-post/\" score=\"1\" created-timestamp=\"1700000000\"><a slot=\"title\" href=\"/comments/post_035/fixture-post/\">Fixture Reddit Post 35</a></shreddit-post>"
+    },
+    {
+      "attrs": {
+        "id": "t3_post_036",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 36",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_036/fixture-post/",
+        "score": "11",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset085.jpg?width=640&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_036\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 36\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_036/fixture-post/\" score=\"11\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset085.jpg?width=640&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_036/fixture-post/\">Fixture Reddit Post 36</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset085.jpg?width=640&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset086.jpg?width=640&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    }
+  ],
+  "pageCount": 4,
+  "expected": {
+    "posts": 36,
+    "pageCount": 4
+  }
+}

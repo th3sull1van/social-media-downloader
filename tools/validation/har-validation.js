@@ -62,7 +62,7 @@ export function createReport(inspections) {
   };
 }
 
-export function discoverHarFiles(rootDir, includePrivate = true) {
+export function discoverHarFiles(rootDir, includePrivate = false) {
   const roots = [path.join(rootDir, 'tests', 'fixtures', 'har')];
   if (includePrivate) roots.push(path.join(rootDir, 'fixtures-private'));
   const result = [];
@@ -100,14 +100,19 @@ export function validateHarFiles(files, { allowPrivate = false } = {}) {
   return createReport(inspections);
 }
 
-export function validateFixtureSet(rootDir, { requirePublic = false } = {}) {
+export function validateFixtureSet(rootDir, { requirePublic = false, includePrivate = false } = {}) {
   const publicFiles = discoverHarFiles(rootDir, false);
-  const allFiles = discoverHarFiles(rootDir, true);
-  const privateFiles = allFiles.filter((file) => !publicFiles.includes(file));
+  const privateFiles = includePrivate
+    ? discoverHarFiles(rootDir, true).filter((file) => !publicFiles.includes(file))
+    : [];
   if (requirePublic && publicFiles.length === 0) {
     throw new Error('No sanitized versioned HAR fixtures found under tests/fixtures/har');
   }
-  if (!publicFiles.length && !privateFiles.length) throw new Error('No HAR fixtures found');
+  if (!publicFiles.length && !privateFiles.length) {
+    throw new Error(includePrivate
+      ? 'No HAR fixtures found'
+      : 'No public HAR fixtures found under tests/fixtures/har; pass --private only for explicit local capture validation');
+  }
   const publicReport = publicFiles.length ? validateHarFiles(publicFiles) : createReport([]);
   const privateReport = privateFiles.length
     ? validateHarFiles(privateFiles, { allowPrivate: true })
@@ -137,4 +142,3 @@ export { SENSITIVE_NAMES, SENSITIVE_TEXT };
 // Keep imports explicit in the generated report path.
 void fs;
 void path;
-

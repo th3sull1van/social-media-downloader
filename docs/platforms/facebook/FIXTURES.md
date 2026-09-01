@@ -1,11 +1,18 @@
 # Facebook — Fixtures
 
-- **Public HAR:** `tests/fixtures/har/facebook/example-profile.har`
-  (sanitized) plus expected output in `tests/fixtures/har/expected/`.
-- **Private captures:** `fixtures-private/` (git-ignored).
-- **Replay tests:** `tests/integration/har-replay-platforms.test.js`,
-  `tests/integration/fb-fullres.test.js`,
-  `tests/integration/avatar-replay.test.js`.
+- **Default compact fixtures:** `tests/fixtures/extracted/facebook/*.json`.
+  They preserve GraphQL, inline JSON, DOM, profile/cover, reel, and CDN query
+  shapes needed by the real Facebook paths without retaining the original
+  account payload.
+- **Source HAR:** `tests/fixtures/har/facebook/example-profile.har` is a
+  committed sanitized network-shape reference; it is not loaded by the default
+  test suite.
+- **Private captures:** `fixtures-private/` (git-ignored) are used only by the
+  explicit raw evidence gate.
+- **Replay tests:** `tests/integration/har-replay-platforms.test.js` runs the
+  compact platform replay by default and raw replay when invoked directly;
+  `tests/integration/fb-fullres.test.js` and
+  `tests/integration/avatar-replay.test.js` use compact fixtures.
 - **Private profile-header regression (2026-08-31):** a user-supplied private
   Facebook capture exposed the target image as `profilePicLarge` and the cover
   as `cover_photo.photo.image` inside `profile_header_renderer.user`. The raw
@@ -21,5 +28,6 @@
 - **Naming guards:** `tests/contracts/facebook-naming.test.js` (authentic CDN
   basenames).
 
-Fixtures follow Capture → Sanitize → Validate → Commit and never contain real
-credentials (SPEC §79, §125).
+Regenerate with `bun run fixtures:extract` and validate with
+`bun run check:fixtures`. Fixtures follow Capture → Extract → Anonymize →
+Validate → Commit and never contain real credentials (SPEC §79, §125).

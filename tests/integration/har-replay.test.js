@@ -5,8 +5,10 @@
  * Verifies: nonce-gated ingestion, spoof rejection, and field-level parity between the
  * content script's normalized items and the canonical plugin pipeline.
  *
- * Fixtures are private (fixtures-private/, gitignored). The suite skips gracefully
- * when captures are absent so CI without fixtures stays green.
+ * This file is the explicit raw evidence suite. The default test catalog uses
+ * tests/integration/fixture-replay.test.js and does not parse fixtures-private/.
+ * The raw suite skips gracefully when captures are absent so CI without local
+ * captures stays green.
  */
 import fs from 'node:fs';
 import path from 'node:path';

@@ -4,7 +4,8 @@ import {
   classifyHarPath,
   inspectHar,
   validateHarDocument,
-  createReport
+  createReport,
+  validateFixtureSet
 } from '../../tools/validation/har-validation.js';
 
 export function runHarValidationUnitTests() {
@@ -40,6 +41,12 @@ export function runHarValidationUnitTests() {
   assert.deepEqual(report.fixtures.map((x) => x.fixture), ['a.har', 'b.har']);
   assert.equal(report.schemaVersion, 1);
   assert.ok(!JSON.stringify(report).includes('ok'));
+
+  // The default inventory must not open fixtures-private, even when local raw
+  // captures happen to be present. Reading them is reserved for --private.
+  const publicOnly = validateFixtureSet(process.cwd(), { requirePublic: true });
+  assert.ok(publicOnly.publicFixtureCount > 0);
+  assert.equal(publicOnly.privateFixtureCount, 0);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

@@ -15,10 +15,14 @@
     "build:locales": "bun tools/build-locales.js",
     "build:dist": "bun tools/build-dist.js",
     "check:har": "bun tools/validation/har-check.js",
+    "check:fixtures": "bun tools/validation/fixture-check.js",
+    "fixtures:extract": "bun tools/extract-fixtures.js",
     "har:report": "bun tools/validation/har-check.js --report=.artifacts/har-report.json",
     "har:compare": "bun tools/har-compare.js --report=.artifacts/har-report.json --baseline=tests/fixtures/har/expected/baseline.json",
-    "validate:local": "bun run check:har -- --private --report=.artifacts/har-report.json && bun run typecheck && bun run test && bun run check:manifest && bun run check:dependencies && bun run check:i18n",
-    "validate": "bun run check:har -- --require-public --report=.artifacts/har-report.json && bun run typecheck && bun run test && bun run check:manifest && bun run check:dependencies && bun run check:i18n"
+    "test:raw": "bun tests/integration/har-replay.test.js && bun tests/integration/har-replay-platforms.test.js",
+    "validate:raw": "bun run check:har -- --private --report=.artifacts/har-report.json && bun run test:raw && bun run har:compare",
+    "validate:local": "bun run check:fixtures && bun run check:har -- --require-public --report=.artifacts/har-report.json && bun run typecheck && bun run test && bun run check:manifest && bun run check:dependencies && bun run check:i18n",
+    "validate": "bun run check:fixtures && bun run check:har -- --require-public --report=.artifacts/har-report.json && bun run typecheck && bun run test && bun run check:manifest && bun run check:dependencies && bun run check:i18n"
   },
   "keywords": [
     "chrome-extension",

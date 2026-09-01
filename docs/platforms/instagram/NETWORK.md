@@ -7,5 +7,6 @@
 - **CDN helpers:** `src/plugins/meta-shared/MetaCdn.js` handles Instagram CDN
   URLs and full-resolution upscaling.
 - **Host permissions:** `*://*.instagram.com/*`, `*://*.cdninstagram.com/*`.
-- Credentials and cookies are never committed or logged; the HAR workflow is the
-  only capture path and is sanitized (SPEC §79).
+- Credentials and cookies are never committed or logged. Raw HARs are source
+  evidence; routine tests use the sanitized compact projections under
+  `tests/fixtures/extracted/` (SPEC §79–§80).

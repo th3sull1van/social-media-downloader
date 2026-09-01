@@ -1,21 +1,11 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FacebookDetector } from '../../src/plugins/facebook/FacebookDetector.js';
 import { FacebookNormalizer } from '../../src/plugins/facebook/FacebookNormalizer.js';
+import { readCompactFixture } from '../../tools/fixture-replay.js';
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const fixture = path.join(rootDir, 'fixtures-private/facebook-profile.har');
-
-function extractEmbeddedJson(html) {
-  const results = [];
-  const re = /<script type="application\/json"[^>]*>([\s\S]*?)<\/script>/g;
-  let match;
-  while ((match = re.exec(html))) {
-    try { results.push(JSON.parse(match[1])); } catch { /* skip malformed */ }
-  }
-  return results;
-}
+const fixture = path.join(rootDir, 'tests/fixtures/extracted/facebook/facebook-profile.json');
 
 function countViewerItems(payloads, maxDepth) {
   let count = 0;
@@ -135,7 +125,8 @@ export async function runFbFullResTests() {
   }
 
   // 3b. Regression (2026-08-29): the `oh`/`oe` HMAC on Facebook signed URLs
-  //     does NOT cover `ctp` (validated live against fixtures-private
+  //     does NOT cover `ctp` (validated against the compact fixture and, when
+  //     available, the raw capture in fixtures-private/
   //     captures: 66+ distinct URLs, rewritten ctp → cstp served HTTP 200
   //     with strictly larger payloads; touching `stp`/path still 403s).
   //     upgradeUrl must therefore rewrite ctp to cstp's max render instead
@@ -216,9 +207,8 @@ export async function runFbFullResTests() {
   }
 
 
-  const har = JSON.parse(fs.readFileSync(fixture, 'utf8'));
-  const html = har.log.entries.find((e) => /\/photos$/.test(e.request?.url || '') && /html/i.test(e.response?.content?.mimeType || ''))?.response?.content?.text || '';
-  const payloads = extractEmbeddedJson(html);
+  const profileFixture = readCompactFixture(fixture);
+  const payloads = profileFixture.jsonScripts || [];
   const shallow = countViewerItems(payloads, 12);
   const deep = countViewerItems(payloads, 40);
   assert.ok(deep.length >= 4, `expected full-size viewer_image items in the work capture, got ${deep.length}`);
@@ -235,7 +225,7 @@ export async function runFbFullResTests() {
   const items = [];
   for (const payload of payloads) items.push(...FacebookNormalizer.extractPhotosFromGraphQL(payload));
   assert.ok(items.length >= 4, `walker must reach Photo nodes inside tiles, got ${items.length}`);
-  const KNOWN_DOWNSCALED = new Set(['25935962852737954', '2939409202819978']);
+  const KNOWN_DOWNSCALED = new Set(profileFixture.knownDownscaledIds || []);
   for (const item of items) {
     const query = item.downloadUrl.split('?')[1] || '';
     if (!KNOWN_DOWNSCALED.has(String(item.id))) {
@@ -336,35 +326,22 @@ export async function runFbFullResTests() {
     assert.strictEqual(items.length, 0, 'Story wrapping a Video must not emit any photo (was 1 with the old walker)');
   }
 
-  // 7. Real fixture: facebook-reels.har carries 4 GraphQL responses with
+  // 7. Compact fixture: facebook-reels carries GraphQL responses with
   //    profile_reel_node. Even with the Story wrapper present, the inner
   //    media nodes (all __typename: 'Video') must yield zero photo items.
   //    Before the fix, this fixture produced 80+ Reel-cover "photos" from a
   //    single response line.
   {
-    const reelsFixture = path.join(rootDir, 'fixtures-private/facebook-reels.har');
-    if (fs.existsSync(reelsFixture)) {
-      const har = JSON.parse(fs.readFileSync(reelsFixture, 'utf8'));
-      let totalReelResponses = 0;
+    const reelsFixture = readCompactFixture(path.join(rootDir, 'tests/fixtures/extracted/facebook/facebook-reels.json'));
+    {
+      let totalReelResponses = reelsFixture.reelPayloads?.length || 0;
       let totalEmitted = 0;
       let totalVideoEmitted = 0;
-      for (const entry of har.log.entries) {
-        const u = entry.request?.url || '';
-        if (!/api\/graphql/.test(u)) continue;
-        let t = entry.response?.content?.text || '';
-        if (t.length < 1000) continue;
-        if (t.indexOf('profile_reel_node') < 0) continue;
-        totalReelResponses++;
-        // Each response is one or more JSON lines concatenated with '\n'.
-        const lines = t.split('\n').filter(Boolean);
-        for (const line of lines) {
-          let parsed;
-          try { parsed = JSON.parse(line); } catch { continue; }
-          const items = FacebookNormalizer.extractPhotosFromGraphQL(parsed);
-          totalEmitted += items.length;
-          for (const it of items) {
-            if (/^\d+$/.test(String(it.id))) totalVideoEmitted++;
-          }
+      for (const payload of reelsFixture.reelPayloads || []) {
+        const items = FacebookNormalizer.extractPhotosFromGraphQL(payload);
+        totalEmitted += items.length;
+        for (const it of items) {
+          if (/^\d+$/.test(String(it.id))) totalVideoEmitted++;
         }
       }
       assert.ok(totalReelResponses > 0, 'fixture must contain at least one GraphQL Reel response');
@@ -373,7 +350,7 @@ export async function runFbFullResTests() {
     }
   }
 
-  // 8. Real fixture: facebook-206x206.har was captured while the user saw
+  // 8. Compact fixture: facebook-206x206 was captured while the user saw
   //    206x206 album-cover thumbnails leaking into the download list. The
   //    fixture carries 144 HTTP requests at ctp=s206x206, but every one of
   //    them is the rendered cover of a TimelineAppCollectionItem — they
@@ -382,38 +359,19 @@ export async function runFbFullResTests() {
   //    record is available, downscaled src URLs are dropped outright.
   //    We replicate the gate here so the behaviour is testable in isolation.
   {
-    const fixture = path.join(rootDir, 'fixtures-private/facebook-206x206.har');
-    if (fs.existsSync(fixture)) {
-      // Inline copy of the production gate so the test does not depend on the
-      // content script's IIFE. Keep the two in sync.
-      function isDownscaledRender(url) {
-        if (!url || typeof url !== 'string') return false;
-        try {
-          const u = new URL(url);
-          const ctp = /(\d+)x(\d+)/i.exec(u.searchParams.get('ctp'));
-          const cstp = /(\d+)x(\d+)/i.exec(u.searchParams.get('cstp'));
-          if (ctp && cstp) {
-            const requested = Number(ctp[1]) * Number(ctp[2]);
-            const available = Number(cstp[1]) * Number(cstp[2]);
-            if (requested < available) return true;
-          }
-          const stp = u.searchParams.get('stp');
-          if (/[?&]stp=[^&]*[sc]\d+x\d+/i.test(url) || /c\d+\.\d+\.\d+\.\d+/i.test(stp)) return true;
-          return false;
-        } catch (e) { return false; }
-      }
-      const har = JSON.parse(fs.readFileSync(fixture, 'utf8'));
+    const compactFixture = readCompactFixture(path.join(rootDir, 'tests/fixtures/extracted/facebook/facebook-206x206.json'));
+    {
       let totalRequests = 0;
       let downscaledRequests = 0;
-      for (const entry of har.log.entries) {
-        const u = entry.request?.url || '';
+      for (const url of compactFixture.cdnRequests || []) {
+        const u = String(url);
         if (!/fbcdn\.net/.test(u)) continue;
         totalRequests++;
         if (isDownscaledRender(u)) downscaledRequests++;
       }
       assert.ok(totalRequests > 0, 'fixture must contain at least one fbcdn request');
       assert.ok(downscaledRequests > 0, `fixture should contain downscaled renders, found ${downscaledRequests}`);
-      const userUrl = 'https://scontent.fmcz13-1.fna.fbcdn.net/v/t39.30808-6/492647362_2201247946991750_7586563030356519141_n.jpg?stp=c0.89.1080.1080a_dst-jpg_tt6&cstp=mx1080x1080&ctp=s206x206&_nc_cat=108&ccb=1-7&_nc_sid=714c7a';
+      const userUrl = 'https://scontent.example.fbcdn.net/v/fixture.jpg?stp=c0.89.1080.1080a_dst-jpg_tt6&cstp=mx1080x1080&ctp=s206x206&_nc_cat=1&_nc_sid=fixture-sid';
       assert.strictEqual(isDownscaledRender(userUrl), true, 'user-reported 206x206 URL must be detected as downscaled');
       const fullUrl = 'https://scontent.xx.fbcdn.net/v/x.jpg?stp=dst-jpg_tt6&cstp=mx1080x1080&ctp=s1080x1080&oh=abc&oe=123';
       assert.strictEqual(isDownscaledRender(fullUrl), false, 'full-resolution URL must NOT be detected as downscaled');

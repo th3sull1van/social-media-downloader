@@ -1,14 +1,48 @@
-# HAR validation matrix
+# Fixture validation matrix
 
-This matrix is the source of truth for captured-network regression coverage. A scenario is covered only when its listed replay test executes the real production path against the listed HAR fixture.
+This matrix is the source of truth for regression inputs. Versioned compact
+fixtures are the default test inputs; raw HAR captures are source evidence and
+an explicit local validation gate for changes that affect capture extraction or
+platform behavior.
 
 ## Fixture classes
 
-| Class | Location | Versioned | Use |
-|---|---|---:|---|
-| Private capture | `fixtures-private/*.har` | No | Local replay with real account/session captures. Never commit. |
-| Sanitized fixture | `tests/fixtures/har/<platform>/*.har` | Yes | CI-safe replay. Must pass the sanitization check. |
-| Synthetic fixture | Test source or non-HAR fixture | Maybe | Unit/contract edge cases only. It cannot satisfy HAR coverage. |
+| Class | Location | Versioned | Default test input | Use |
+|---|---|---:|---|---|
+| Compact extracted fixture | `tests/fixtures/extracted/<platform>/*.json` | Yes | Yes | Fast CI and deterministic parser/scanner/normalizer replay |
+| Sanitized source HAR | `tests/fixtures/har/<platform>/*.har` | Yes | No | Public network-shape evidence and HAR checks |
+| Private raw capture | `fixtures-private/*.har` | No | No | Local before/after raw replay; never commit |
+| Synthetic unit fixture | Test source or focused fixture | Maybe | Yes, when appropriate | Contract and edge-case tests |
+
+Compact fixtures contain only the allowlisted fields required by the production
+path. They carry `fixtureVersion`, `fixtureType`, `sourceCaptureId`,
+`extractionVersion`, `sanitizationVersion`, and `sanitized: true`. The source
+capture identifier is descriptive and does not contain a local path, account
+identifier, or secret hash.
+
+## Current compact fixtures
+
+| Platform | Fixture | Scenario/code paths |
+|---|---|---|
+| Instagram | `instagram/example-profile.json` | Public profile timeline and signed CDN URLs |
+| Instagram | `instagram/instagram-profile.json` | Profile pagination, posts, carousels, stories, full-resolution upgrade |
+| Instagram | `instagram/instagram-profile-v2.json` | Alternate profile payload and story/highlight extraction |
+| Facebook | `facebook/facebook-profile.json` | GraphQL photos, profile/cover candidates, JSON scripts, DOM anchors, signed URLs |
+| Facebook | `facebook/facebook-reels.json` | Reel payloads and photo exclusion |
+| Facebook | `facebook/facebook-206x206.json` | Downscaled CDN request regression |
+| Reddit | `reddit/example-feed.json` | Server-rendered feed, image, RedGifs, icon/style-asset exclusion |
+| Reddit | `reddit/reddit-feed.json` | Feed/profile discovery and pagination |
+| Reddit | `reddit/reddit-post.json` | Single-post scanning |
+| Reddit | `reddit/reddit-gallery.json` | Gallery slide extraction and preview-to-fullres upgrade |
+| Reddit | `reddit/reddit-empty-profile.json` | Suspicious empty-profile result guard |
+| Reddit | `reddit/reddit-private-profile.json` | JSON API profile pagination and deduplication |
+
+The generated manifest records exact byte sizes and the extraction source. The
+complete compact set is validated with:
+
+```bash
+bun run check:fixtures
+```
 
 ## Current private captures
 
@@ -24,23 +58,23 @@ Counts below were produced by scanning `log.entries` and classifying response bo
 | Reddit | `fixtures-private/reddit-post.har` | 115 | 1 server-rendered `shreddit-post` response | `har-replay-platforms.test.js` |
 | Reddit | `fixtures-private/reddit-gallery.har` | 1 | 1 sanitized `shreddit-post` gallery with 3 `preview.redd.it` `-v0-` slides (closes G-1) | `har-replay-platforms.test.js` |
 
-## Sanitized public fixture code-path coverage
+## Compact fixture code-path coverage
 
-The versioned fixtures under `tests/fixtures/har/<platform>/` are the CI-safe replay inputs.
-This table records **which production code paths each one actually exercises** (measured 2026-08-28
-against the real scanner/normalizer), not merely that "a replay exists". Asymmetric coverage is
-called out so a green CI run is not mistaken for full coverage.
+The versioned fixtures under `tests/fixtures/extracted/<platform>/` are the
+CI-safe replay inputs. This table records the production paths exercised by the
+compact set; a green run is not a claim of complete live-site coverage.
 
 | Fixture | Platform | Code paths exercised | Paths NOT exercised by this fixture |
 |---|---|---|---|
-| `instagram/example-profile.har` | Instagram | `extractTimelineNodes` (xdt/edge timeline), `InstagramNormalizer.normalizePost`, signed-URL verbatim preservation (100% of 685 URLs signed), HEIC extension preservation, `InstagramNaming.getOriginalFilename` against numeric `_n` basenames | Stories/highlights (`extractStoryItems` yields 0 — fixture is profile timeline only); video-token naming guard (no ephemeral `/o1/v/t2/...` video URLs present); unsigned-CDN branch; non-fna host |
-| `reddit/example-feed.har` | Reddit | `extractRedditPosts` (shreddit HTML, NSFW server-render fallback), `RedditScanner.extractFromShredditPost`, `RedditNormalizer.normalizeItem`, `preview.redd.it`→`i.redd.it` upgrade, RedGifs (`redgifs` source type), single-image (`reddit_image`), **icon/style-asset exclusion** (`RedditScanner.isIconOrStyleAsset`) | Real gallery slide extraction — `post-type="gallery"` posts in this capture only carry decorative `profileIcon_`/`communityIcon_` noise; JSON-API path (`parseApiPostObject`); `v.redd.it` DASH muxing |
-| `facebook/example-profile.har` | Facebook | `extractFacebookData` GraphQL branch (`/api/graphql/` POST), `FacebookNormalizer.extractPhotosFromGraphQL` (689 photos from 96 responses, 0 errors), signed-URL verbatim preservation (99.7%) | Inline `application/json` script sweep (`jsonScripts` = 0 — all URLs live inside GraphQL bodies here); DOM anchor harvest (`htmlPages` = 0); album-tile discriminator edge (no `TimelineAppCollectionItem` tiles present) |
+| `instagram/*.json` | Instagram | Timeline, profile pagination, carousels, stories/highlights, normalization, signed URL preservation, full-resolution upgrade, naming/path and nonce checks | Live browser lifecycle and unsupported response shapes |
+| `reddit/*.json` | Reddit | Server-rendered `shreddit-post`, image/gallery/RedGifs scanning, icon/style-asset exclusion, JSON API profile pagination, deduplication, preview-to-fullres upgrade, empty-result guard | Live browser lifecycle and full DASH network transfer |
+| `facebook/facebook-profile.json` | Facebook | GraphQL extraction, profile/cover candidates, inline JSON scripts, DOM anchors, signed CDN URLs, downscaled-request and facepile exclusion | Live browser lifecycle and unrepresented GraphQL schemas |
+| `facebook/facebook-reels.json` | Facebook | Reel payload extraction and non-photo filtering | Live reel navigation |
 
-NOTE: the two private Facebook/Reddit captures (`facebook-profile.har`, `reddit-feed.har`) DO exercise
-the GraphQL json-script sweep and DOM-harvest branches, and the reddit-feed capture is where the
-icon-exclusion guard removes 13 `communityIcon_`/`profileIcon_` URLs. The public fixtures are a
-representative subset, not the full surface.
+The compact fixtures are extracted from the corresponding local captures with
+deterministic synthetic identities and URL hosts. Their assertions preserve
+relationships, ordering, signed-query shape, dimensions, and error semantics;
+they do not retain original account data.
 
 ## Invariant coverage
 
@@ -61,27 +95,36 @@ representative subset, not the full surface.
 
 | Change class | Required validation |
 |---|---|
-| Platform/network parser, normalizer, scanner or resolver | Relevant HAR replay before and after; update/add sanitized fixture if shape is uncovered. |
-| Core runtime or data contract | Full replay suite plus affected unit/contract/integration tests. |
-| Manifest, permissions or execution context | Full replay regression plus manifest validation and browser smoke test when available. |
-| Tests/tooling only | Full replay regression; prove the harness still exercises real production code. |
-| Documentation-only | Full replay regression when it describes observed platform behavior; otherwise static checks are sufficient. |
-| Security-sensitive | Full relevant replay, sanitization check, secret scan and explicit review of changed invariants. |
+| Platform/network parser, normalizer, scanner or resolver | Relevant compact replay; raw before/after replay when the relevant capture is available; compare IDs, URLs, dimensions, ordering, names/paths, and errors. |
+| Core runtime or data contract | Full compact suite plus affected unit/contract/integration tests. |
+| Manifest, permissions or execution context | Full compact regression, manifest validation, and browser smoke test when available. |
+| Tests/tooling only | Compact suite; raw before/after when extraction, anonymization, or raw replay tooling changes. |
+| Documentation-only | Static checks; compact regression when it describes implemented behavior; raw replay only when it changes a documented capture claim. |
+| Security-sensitive | Compact sanitizer check, secret scan, relevant raw replay, and explicit review of changed invariants. |
 
 ## Coverage gaps (`missing-evidence`)
 
-- **G-1 — Reddit gallery slides (RESOLVED)**: committed reddit captures (`reddit-feed.har`, `example-feed.har`, `reddit-post.har`) contained no real gallery image URLs — `post-type="gallery"` posts only carried decorative `profileIcon_`/`communityIcon_` noise in their gallery slots. Closed by `fixtures-private/reddit-gallery.har` (sanitized `<gallery-carousel>` with real `preview.redd.it/...-v0-` slide URLs upgrading to `i.redd.it`); the HAR replay suite now asserts `reddit_gallery > 0`. Regenerate via `tools/gen-reddit-gallery-fixture.js`.
-- The versioned sanitized fixtures currently cover one representative replay shape per platform. They are intentionally smaller than the private captures; add another fixture when a new response shape or regression is not represented.
-- Browser lifecycle, CSP, popup rendering, service-worker lifetime and real Chrome download APIs are not proven by HAR replay.
+- **G-1 — Reddit gallery slides (RESOLVED)**: the compact `reddit-gallery.json`
+  fixture is extracted from `fixtures-private/reddit-gallery.har` and asserts
+  that real slide URLs upgrade from `preview.redd.it` to `i.redd.it`.
+- The compact set is intentionally smaller than the private captures; add or
+  regenerate a fixture when a new response shape or regression is not
+  represented.
+- Browser lifecycle, CSP, popup rendering, service-worker lifetime and real
+  Chrome download APIs are not proven by fixture replay.
 - Live-site behavior is intentionally not part of the routine deterministic gate.
 
-A missing fixture is a blocking condition for a change that depends on that behavior. It is not a passing result.
+A missing compact fixture is a blocking condition for a change that depends on
+that behavior. Missing raw evidence must be reported as `UNVERIFIED` when the
+relevant capture cannot be obtained.
 
 ## Commands
 
 ```bash
 bun run validate:local
-bun run validate
+bun run fixtures:extract
+bun run check:fixtures
+bun run validate:raw
 bun tests/integration/har-replay.test.js
 bun tests/integration/har-replay-platforms.test.js
 ```

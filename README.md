@@ -66,11 +66,15 @@ New platforms plug into the same Core — no changes to download, queue, ZIP, or
 
 1. Create `src/plugins/<platform>/` implementing the platform plugin contract.
 2. Register the plugin deterministically in the plugin registry.
-3. Add HAR/JSON fixtures under `tests/fixtures/<platform>/` and contract tests under `tests/contracts/`.
+3. Add compact extracted fixtures under `tests/fixtures/extracted/<platform>/` (and a sanitized source HAR under
+   `tests/fixtures/har/<platform>/` when network-shape evidence is needed) plus contract tests under
+   `tests/contracts/`.
 4. Add platform docs under `docs/platforms/<platform>/` and localized strings under `_locales/`.
 5. Declare only the host permissions the platform needs, with a documented purpose.
 
 See the [plugin system guide](docs/architecture/plugin-system.md).
+
+See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ---
 
@@ -128,11 +132,14 @@ The repository is guarded by a comprehensive automated test suite and strict arc
 # Install dependencies
 bun install
 
-# Run the complete local validation gate (HAR replays + typecheck + tests + repository validators)
+# Run the fast local validation gate (compact fixtures + public HAR inventory + tests + validators)
 bun run validate:local
 
 # Run CI validation gate
 bun run validate
+
+# Run raw HAR evidence validation explicitly when local captures are available
+bun run validate:raw
 
 # Run individual test checks
 bun test
@@ -141,6 +148,10 @@ bun run check:manifest
 bun run check:dependencies
 bun run check:i18n
 bun run check:har
+bun run check:fixtures
+
+# Optional process-isolated parallel suite runner
+bun run test:parallel -- --jobs=4
 ```
 
 ---

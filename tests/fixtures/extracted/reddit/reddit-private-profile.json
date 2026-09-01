@@ -1,0 +1,245 @@
+{
+  "fixtureVersion": 1,
+  "fixtureType": "reddit-api",
+  "extractionVersion": 1,
+  "sanitizationVersion": 1,
+  "platform": "reddit",
+  "scenario": "reddit-private-profile",
+  "sourceCaptureId": "reddit-private-profile",
+  "capturedAt": "2026-08-31",
+  "browser": "Chrome",
+  "sanitized": true,
+  "source": "local-har-extraction",
+  "purpose": "Offline Reddit profile API fallback and avatar regression",
+  "username": "fixture_user",
+  "submitted": {
+    "kind": "listing",
+    "data": {
+      "after": null,
+      "children": []
+    }
+  },
+  "search": {
+    "kind": "listing",
+    "data": {
+      "after": null,
+      "children": [
+        {
+          "kind": "t3",
+          "data": {
+            "id": "post_001",
+            "title": "Fixture API Post 1",
+            "author": "fixture_author",
+            "subreddit": "fixture_subreddit",
+            "score": 11,
+            "url": "https://i.redd.it/fixture/asset001.jpeg",
+            "preview": {
+              "images": [
+                {
+                  "resolutions": [
+                    {
+                      "url": "https://preview.redd.it/fixture/asset001.jpeg?width=108&crop=smart&auto=webp",
+                      "width": 108,
+                      "height": 142
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset001.jpeg?width=216&crop=smart&auto=webp",
+                      "width": 216,
+                      "height": 284
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset001.jpeg?width=320&crop=smart&auto=webp",
+                      "width": 320,
+                      "height": 421
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset001.jpeg?width=640&crop=smart&auto=webp",
+                      "width": 640,
+                      "height": 842
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset001.jpeg?width=960&crop=smart&auto=webp",
+                      "width": 960,
+                      "height": 1264
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset001.jpeg?width=1080&crop=smart&auto=webp",
+                      "width": 1080,
+                      "height": 1422
+                    }
+                  ]
+                }
+              ]
+            },
+            "thumbnail": "https://preview.redd.it/fixture/asset001.jpeg?width=140&height=140&crop=synthetic-crop&auto=webp"
+          }
+        },
+        {
+          "kind": "t3",
+          "data": {
+            "id": "post_002",
+            "title": "Fixture API Post 2",
+            "author": "fixture_author",
+            "subreddit": "fixture_subreddit",
+            "score": 334,
+            "url": "https://i.redd.it/fixture/asset001.jpeg",
+            "preview": {
+              "images": [
+                {
+                  "resolutions": [
+                    {
+                      "url": "https://preview.redd.it/fixture/asset001.jpeg?width=108&crop=smart&auto=webp",
+                      "width": 108,
+                      "height": 142
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset001.jpeg?width=216&crop=smart&auto=webp",
+                      "width": 216,
+                      "height": 284
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset001.jpeg?width=320&crop=smart&auto=webp",
+                      "width": 320,
+                      "height": 421
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset001.jpeg?width=640&crop=smart&auto=webp",
+                      "width": 640,
+                      "height": 842
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset001.jpeg?width=960&crop=smart&auto=webp",
+                      "width": 960,
+                      "height": 1264
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset001.jpeg?width=1080&crop=smart&auto=webp",
+                      "width": 1080,
+                      "height": 1422
+                    }
+                  ]
+                }
+              ]
+            },
+            "thumbnail": "https://preview.redd.it/fixture/asset001.jpeg?width=140&height=140&crop=synthetic-crop&auto=webp"
+          }
+        },
+        {
+          "kind": "t3",
+          "data": {
+            "id": "post_003",
+            "title": "Fixture API Post 3",
+            "author": "fixture_author",
+            "subreddit": "fixture_subreddit",
+            "score": 662,
+            "url": "https://i.redd.it/fixture/asset002.jpeg",
+            "preview": {
+              "images": [
+                {
+                  "resolutions": [
+                    {
+                      "url": "https://preview.redd.it/fixture/asset002.jpeg?width=108&crop=smart&auto=webp",
+                      "width": 108,
+                      "height": 189
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset002.jpeg?width=216&crop=smart&auto=webp",
+                      "width": 216,
+                      "height": 378
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset002.jpeg?width=320&crop=smart&auto=webp",
+                      "width": 320,
+                      "height": 561
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset002.jpeg?width=640&crop=smart&auto=webp",
+                      "width": 640,
+                      "height": 1122
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset002.jpeg?width=960&crop=smart&auto=webp",
+                      "width": 960,
+                      "height": 1683
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset002.jpeg?width=1080&crop=smart&auto=webp",
+                      "width": 1080,
+                      "height": 1893
+                    }
+                  ]
+                }
+              ]
+            },
+            "thumbnail": "https://preview.redd.it/fixture/asset002.jpeg?width=140&height=140&crop=synthetic-crop&auto=webp"
+          }
+        },
+        {
+          "kind": "t3",
+          "data": {
+            "id": "post_004",
+            "title": "Fixture API Post 4",
+            "author": "fixture_author",
+            "subreddit": "fixture_subreddit",
+            "score": 506,
+            "url": "https://i.redd.it/fixture/asset003.jpeg",
+            "preview": {
+              "images": [
+                {
+                  "resolutions": [
+                    {
+                      "url": "https://preview.redd.it/fixture/asset003.jpeg?width=108&crop=smart&auto=webp",
+                      "width": 108,
+                      "height": 189
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset003.jpeg?width=216&crop=smart&auto=webp",
+                      "width": 216,
+                      "height": 378
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset003.jpeg?width=320&crop=smart&auto=webp",
+                      "width": 320,
+                      "height": 561
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset003.jpeg?width=640&crop=smart&auto=webp",
+                      "width": 640,
+                      "height": 1122
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset003.jpeg?width=960&crop=smart&auto=webp",
+                      "width": 960,
+                      "height": 1683
+                    },
+                    {
+                      "url": "https://preview.redd.it/fixture/asset003.jpeg?width=1080&crop=smart&auto=webp",
+                      "width": 1080,
+                      "height": 1893
+                    }
+                  ]
+                }
+              ]
+            },
+            "thumbnail": "https://preview.redd.it/fixture/asset003.jpeg?width=140&height=140&crop=synthetic-crop&auto=webp"
+          }
+        }
+      ]
+    }
+  },
+  "about": {
+    "data": {
+      "icon_img": "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_3.png",
+      "snoovatar_img": ""
+    }
+  },
+  "expected": {
+    "postIds": [
+      "post_001",
+      "post_002",
+      "post_003",
+      "post_004"
+    ],
+    "totalPosts": 4
+  }
+}

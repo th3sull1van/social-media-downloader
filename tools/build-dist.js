@@ -10,7 +10,10 @@ import path from 'node:path';
 
 const rootDir = path.resolve(import.meta.dirname, '..');
 const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
-const version = pkg.version || '1.1.0';
+const version = pkg.version;
+if (typeof version !== 'string' || version.length === 0) {
+  throw new Error('package.json must define a non-empty product version before building a release');
+}
 const distDir = path.join(rootDir, 'dist');
 const zipFileName = `social-media-downloader-v${version}-chrome.zip`;
 const zipFilePath = path.join(distDir, zipFileName);

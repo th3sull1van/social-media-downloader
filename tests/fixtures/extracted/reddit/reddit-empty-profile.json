@@ -1,0 +1,20 @@
+{
+  "fixtureVersion": 1,
+  "fixtureType": "reddit-replay",
+  "extractionVersion": 1,
+  "sanitizationVersion": 1,
+  "platform": "reddit",
+  "scenario": "reddit-empty-profile",
+  "sourceCaptureId": "reddit-empty-profile",
+  "capturedAt": "2026-08-31",
+  "browser": "Chrome",
+  "sanitized": true,
+  "source": "local-har-extraction",
+  "purpose": "Offline Reddit DOM scanner and media classification regression",
+  "posts": [],
+  "pageCount": 1,
+  "expected": {
+    "posts": 0,
+    "pageCount": 1
+  }
+}

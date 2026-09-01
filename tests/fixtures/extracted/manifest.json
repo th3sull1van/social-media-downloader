@@ -1,0 +1,92 @@
+{
+  "manifestVersion": 1,
+  "generatedBy": "tools/extract-fixtures.js",
+  "sanitized": true,
+  "fixtures": [
+    {
+      "path": "facebook/facebook-206x206.json",
+      "platform": "facebook",
+      "fixtureType": "facebook-replay",
+      "sourceCaptureId": "facebook-206x206",
+      "bytes": 53516
+    },
+    {
+      "path": "facebook/facebook-profile.json",
+      "platform": "facebook",
+      "fixtureType": "facebook-replay",
+      "sourceCaptureId": "facebook-profile",
+      "bytes": 367573
+    },
+    {
+      "path": "facebook/facebook-reels.json",
+      "platform": "facebook",
+      "fixtureType": "facebook-replay",
+      "sourceCaptureId": "facebook-reels",
+      "bytes": 60318
+    },
+    {
+      "path": "instagram/example-profile.json",
+      "platform": "instagram",
+      "fixtureType": "instagram-replay",
+      "sourceCaptureId": "example-profile",
+      "bytes": 200390
+    },
+    {
+      "path": "instagram/instagram-profile-v2.json",
+      "platform": "instagram",
+      "fixtureType": "instagram-replay",
+      "sourceCaptureId": "instagram-profile-v2",
+      "bytes": 1949809
+    },
+    {
+      "path": "instagram/instagram-profile.json",
+      "platform": "instagram",
+      "fixtureType": "instagram-replay",
+      "sourceCaptureId": "instagram-profile",
+      "bytes": 2758566
+    },
+    {
+      "path": "reddit/example-feed.json",
+      "platform": "reddit",
+      "fixtureType": "reddit-replay",
+      "sourceCaptureId": "example-feed",
+      "bytes": 35838
+    },
+    {
+      "path": "reddit/reddit-empty-profile.json",
+      "platform": "reddit",
+      "fixtureType": "reddit-replay",
+      "sourceCaptureId": "reddit-empty-profile",
+      "bytes": 499
+    },
+    {
+      "path": "reddit/reddit-feed.json",
+      "platform": "reddit",
+      "fixtureType": "reddit-replay",
+      "sourceCaptureId": "reddit-feed",
+      "bytes": 50715
+    },
+    {
+      "path": "reddit/reddit-gallery.json",
+      "platform": "reddit",
+      "fixtureType": "reddit-replay",
+      "sourceCaptureId": "reddit-gallery",
+      "bytes": 2031
+    },
+    {
+      "path": "reddit/reddit-post.json",
+      "platform": "reddit",
+      "fixtureType": "reddit-replay",
+      "sourceCaptureId": "reddit-post",
+      "bytes": 1923
+    },
+    {
+      "path": "reddit/reddit-private-profile.json",
+      "platform": "reddit",
+      "fixtureType": "reddit-api",
+      "sourceCaptureId": "reddit-private-profile",
+      "bytes": 8865
+    }
+  ],
+  "totalBytes": 5490043
+}

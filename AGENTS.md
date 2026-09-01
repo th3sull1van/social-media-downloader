@@ -70,38 +70,51 @@ That is acceptable if the behavior is required.
 
 ---
 
-# 2A. Mandatory HAR Validation Gate
+# 2A. Mandatory Fixture Validation Gate
 
-Every change MUST be validated against the available sanitized HAR captures before it is considered complete.
-This applies to code, tests, tooling, manifest changes, documentation that describes observed platform behavior,
-and refactors. A change that does not alter runtime behavior still runs the HAR replay gate as a regression check.
+Every change MUST run the compact, sanitized fixture gate before it is considered complete. Compact fixtures are
+the default deterministic test inputs and live under `tests/fixtures/extracted/`; routine tests MUST NOT load
+`fixtures-private/` or parse a multi-megabyte HAR.
 
 The minimum gate is:
 
 ```bash
 bun run validate:local
-bun tests/integration/har-replay.test.js
-bun tests/integration/har-replay-platforms.test.js
 ```
 
-The replay tests MUST execute the real parser, normalizer, resolver, scanner, or content-script path affected by
-the change against the relevant HAR files in `fixtures-private/`. Do not replace replay with a hand-written object
-that merely resembles a captured response.
+The compact fixtures MUST execute the real parser, normalizer, resolver, scanner, or content-script path affected
+by the change. Do not replace a production path with a hand-written expected object merely to make a test pass.
 
-For a platform or network change:
+HAR replay remains a separate evidence gate for changes that affect real platform or network behavior, including:
 
-1. identify the relevant HAR and the request/response shape it covers;
-2. replay the baseline before editing when the fixture is available;
-3. make the smallest change;
-4. replay the same HAR after editing;
-5. compare item count, IDs, media URLs, dimensions, filenames/archive paths, ordering, and error behavior as
+- platform parsers, normalizers, scanners or resolvers;
+- GraphQL/API/DOM extraction;
+- authentication or response-shape handling;
+- network interception and request routing;
+- fixture extraction or sanitization itself.
+
+For those changes:
+
+1. identify the relevant private or sanitized HAR and the response shape it covers;
+2. run the compact fixture baseline before editing;
+3. replay the relevant HAR before editing when it is available;
+4. make the smallest change;
+5. replay the same HAR after editing;
+6. compare item count, IDs, media URLs, dimensions, filenames/archive paths, ordering and error behavior as
    applicable;
-6. add or update a sanitized HAR regression fixture when the existing captures do not cover the changed behavior;
-7. record the fixture, scenario, command, and result in the change notes or audit documentation.
+7. regenerate or add a compact sanitized fixture when the shape is not already represented;
+8. record the fixture, scenario, commands and results in the change notes or audit documentation.
 
-If the relevant HAR is unavailable, do not claim validation. Capture it from a real browser, sanitize it, and keep
-the raw capture only under the ignored `fixtures-private/` directory. If capture is impossible, stop before
-declaring the change complete and report the missing evidence.
+Use:
+
+```bash
+bun run test:raw
+bun run validate:raw
+```
+
+`validate:raw` is intentionally opt-in because it reads local captures. If a relevant HAR is unavailable, do not
+claim raw-network validation; report the missing evidence. The compact fixture gate may still validate behavior that
+does not depend on the missing transport capture.
 
 The HAR gate is evidence of compatibility, not permission to preserve a bug. If the intended behavior changes,
 document that intent and update the expected regression assertions explicitly.
@@ -602,9 +615,10 @@ Diagnostic exports must be sanitized. Acceptable: environment, browser/extension
 
 ---
 
-# 38. HAR Fixtures
+# 38. Capture and Fixture Artifacts
 
-HAR captures are first-class development and regression artifacts.
+HAR captures and compact extracted fixtures are first-class development and regression artifacts. HARs are source
+evidence; compact fixtures are the normal test inputs.
 
 Use:
 
@@ -625,6 +639,18 @@ Fixtures may represent:
 - authentication-related behavior;
 - known regressions;
 - failure states.
+
+Prefer the smallest fixture type that proves the behavior:
+
+```text
+Network fixture       → request/response and transport behavior
+API JSON fixture      → parser/normalizer behavior
+DOM/HTML fixture      → scanner/content extraction behavior
+Normalized fixture    → Core contracts and downstream behavior
+```
+
+The default test path should use compact fixtures. A compact fixture must retain the real production input shape
+needed by the path under test; it must not be a synthetic expected-result shortcut.
 
 ---
 
@@ -652,9 +678,28 @@ for unsanitized captures.
 
 ---
 
-# 40. HAR Sanitization
+# 40. Capture Extraction and Sanitization
 
-Use a deterministic sanitization process.
+Use a deterministic, allowlisted extraction and sanitization process:
+
+```text
+HAR under fixtures-private/
+↓
+relevant request/response selection
+↓
+platform-specific structural projection
+↓
+deterministic pseudonymization
+↓
+fail-closed sensitive-data validation
+↓
+tests/fixtures/extracted/
+```
+
+The extractor may be platform-aware in `tools/`, but must not move platform behavior into Core. It must not copy an
+entire response and redact a few known fields after the fact. Free-form text, captured media, cookies, auth data,
+opaque signatures and private URLs should be omitted or replaced with synthetic values unless a test explicitly
+requires their structural form.
 
 Example:
 
@@ -668,11 +713,15 @@ private token → <REDACTED>
 
 Sanitization must fail safely rather than silently leaving unknown secrets behind.
 
+Every committed compact fixture must pass `bun run check:fixtures`. The validator scans the complete output tree,
+including nested JSON strings and HTML fragments; the existing private-HAR inventory is not sufficient for this
+purpose because private captures are intentionally not treated as publishable artifacts.
+
 ---
 
-# 41. Fixture Types
+# 41. Fixture Types and Default Inputs
 
-Do not rely only on HAR.
+Do not rely only on HAR, and do not make routine tests depend on HAR.
 
 Use:
 
@@ -688,9 +737,11 @@ Test individual layers independently where useful.
 For example:
 
 ```text
-HAR
+HAR (source evidence)
 ↓
 network extraction
+↓
+compact API/DOM fixture
 ↓
 normalization
 ↓
@@ -721,6 +772,15 @@ Fixtures should document:
 - sanitization status;
 - purpose;
 - associated regression.
+
+Compact extracted fixtures should additionally record:
+
+- fixture type;
+- source capture identifier without a local path;
+- extraction version;
+- sanitization version.
+
+Metadata must not contain account identifiers, raw capture paths, private URLs or secret-bearing hashes.
 
 Do not overwrite a historical fixture without reason.
 
@@ -1452,7 +1512,7 @@ Maintain platform invariants. The canonical list per platform lives in **SPECIFI
 
 # 83. Adding a New Platform
 
-A new platform should normally involve a new `src/plugins/<platform>/` directory, `tests/fixtures/<platform>/`, `tests/contracts/` coverage, `docs/platforms/<platform>/` documentation, `_locales` additions, manifest permissions, and plugin registration. The new plugin should reuse Core download, queue, ZIP, progress, selection, UI, diagnostics, logging, storage, and messaging — do not duplicate those implementations. See **SPECIFICATION.md §83 (Adding a New Platform)**, **§134 (New Platform Checklist)**, **§150 (Extensibility Requirement)**, and **§151 (Stability Requirement)**.
+A new platform should normally involve a new `src/plugins/<platform>/` directory, `tests/fixtures/extracted/<platform>/` compact fixtures, `tests/contracts/` coverage, `docs/platforms/<platform>/` documentation, `_locales` additions, manifest permissions, and plugin registration. The new plugin should reuse Core download, queue, ZIP, progress, selection, UI, diagnostics, logging, storage, and messaging — do not duplicate those implementations. See **SPECIFICATION.md §83 (Adding a New Platform)**, **§134 (New Platform Checklist)**, **§150 (Extensibility Requirement)**, and **§151 (Stability Requirement)**.
 
 ---
 

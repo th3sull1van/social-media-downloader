@@ -2030,9 +2030,12 @@ Do not present assumptions as facts.
 
 ---
 
-# 78. HAR Fixtures
+# 78. Capture and Fixture Artifacts
 
-HAR captures are first-class test/debug artifacts.
+HAR captures are first-class source evidence and test/debug artifacts. Routine
+tests should consume compact, sanitized fixtures extracted from those captures
+so that the normal validation path does not repeatedly parse multi-megabyte
+account captures.
 
 Directory:
 
@@ -2041,6 +2044,12 @@ tests/fixtures/
 ├── instagram/
 ├── facebook/
 └── reddit/
+```
+
+The default compact inputs live under:
+
+```text
+tests/fixtures/extracted/<platform>/
 ```
 
 Fixtures may represent:
@@ -2053,6 +2062,10 @@ Fixtures may represent:
 - media resolution;
 - regression cases;
 - failure scenarios.
+
+Raw captures remain local evidence under `fixtures-private/`. They are replayed
+explicitly for network/parser/tooling changes, while compact fixtures are the
+versioned default inputs for unit, contract, integration, and routine CI tests.
 
 ---
 
@@ -2078,7 +2091,7 @@ or another ignored location.
 
 ---
 
-# 80. HAR Sanitization
+# 80. Capture Extraction and Sanitization
 
 Provide tooling such as:
 
@@ -2086,9 +2099,15 @@ Provide tooling such as:
 bun run check:har
 bun run har:report
 bun run har:compare
+bun run fixtures:extract
+bun run check:fixtures
 ```
 
-Sanitization should remove or replace secrets deterministically.
+Extraction should use an explicit allowlist for fields required by the
+production path and discard unrelated request/response data. Sanitization must
+remove or replace secrets deterministically; a denylist alone is insufficient.
+The compact-fixture validator must fail closed when it encounters sensitive
+keys, secret-like values, executable markup, or unsafe source metadata.
 
 Example:
 
@@ -2110,8 +2129,12 @@ Every committed fixture should have metadata:
 ```json
 {
   "fixtureVersion": 1,
+  "fixtureType": "instagram-replay",
   "platform": "instagram",
   "scenario": "profile-pagination",
+  "sourceCaptureId": "instagram-profile-v2",
+  "extractionVersion": 1,
+  "sanitizationVersion": 1,
   "capturedAt": "2026-08-27",
   "browser": "Chrome",
   "sanitized": true,
@@ -2122,9 +2145,11 @@ Every committed fixture should have metadata:
 
 ---
 
-# 82. Fixture Types
+# 82. Fixture Types and Default Test Inputs
 
-Use more than HAR.
+Use more than HAR. Routine tests should consume the smallest versioned fixture
+that exercises the behavior under test and must not require
+`fixtures-private/`.
 
 Supported conceptual fixture types:
 
@@ -2136,6 +2161,18 @@ Normalized-object fixture
 ```
 
 Each layer should be testable independently where useful.
+
+The normal relationship is:
+
+```text
+HAR source evidence
+ ↓
+allowlisted extraction + deterministic anonymization
+ ↓
+compact fixture
+ ↓
+real parser / normalizer / scanner / resolver path
+```
 
 ---
 
@@ -3006,6 +3043,11 @@ Validate
 Commit
 ```
 
+The same rule applies to extracted JSON, HTML, network, and normalized-object
+fixtures. Sanitization must preserve relationships needed by the test while
+removing original account identifiers, private URLs, credentials, cookies,
+tokens, and personal data.
+
 Never:
 
 ```text
@@ -3136,7 +3178,7 @@ Adding a new platform normally requires:
 
 ```text
 src/plugins/<platform>/
-tests/fixtures/<platform>/
+tests/fixtures/extracted/<platform>/
 docs/platforms/<platform>/
 locale additions
 manifest changes
@@ -4045,7 +4087,8 @@ The architecture MUST preserve these principles:
 
 9. UI is generic infrastructure with platform capability extensions.
 
-10. HAR fixtures are first-class regression/debugging artifacts.
+10. Captured-network evidence and compact extracted fixtures are first-class
+    regression/debugging artifacts.
 
 11. Raw HAR data is sensitive and must be sanitized.
 

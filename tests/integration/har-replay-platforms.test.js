@@ -1,12 +1,14 @@
 /**
  * Social Media Downloader — HAR Replay Regression Tests (Facebook & Reddit)
- * Runs the REAL scanners/normalizers against captured traffic:
+ * The exported raw runner below executes REAL scanners/normalizers against
+ * captured traffic. The default suite uses runCompactPlatformReplayTests so
+ * it does not parse fixtures-private/.
  *  - Reddit: shreddit-post HTML extraction (RedditScanner.extractFromShredditPost) +
  *    RedditNormalizer over server-rendered pages (incl. an empty-profile edge capture).
  *  - Facebook: FacebookNormalizer.extractPhotosFromGraphQL over captured /api/graphql/
  *    responses + inline JSON sweeps + DOM anchor harvest rules.
- * Instagram HAR regression lives in har-replay.test.js; both suites share the
- * fixtures-private/ contract (skip gracefully when captures are absent).
+ * Instagram raw HAR regression lives in har-replay.test.js. Raw runners share
+ * the fixtures-private/ contract and skip gracefully when captures are absent.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -21,6 +23,7 @@ import { FacebookPlugin } from '../../src/plugins/facebook/FacebookPlugin.js';
 import { DownloadManager } from '../../src/core/application/DownloadManager.js';
 import { MetaCdn } from '../../src/plugins/meta-shared/MetaCdn.js';
 import { MediaItemModel } from '../../src/core/domain/MediaItem.js';
+import { discoverPlatformFixtures, readCompactFixture } from '../../tools/fixture-replay.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -115,8 +118,8 @@ function isDownscaledRender(query) {
 /**
  * Reddit replay through the real scanner.
  */
-function replayReddit(harPath) {
-  const { posts } = extractRedditPosts(harPath);
+function replayReddit(source) {
+  const posts = typeof source === 'string' ? extractRedditPosts(source).posts : (source.posts || []);
   const stats = { posts: posts.length, items: 0, byType: {}, iconLeak: 0, violations: [] };
 
   for (const p of posts) {
@@ -194,12 +197,14 @@ function replayReddit(harPath) {
 /**
  * Facebook replay through the real walker + naming + collision audit.
  */
-function replayFacebook(harPath, { auditCollisions = true } = {}) {
+function replayFacebook(source, { auditCollisions = true, knownDownscaledIds = KNOWN_DOWNSCALED_FACEBOOK_IDS } = {}) {
   // auditCollisions: the sanitized public fixture rewrote photo ids without rewriting
   // CDN basenames, so distinct items share one basename there — a sanitizer artifact.
   // Real captures may also collide (two photo ids can reference one CDN asset); the
   // ZIP flow uniquifies those, so the audit must not treat them as violations.
-  const { graphqlBodies, jsonScripts, htmlPages } = extractFacebookData(harPath);
+  const { graphqlBodies, jsonScripts, htmlPages } = typeof source === 'string'
+    ? extractFacebookData(source)
+    : source;
   const stats = { graphqlResponses: 0, items: 0, uniqueItems: 0, signedUrls: 0, profileAvatars: 0, jsonSweepItems: 0, domAnchorItems: 0, collisions: 0, violations: [] };
   const allById = new Map();
   /** @type {Array<{ path: string }>} */
@@ -282,7 +287,7 @@ function replayFacebook(harPath, { auditCollisions = true } = {}) {
     // (c0.0.206.206a) — those serve the small crop, not the photo.
     if (item.metadata?.source !== 'dom_harvest' && item.downloadUrl) {
       const query = String(item.downloadUrl).split('?')[1] || '';
-      if (isDownscaledRender(query) && !KNOWN_DOWNSCALED_FACEBOOK_IDS.has(String(item.id))) {
+      if (isDownscaledRender(query) && !knownDownscaledIds.has(String(item.id))) {
         stats.violations.push(`downscaled render kept on ${item.id} (ctp < cstp)`);
       }
       if (/stp=c\d+\.\d+\.\d+\.\d+[a-z]?/.test(query)) stats.violations.push(`grid crop spec kept on ${item.id}`);
@@ -396,6 +401,88 @@ export async function runHarPlatformReplayTests() {
       globalThis.fetch = originalFetch;
     }
   }
+}
+
+/**
+ * Default offline platform replay using compact sanitized fixtures.  The raw
+ * HAR function above remains available as an explicit network-evidence test.
+ */
+export async function runCompactPlatformReplayTests() {
+  const redditFiles = discoverPlatformFixtures(rootDir, 'reddit');
+  const facebookFiles = discoverPlatformFixtures(rootDir, 'facebook');
+  assert.ok(redditFiles.length > 0, 'Compact Reddit fixtures must be present');
+  assert.ok(facebookFiles.length > 0, 'Compact Facebook fixtures must be present');
+
+  let feedStats = { items: 0, byType: {}, iconLeak: 0 };
+  let emptyStats = null;
+  for (const fixturePath of redditFiles) {
+    const fixture = readCompactFixture(fixturePath);
+    if (fixture.fixtureType === 'reddit-api') continue;
+    const stats = replayReddit(fixture);
+    assert.equal(stats.violations.length, 0, `Reddit compact replay violations in ${fixture.sourceCaptureId}: ${stats.violations.slice(0, 4).join(' | ')}`);
+    if (fixture.sourceCaptureId.includes('empty-profile')) {
+      emptyStats = stats;
+    } else {
+      feedStats.items += stats.items;
+      feedStats.iconLeak += stats.iconLeak;
+      for (const [key, value] of Object.entries(stats.byType)) feedStats.byType[key] = (feedStats.byType[key] || 0) + value;
+    }
+  }
+  assert.ok(feedStats.items >= 15, `expected real media from compact Reddit fixtures, got ${feedStats.items}`);
+  assert.ok(feedStats.items < 200, `compact Reddit media must not be padded by noise (got ${feedStats.items})`);
+  assert.ok(feedStats.byType.reddit_gallery > 0, 'compact gallery slides must yield reddit_gallery items');
+  assert.ok(feedStats.byType.redgifs > 0, 'compact RedGifs posts must yield redgifs items');
+  assert.ok(feedStats.byType.reddit_image > 0, 'compact image posts must yield image items');
+  assert.equal(feedStats.iconLeak, 0, 'compact Reddit fixtures must not leak icon/style assets');
+  assert.ok(emptyStats, 'compact empty Reddit profile fixture must be exercised');
+  assert.equal(emptyStats.posts, 0);
+  assert.equal(emptyStats.items, 0);
+
+  const apiFixturePath = redditFiles.find((filePath) => readCompactFixture(filePath).fixtureType === 'reddit-api');
+  assert.ok(apiFixturePath, 'compact Reddit profile API fixture must be present');
+  const apiFixture = readCompactFixture(apiFixturePath);
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = /** @type {any} */ (async (url) => {
+      const text = String(url);
+      const listing = text.includes('/search.json') ? apiFixture.search : apiFixture.submitted;
+      return { ok: true, status: 200, json: async () => listing };
+    });
+    const result = await RedditScanner.fetchUserSubmissions(apiFixture.username, { limit: 200 });
+    assert.equal(result.totalPosts, apiFixture.expected.totalPosts);
+    assert.equal(result.mediaItems.length, apiFixture.expected.totalPosts);
+    assert.deepEqual(result.mediaItems.map((item) => item.metadata.postId), apiFixture.expected.postIds);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  const facebookProfilePath = facebookFiles.find((filePath) => readCompactFixture(filePath).sourceCaptureId === 'facebook-profile');
+  assert.ok(facebookProfilePath, 'compact Facebook profile fixture must be present');
+  const facebookProfile = readCompactFixture(facebookProfilePath);
+  const primaryStats = replayFacebook(facebookProfile, {
+    knownDownscaledIds: new Set(facebookProfile.knownDownscaledIds || [])
+  });
+  assert.equal(primaryStats.violations.length, 0, `Facebook compact replay violations: ${primaryStats.violations.slice(0, 4).join(' | ')}`);
+  assert.ok(primaryStats.graphqlResponses >= 50, `expected many compact GraphQL responses, got ${primaryStats.graphqlResponses}`);
+  assert.ok(primaryStats.items >= 500, `expected substantial compact photo yield, got ${primaryStats.items}`);
+  assert.ok(primaryStats.uniqueItems >= 400, `expected unique compact photos after dedup, got ${primaryStats.uniqueItems}`);
+  assert.ok(primaryStats.signedUrls >= 400, 'compact Facebook media must keep synthetic signed URLs');
+  assert.ok(primaryStats.profileAvatars > 0, 'compact Facebook GraphQL must expose a target profile avatar');
+  assert.ok(primaryStats.domAnchorItems > 0, 'compact Facebook HTML projection must exercise anchor harvesting');
+
+  const reelsPath = facebookFiles.find((filePath) => readCompactFixture(filePath).sourceCaptureId === 'facebook-reels');
+  assert.ok(reelsPath, 'compact Facebook Reel fixture must be present');
+  const reels = readCompactFixture(reelsPath);
+  assert.ok((reels.reelPayloads || []).length > 0, 'compact Reel fixture must retain Reel response cases');
+  const reelItems = (reels.reelPayloads || []).reduce((sum, payload) => sum + FacebookNormalizer.extractPhotosFromGraphQL(payload).length, 0);
+  assert.equal(reelItems, 0, 'compact Reel video wrappers must not emit photo items');
+
+  const cdnPath = facebookFiles.find((filePath) => readCompactFixture(filePath).sourceCaptureId === 'facebook-206x206');
+  assert.ok(cdnPath, 'compact Facebook CDN fixture must be present');
+  const cdn = readCompactFixture(cdnPath);
+  const downscaledRequests = (cdn.cdnRequests || []).filter((url) => isDownscaledRender(String(url).split('?')[1] || ''));
+  assert.ok(cdn.cdnRequests.length > 0, 'compact Facebook CDN fixture must retain requests');
+  assert.ok(downscaledRequests.length > 0, 'compact Facebook CDN fixture must retain downscaled requests');
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

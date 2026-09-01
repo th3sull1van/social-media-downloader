@@ -2,21 +2,16 @@
  * Social Media Downloader — Instagram Maximum Resolution Extraction Tests
  * Validates that candidate sorting and media normalization always pick the highest
  * resolution asset (by pixel area, width, and uncropped priority) across all post types:
- * single images, multi-item carousels, videos, stories, and real HAR captures.
+ * single images, multi-item carousels, videos, stories, and compact extracted fixtures.
  */
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { InstagramNormalizer } from '../../src/plugins/instagram/InstagramNormalizer.js';
-import { extractTimelineNodes, extractStoryItems } from '../../tools/har-replay.js';
+import { discoverPlatformFixtures, readCompactFixture } from '../../tools/fixture-replay.js';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const HAR_FILES = [
-  path.join(rootDir, 'tests/fixtures/har/instagram/example-profile.har'),
-  path.join(rootDir, 'fixtures-private/instagram-profile.har'),
-  path.join(rootDir, 'fixtures-private/instagram-profile-v2.har')
-].filter((p) => fs.existsSync(p));
+const FIXTURE_FILES = discoverPlatformFixtures(rootDir, 'instagram');
 
 export function runIgFullResTests() {
   // 1. Candidate sorting by pixel area (width * height)
@@ -128,10 +123,11 @@ export function runIgFullResTests() {
     assert.equal(item.height, 1920);
   }
 
-  // 6. HAR Replay Validation across captured fixtures
-  for (const harPath of HAR_FILES) {
-    const { nodes } = extractTimelineNodes(harPath);
-    const { storyItems } = extractStoryItems(harPath);
+  // 6. Replay validation across compact extracted fixtures
+  assert.ok(FIXTURE_FILES.length > 0, 'compact Instagram fixtures must be present');
+  for (const fixturePath of FIXTURE_FILES) {
+    const fixture = readCompactFixture(fixturePath);
+    const { nodes, storyItems } = fixture;
 
     for (const node of nodes) {
       const items = InstagramNormalizer.normalizePost(node);

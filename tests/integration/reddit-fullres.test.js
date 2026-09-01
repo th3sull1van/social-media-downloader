@@ -5,26 +5,21 @@
  * - Full-resolution gallery items using original media metadata
  * - Native Reddit DASH video streams with companion audio pairing
  * - RedGifs high-definition (HD / 1080p) video resolution
- * - HAR replay against captured Reddit traffic
+ * - replay against compact sanitized projections of captured Reddit traffic
  */
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RedditNormalizer } from '../../src/plugins/reddit/RedditNormalizer.js';
 import { RedditScanner } from '../../src/plugins/reddit/RedditScanner.js';
 import { RedGifsResolver } from '../../src/plugins/reddit/RedGifsResolver.js';
-import { extractRedditPosts } from '../../tools/har-replay.js';
+import { discoverPlatformFixtures, readCompactFixture } from '../../tools/fixture-replay.js';
 
 import { makeElement, parseOpenTag } from '../../tools/mini-dom.js';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const REDDIT_HARS = [
-  path.join(rootDir, 'tests/fixtures/har/reddit/example-feed.har'),
-  path.join(rootDir, 'fixtures-private/reddit-feed.har'),
-  path.join(rootDir, 'fixtures-private/reddit-post.har'),
-  path.join(rootDir, 'fixtures-private/reddit-empty-profile.har')
-].filter((p) => fs.existsSync(p));
+const REDDIT_FIXTURES = discoverPlatformFixtures(rootDir, 'reddit')
+  .filter((filePath) => readCompactFixture(filePath).fixtureType === 'reddit-replay');
 
 export async function runRedditFullResTests() {
   // 1. Preview URL cleanup & upgrade to original uncompressed i.redd.it
@@ -162,9 +157,10 @@ export async function runRedditFullResTests() {
     }
   }
 
-  // 5. HAR Replay Validation across captured Reddit traffic
-  for (const harPath of REDDIT_HARS) {
-    const { posts } = extractRedditPosts(harPath);
+  // 5. Replay validation across compact extracted Reddit traffic
+  assert.ok(REDDIT_FIXTURES.length > 0, 'compact Reddit fixtures must be present');
+  for (const fixturePath of REDDIT_FIXTURES) {
+    const { posts } = readCompactFixture(fixturePath);
     for (const p of posts) {
       const openTag = p.html.match(/^<shreddit-post\s([^>]*)>/);
       const parsed = openTag ? parseOpenTag(`<shreddit-post ${openTag[1]}>`) : null;

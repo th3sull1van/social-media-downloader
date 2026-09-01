@@ -1,0 +1,39 @@
+{
+  "fixtureVersion": 1,
+  "fixtureType": "reddit-replay",
+  "extractionVersion": 1,
+  "sanitizationVersion": 1,
+  "platform": "reddit",
+  "scenario": "reddit-gallery",
+  "sourceCaptureId": "reddit-gallery",
+  "capturedAt": "2026-08-31",
+  "browser": "Chrome",
+  "sanitized": true,
+  "source": "local-har-extraction",
+  "purpose": "Offline Reddit DOM scanner and media classification regression",
+  "posts": [
+    {
+      "attrs": {
+        "id": "t3_post_001",
+        "post-type": "gallery",
+        "post-title": "Fixture Reddit Post 1",
+        "author": "fixture_author",
+        "author-name": "fixture_author",
+        "subreddit-name": "fixture_subreddit",
+        "subreddit-prefixed-name": "r/fixture_subreddit",
+        "domain": "i.redd.it",
+        "permalink": "/comments/post_001/fixture-post/",
+        "score": "123",
+        "created-timestamp": "1700000000",
+        "gallery-data": "true",
+        "content-href": "https://preview.redd.it/fixture/asset001.jpg?width=1080&crop=smart&auto=webp"
+      },
+      "html": "<shreddit-post id=\"t3_post_001\" post-type=\"gallery\" post-title=\"Fixture Reddit Post 1\" author=\"fixture_author\" author-name=\"fixture_author\" subreddit-name=\"fixture_subreddit\" subreddit-prefixed-name=\"r/fixture_subreddit\" domain=\"i.redd.it\" permalink=\"/comments/post_001/fixture-post/\" score=\"123\" created-timestamp=\"1700000000\" gallery-data=\"true\" content-href=\"https://preview.redd.it/fixture/asset001.jpg?width=1080&amp;crop=smart&amp;auto=webp\"><a slot=\"title\" href=\"/comments/post_001/fixture-post/\">Fixture Reddit Post 1</a><gallery-carousel><img src=\"https://preview.redd.it/fixture/asset001.jpg?width=1080&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset002.png?width=1080&amp;crop=smart&amp;auto=webp\"><img src=\"https://preview.redd.it/fixture/asset003.jpg?width=1080&amp;crop=smart&amp;auto=webp\"></gallery-carousel></shreddit-post>"
+    }
+  ],
+  "pageCount": 1,
+  "expected": {
+    "posts": 1,
+    "pageCount": 1
+  }
+}
