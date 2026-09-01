@@ -43,6 +43,15 @@ export class MetaCdn {
           }
           return url;
         }
+
+        // A Facebook cover URL may carry only `stp=s720x720` (no cstp/ctp).
+        // On signed CDN URLs, stp is covered by the HMAC just like the path;
+        // removing it turns an otherwise valid private-media URL into HTTP 403.
+        // There is no safe max-render rewrite when cstp is absent, so preserve
+        // the complete signed URL verbatim.
+        if (parsed.searchParams.has('oh') || parsed.searchParams.has('_nc_ohc') || parsed.searchParams.has('_nc_sid')) {
+          return url;
+        }
       }
 
       // Unsigned (or Instagram-unsigned) URLs: legacy crop/resize directives

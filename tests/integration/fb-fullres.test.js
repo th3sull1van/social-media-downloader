@@ -171,7 +171,20 @@ export async function runFbFullResTests() {
     assert.strictEqual(item.downloadUrl.indexOf('ctp=s1080x1080') > -1, true, 'normalized item must request the max render');
   }
 
-  // 3c. Regression (2026-08-29): SPA photo-viewer dialogs wipe document.title
+  // 3c. Regression (2026-08-31): private profile cover URLs can contain only
+  //     stp=s720x720 (without cstp/ctp). That stp is part of the signed CDN
+  //     URL; stripping it makes the download fail with HTTP 403. There is no
+  //     safe upgrade target without cstp, so signed URLs must stay verbatim.
+  {
+    const signedCover = 'https://scontent.fmcz13-1.fna.fbcdn.net/v/t1.6435-9/136080444_425404421936358_7753828679786143013_n.jpg?stp=dst-jpg_s720x720_tt6&_nc_cat=107&_nc_sid=cf85f3&_nc_ohc=cover-signature&oh=cover-hmac&oe=cover-expiry';
+    assert.strictEqual(
+      MetaCdn.upgradeUrl(signedCover, 'facebook'),
+      signedCover,
+      'signed Facebook cover URL without cstp must preserve stp and all signature parameters'
+    );
+  }
+
+  // 3d. Regression (2026-08-29): SPA photo-viewer dialogs wipe document.title
   //     to a generic value, so the ZIP was named facebook_Facebook_Media_...
   //     even though the popup showed the profile name. The detector must pull
   //     the identity from the URL (profile.php?id, set=pb/t/a grammars, slugs)
