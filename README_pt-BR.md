@@ -66,11 +66,13 @@ Novas plataformas se integram ao mesmo Core — sem alterar a infraestrutura de 
 
 1. Crie `src/plugins/<plataforma>/` implementando o contrato de plugin da plataforma.
 2. Registre o plugin de forma determinística no registro de plugins.
-3. Adicione fixtures HAR/JSON em `tests/fixtures/<plataforma>/` e testes de contrato em `tests/contracts/`.
+3. Adicione fixtures compactas extraídas em `tests/fixtures/extracted/<plataforma>/` (e um HAR de origem sanitizado em `tests/fixtures/har/<plataforma>/` quando for necessária evidência do formato de rede), além dos testes de contrato em `tests/contracts/`.
 4. Adicione a documentação em `docs/platforms/<plataforma>/` e as strings localizadas em `_locales/`.
 5. Declare apenas as host permissions que a plataforma precisa, com finalidade documentada.
 
 Veja o [guia do sistema de plugins](docs/architecture/plugin-system.md).
+
+Veja o [CHANGELOG.md](CHANGELOG.md) para o histórico de releases.
 
 ---
 
@@ -128,11 +130,14 @@ O repositório conta com validação estrita e testes automatizados:
 # Instalar dependências
 bun install
 
-# Executar gate de validação local completo (replays HAR + typecheck + testes + regras)
+# Executar gate de validação local rápido (fixtures compactas + inventário HAR público + testes + regras)
 bun run validate:local
 
 # Executar gate de validação de CI
 bun run validate
+
+# Executar evidência HAR bruta explicitamente quando houver capturas locais
+bun run validate:raw
 
 # Executar validações individuais
 bun test
@@ -141,6 +146,10 @@ bun run check:manifest
 bun run check:dependencies
 bun run check:i18n
 bun run check:har
+bun run check:fixtures
+
+# Runner opcional de testes isolados em processos paralelos
+bun run test:parallel -- --jobs=4
 ```
 
 ---

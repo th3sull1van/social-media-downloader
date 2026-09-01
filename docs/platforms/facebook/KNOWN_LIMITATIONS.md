@@ -2,7 +2,7 @@
 
 1. **Private Photos / Friends-Only Media**: Requires active login permissions for the target user.
 2. **Encrypted Video Streams**: Some Facebook Live or DRM-protected video streams are not supported for direct download.
-3. **Scan strategy (since v1.1.0)**: media discovery navigates the profile's photo tabs (`photos_of`, `photos_by`, `photos_albums`, custom albums) with progressive scrolling and harvests rendered DOM photos plus embedded `application/json` payloads. Consequences:
+3. **Current scan strategy**: media discovery navigates the profile's photo tabs (`photos_of`, `photos_by`, `photos_albums`, custom albums) with progressive scrolling and harvests rendered DOM photos plus embedded `application/json` payloads. Consequences:
    - The scan is **visible** in the tab (the page scrolls on its own). Do not switch tabs mid-scan.
    - The Comet Router navigation helper (`currentCometRouterInstance` / `CometRouter` via `window.require`) is a private, undocumented API and may break without notice; when it fails the scanner falls back to guarded DOM link clicks and the History API without allowing a full-page reload.
 4. **GraphQL discovery**: the injected script no longer holds a `FETCH_FB_GRAPHQL`/`RESOLVE_FB_PHOTO` bridge — those handlers were dead (nothing dispatched them) and were removed. Photo discovery relies on in-page Comet navigation plus fetch/XHR response interception (`broadcastMediaBatch` → `fbProcessGraphQLText`) and DOM harvesting. Do not rely on GraphQL doc IDs for new features without capturing a fresh HAR first.

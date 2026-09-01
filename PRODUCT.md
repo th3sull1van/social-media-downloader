@@ -23,7 +23,7 @@ Original maximum resolution through authentic CDN extraction: no compression, no
 - Loaded unpacked via `chrome://extensions/` developer mode; no store install flow.
 - Used while browsing Instagram, Facebook, or Reddit: the popup is opened from the toolbar, and in-page overlay controls appear on supported pages.
 - Workflows: detect current platform/target → scan (all or per-type quick scans, e.g. Instagram Posts/Stories/Highlights/HD Profile Pic, Reddit Galleries/Videos/RedGifs) → review media items → download individually into `Downloads/SMD/<Platform>/...` or package as a timestamped ZIP.
-- Development is driven by sanitized HAR replay regression tests (`bun run validate:local`); Bun is the dev toolchain, the browser is the production runtime.
+- Development is driven by compact sanitized fixture replay (`bun run validate:local`), with raw HAR replay as an explicit evidence gate for platform/network changes (`bun run validate:raw`); Bun is the dev toolchain, the browser is the production runtime.
 
 ## Capabilities and Constraints
 
@@ -46,7 +46,7 @@ Original maximum resolution through authentic CDN extraction: no compression, no
 
 - Bilingual READMEs (English, pt-BR) at repo root describing capabilities, download structure, and privacy posture.
 - Per-platform architecture documentation under `docs/platforms/{instagram,facebook,reddit}/`.
-- Sanitized HAR regression fixtures and a HAR validation gate (`bun run check:har`); private captures stay in gitignored `fixtures-private/`.
+- Compact sanitized regression fixtures, a public HAR inventory gate (`bun run check:har`), and an explicit raw HAR evidence gate (`bun run validate:raw`); private captures stay in gitignored `fixtures-private/`.
 - Existing implementation: `src/popup/` (popup.html/css/js), `src/core/`, `src/plugins/`, `src/background/`, `src/content/`, `src/offscreen/`.
 - Absences future work must not fabricate: no testimonials, user quotes, benchmarks, press, pricing, or usage statistics exist anywhere in the repo.
 

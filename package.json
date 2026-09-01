@@ -1,6 +1,6 @@
 {
   "name": "social-media-downloader",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Chrome Extension (Manifest V3) to download photos, videos, reels, stories, highlights, DASH videos (with audio), galleries, and profiles from Instagram, Facebook, and Reddit in maximum resolution.",
   "main": "src/background/background.js",
   "type": "module",

@@ -18,13 +18,13 @@ Thank you for your interest in contributing to Social Media Downloader!
    ```bash
    bun run validate:local
    ```
-   This runs fixture safety/inventory, typecheck, the full test suite, and all architectural, manifest, and i18n checks. Platform or network changes must also replay the relevant HAR scenarios and record the fixture and result in the pull request.
+   This runs compact-fixture safety/inventory, typecheck, the full test suite, and all architectural, manifest, and i18n checks. Platform or network changes must also run the relevant raw HAR evidence gate when a local capture is available and record the fixture and result in the pull request.
 
-   CI-safe validation uses only sanitized versioned fixtures under `tests/fixtures/har/`. Private captures under `fixtures-private/` may support local replay but cannot satisfy CI coverage.
+   Routine CI-safe validation uses the versioned compact fixtures under `tests/fixtures/extracted/` and the public HAR inventory under `tests/fixtures/har/`. Private captures under `fixtures-private/` are optional local evidence and cannot satisfy CI coverage.
 
-   For a platform change, run:
+   For a platform or network change with local captures, run:
    ```bash
-   bun tests/integration/har-replay.test.js
-   bun tests/integration/har-replay-platforms.test.js
+   bun run validate:raw
    ```
+   If the changed response shape is not represented, generate the smallest allowlisted fixture with `bun run fixtures:extract` and validate it with `bun run check:fixtures`.
 4. Submit a Pull Request.
