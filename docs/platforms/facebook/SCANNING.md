@@ -11,3 +11,6 @@
   `media.gallery`, `media.video`; `scan.pagination` where the feed is paged.
 - **Invariants:** album identity, collection identity, source-tab identity and
   observable media ordering are preserved (SPEC §88, AGENTS §82).
+- **SPA navigation:** tab changes use the Comet router when available; guarded
+  synthetic tab clicks and `history.pushState` are fallbacks that do not permit
+  the anchor's default full-page reload.

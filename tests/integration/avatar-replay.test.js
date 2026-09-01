@@ -79,7 +79,7 @@ export async function runAvatarReplayTests() {
       origin: 'https://www.facebook.com',
       href: 'https://www.facebook.com/example.private.user/photos'
     },
-    facebookPayloads: [
+    facebookInitialPayloads: [
       // Simulate a generic Photo node arriving before the profile header. The
       // dedicated header item must win and retain its category.
       { data: { node: { id: '425404418603025', image: privateHeaderUser.cover_photo.photo.image } } },
@@ -90,6 +90,7 @@ export async function runAvatarReplayTests() {
   const coverItem = privateHeader.media.find((item) => item.category === 'facebook_cover_photo');
   assert.ok(profileItem, 'private Facebook profile header must yield a profile-picture download item');
   assert.ok(coverItem, 'private Facebook profile header must yield a cover-photo download item');
+  assert.strictEqual(privateHeader.targetName, 'Example Private User', 'initial Facebook header sweep must retain Title Case display name');
   assert.ok(profileItem.downloadUrl.includes('ctp=s1080x1080'), 'profilePicLarge must use the signed max render');
   assert.strictEqual(privateHeader.avatarUrl, profileItem.downloadUrl, 'header preview and profile download must use the same URL');
   assert.strictEqual(privateHeader.media.some((item) => item.id === '100000000000002'), false, 'friend facepile avatar must not leak into downloads');

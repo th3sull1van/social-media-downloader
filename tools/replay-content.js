@@ -310,8 +310,8 @@ export async function replayContentScript(harPath) {
  * receives avatar data through the main-world batch bridge, while Reddit gets
  * it through the plugin-owned lightweight message.
  *
- * @param {{ platform: 'facebook'|'reddit', location: { hostname: string, pathname: string, search?: string, origin: string, href: string }, facebookPayload?: any, facebookPayloads?: any[], redditAvatarUrl?: string }} options
- * @returns {Promise<{ avatarUrl: string, media: any[], messages: any[] }>}
+ * @param {{ platform: 'facebook'|'reddit', location: { hostname: string, pathname: string, search?: string, origin: string, href: string }, facebookPayload?: any, facebookPayloads?: any[], facebookInitialPayloads?: any[], redditAvatarUrl?: string }} options
+ * @returns {Promise<{ avatarUrl: string, targetName: string, media: any[], messages: any[] }>}
  */
 export async function replayTargetAvatarContentScript(options) {
   const contentSource = fs.readFileSync(
@@ -349,6 +349,9 @@ export async function replayTargetAvatarContentScript(options) {
     search: '',
     ...options.location
   };
+  const initialFacebookScripts = options.platform === 'facebook' && Array.isArray(options.facebookInitialPayloads)
+    ? options.facebookInitialPayloads.map((payload) => ({ textContent: JSON.stringify(payload) }))
+    : [];
   const sandbox = {
     console,
     Math: { random: () => 0.5, floor: Math.floor, min: Math.min, max: Math.max, round: Math.round, abs: Math.abs },
@@ -371,7 +374,9 @@ export async function replayTargetAvatarContentScript(options) {
       createElement: (tag) => fakeElement(tag),
       getElementById: () => null,
       querySelector: () => null,
-      querySelectorAll: () => [],
+      querySelectorAll: (selector = '') => selector === 'script[type="application/json"]'
+        ? initialFacebookScripts
+        : [],
       addEventListener() {},
       removeEventListener() {}
     }
@@ -422,7 +427,12 @@ export async function replayTargetAvatarContentScript(options) {
   for (const listener of onMessageListeners) {
     listener({ type: 'GET_PAGE_STATE' }, {}, (response) => { pageState = response; });
   }
-  return { avatarUrl: pageState?.avatarUrl || '', media: pageState?.media || [], messages };
+  return {
+    avatarUrl: pageState?.avatarUrl || '',
+    targetName: pageState?.targetName || '',
+    media: pageState?.media || [],
+    messages
+  };
 }
 
 // CLI mode

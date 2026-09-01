@@ -203,6 +203,10 @@
     state.targetAvatarUrl = '';
     facebookFullByPhotoId.clear();
     facebookDedicatedMediaIds.clear();
+    if (reason === 'target changed') {
+      facebookDisplayName = '';
+      facebookDisplayNameTarget = '';
+    }
     if (!hadState) return;
     updateFloatingWidgetBadge();
     renderModalGrid();
@@ -219,6 +223,11 @@
   // IDs separate so the recursive walker does not emit the same cover again
   // as a generic album item.
   const facebookDedicatedMediaIds = new Set();
+  // Facebook often exposes only the URL slug in the document title. Once a
+  // target header payload gives us the real display name, retain it across
+  // SPA tab changes and subsequent GET_PAGE_STATE calls.
+  let facebookDisplayName = '';
+  let facebookDisplayNameTarget = '';
 
   function facebookTargetKey(url = window.location.href) {
     if (!isFacebook) return '';
@@ -364,6 +373,14 @@
     return '';
   }
 
+  function fbNameLooksRouteDerived(name, href = window.location.href) {
+    const routeName = fbNameFromUrl(href);
+    if (!name || !routeName) return false;
+    const normalizedName = fbNormalizeIdentity(name);
+    const normalizedRoute = fbNormalizeIdentity(routeName);
+    return normalizedName === normalizedRoute || normalizedName.startsWith(`${normalizedRoute} `);
+  }
+
   function detectTarget() {
     const pathname = window.location.pathname;
 
@@ -421,6 +438,12 @@
 
       if (!name) {
         name = fbNameFromUrl(window.location.href);
+      }
+
+      const currentFacebookTarget = facebookTargetKey();
+      if (facebookDisplayName && facebookDisplayNameTarget === currentFacebookTarget &&
+          (!name || fbNameLooksRouteDerived(name))) {
+        name = facebookDisplayName;
       }
 
       // SPA photo-viewer dialogs wipe document.title to a generic value; when
@@ -1454,6 +1477,20 @@
     return objectNames.some((name) => identity.names.has(name));
   }
 
+  function fbAdoptTargetDisplayName(obj) {
+    if (!fbObjectMatchesTarget(obj)) return;
+
+    const candidate = fbCleanTitle(obj?.name || obj?.display_name || obj?.short_name || '');
+    if (!candidate) return;
+
+    const targetKey = facebookTargetKey();
+    if (!targetKey) return;
+    facebookDisplayName = candidate;
+    facebookDisplayNameTarget = targetKey;
+    state.targetName = candidate;
+    state.username = candidate;
+  }
+
   /**
    * Facebook uses several names for the target profile picture depending on
    * which header fragment was prefetched. `profile_picture` is present in some
@@ -1511,6 +1548,8 @@
 
   function fbCaptureProfileMedia(obj, collectedItems) {
     if (!fbObjectMatchesTarget(obj)) return;
+
+    fbAdoptTargetDisplayName(obj);
 
     const identity = fbTargetIdentity();
     const identityFallback = [...identity.ids][0] || [...identity.names][0] || 'target';
@@ -1805,6 +1844,26 @@
     }
   }
 
+  async function fbTryDomTabNavigation(el, targetKey) {
+    if (!el) return false;
+    const beforeKey = currentNavigationKey();
+    const preventNativeNavigation = (event) => event.preventDefault();
+
+    // A synthetic click on an <a> can perform the anchor's default navigation
+    // even when Facebook's React handler does not recognize the untrusted
+    // event. Prevent that full-document navigation, then let the Comet router
+    // or history fallback below take over if the click did not route the SPA.
+    try { el.addEventListener?.('click', preventNativeNavigation, true); } catch (e) {}
+    try {
+      fbClickElement(el);
+    } finally {
+      try { el.removeEventListener?.('click', preventNativeNavigation, true); } catch (e) {}
+    }
+
+    await new Promise(r => setTimeout(r, 150));
+    return currentNavigationKey() !== beforeKey || fbGetCanonicalTabKey(window.location.href) === targetKey;
+  }
+
   /**
    * Progressive pagination engine for Facebook photo collections.
    */
@@ -1928,18 +1987,14 @@
       if (domLink) {
         domLink.scrollIntoView({ behavior: 'instant', block: 'center' });
         await new Promise(r => setTimeout(r, 100));
-        fbClickElement(domLink);
-        try { domLink.click(); } catch (e) {}
-        routed = true;
+        routed = await fbTryDomTabNavigation(domLink, targetKey);
       } else {
         const allTabs = Array.from(document.querySelectorAll('a[role="tab"], div[role="tablist"] a, div[role="tablist"] [role="tab"], div[role="tablist"] div[role="button"]'));
         for (const tabEl of allTabs) {
           if (fbGetCanonicalTabKey(tabEl) === targetKey) {
             tabEl.scrollIntoView({ behavior: 'instant', block: 'center' });
             await new Promise(r => setTimeout(r, 100));
-            fbClickElement(tabEl);
-            try { tabEl.click(); } catch (e) {}
-            routed = true;
+            routed = await fbTryDomTabNavigation(tabEl, targetKey);
             break;
           }
         }
@@ -2863,11 +2918,25 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       createFloatingUI();
+      if (isFacebook) {
+        // The initial Facebook GraphQL response can arrive before the popup
+        // opens. Harvest embedded header data now so the first state already
+        // has the target name and avatar instead of a facepile candidate.
+        fbSweepScriptTags();
+        harvestFacebookDomPhotos();
+      }
       scheduleTargetAvatarRefresh();
       if (isInstagram && state.username) scanProfileAvatar();
     });
   } else {
     createFloatingUI();
+    if (isFacebook) {
+      // The initial Facebook GraphQL response can arrive before the popup
+      // opens. Harvest embedded header data now so the first state already
+      // has the target name and avatar instead of a facepile candidate.
+      fbSweepScriptTags();
+      harvestFacebookDomPhotos();
+    }
     scheduleTargetAvatarRefresh();
     if (isInstagram && state.username) scanProfileAvatar();
   }
