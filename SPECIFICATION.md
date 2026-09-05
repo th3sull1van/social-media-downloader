@@ -1420,6 +1420,21 @@ Core should only deduplicate using a contract if the semantics are generic.
 
 Do not assume identical media identity logic across platforms.
 
+`MediaItem.deduplicationKey` is an optional opaque plugin-provided identity including
+origin and media type. `deduplicationPriority` is an optional number: higher wins,
+equal priority keeps first discovery. The generic selector preserves group order and
+keeps every item without a key. Popup selection applies this contract only when the
+plugin declares `processing.deduplication` and the user enables the control.
+
+Binary download dedup uses versioned `sha256:v1:` signatures of the full bytes;
+legacy CRC-32/size history cannot match them. CRC-32 remains the ZIP integrity field.
+With binary dedup enabled, one payload is processed at a time. Individual signatures
+are committed only after Chrome reports `complete`; ZIP signatures are collected
+only for accepted entries and committed after the ZIP download reports `complete`.
+Failures/interruption never confirm a signature. Cancellation or worker termination
+before confirmation may cause a later re-download rather than an incorrect skip.
+
+
 ---
 
 # 49. Storage Service

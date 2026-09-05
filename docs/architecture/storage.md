@@ -7,6 +7,8 @@
 at 50,000 entries. A download job loads one `Set` for historical lookups instead
 of reading storage per media item. Clearing history invalidates active snapshots
 and prevents older jobs from writing the cleared history back. Writes are serialized.
+Binary identity and completion requirements are defined in SPECIFICATION.md §48.
+Old CRC-32 signatures remain harmless historical entries; new jobs cannot match them.
 
 ## Temporary media
 
