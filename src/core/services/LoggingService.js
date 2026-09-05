@@ -54,12 +54,12 @@ export class Logger {
     // Error instances lose message/stack under JSON.stringify (non-enumerable props),
     // which made every logged failure appear as {} — un-diagnosable in production.
     if (arg instanceof Error) {
-      return {
+      return Logger.sanitize({
         name: arg.name,
         message: arg.message,
         code: /** @type {any} */ (arg).code,
         stack: typeof arg.stack === 'string' ? arg.stack.split('\n').slice(0, 3).join(' | ') : undefined
-      };
+      });
     }
     if (typeof arg === 'string') {
       return arg
@@ -77,6 +77,8 @@ export class Logger {
               obj[k] = '<REDACTED>';
             } else if (typeof obj[k] === 'object') {
               walk(obj[k]);
+            } else if (typeof obj[k] === 'string') {
+              obj[k] = Logger.sanitize(obj[k]);
             }
           }
         };

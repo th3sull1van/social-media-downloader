@@ -5,6 +5,13 @@ import assert from 'node:assert';
 import { Logger } from '../../src/core/services/LoggingService.js';
 
 export async function runLoggingDiagnosticsTests() {
+  for (const value of [
+    new Error('Request failed: token=audit_secret'),
+    { nested: [{ message: 'Request failed: token=audit_secret' }] }
+  ]) {
+    assert.ok(!JSON.stringify(Logger.sanitize(value)).includes('audit_secret'),
+      'error fields and nested strings must use credential redaction');
+  }
   // 1. Logger sanitization
   const sensitiveString = 'https://example.com/api?fb_dtsg=NAf12345&token=secret_abc';
   const cleanString = /** @type {string} */ (Logger.sanitize(sensitiveString));
