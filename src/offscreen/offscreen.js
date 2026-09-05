@@ -151,38 +151,131 @@ const state = {
   completed: 0,
   cancelled: false,
   lastPct: -1,
-  lastObjectUrl: null,
-  revokeTimer: null,
-  /** @type {Set<string>} */
-  generatedBlobUrls: new Set()
+  sessionId: null
 };
 
 function reportProgress(patch) {
   try {
-    chrome.runtime.sendMessage({ type: 'ZIP_OFFSCREEN_PROGRESS', patch }).catch(() => {});
+    chrome.runtime.sendMessage({ type: 'ZIP_OFFSCREEN_PROGRESS', sessionId: state.sessionId, patch }).catch(() => {});
   } catch (e) {}
 }
 
-async function cleanupOpfs() {
+// All mutations run on one message queue. A resource owns its directory until the
+// browser confirms a terminal download state; there is no time-based deletion.
+const resources = new Map();
+const resourceUrls = new Map();
+const MAX_CHUNK_BYTES = 512 * 1024;
+
+async function tempRoot() {
+  const root = await navigator.storage.getDirectory();
+  return root.getDirectoryHandle('smd_temp', { create: true });
+}
+
+async function removeResource(id) {
+  const resource = resources.get(id);
+  if (resource?.writable) {
+    await resource.writable.abort();
+    resource.writable = null;
+  }
+  if (resource?.objectUrl) URL.revokeObjectURL(resource.objectUrl);
   try {
-    if (typeof navigator !== 'undefined' && navigator.storage && typeof navigator.storage.getDirectory === 'function') {
-      const root = await navigator.storage.getDirectory();
-      await root.removeEntry('smd_zip_temp', { recursive: true });
+    await (await tempRoot()).removeEntry(id, { recursive: true });
+  } catch (error) {
+    if (error?.name !== 'NotFoundError') throw error;
+  }
+  if (resource?.objectUrl) resourceUrls.delete(resource.objectUrl);
+  resources.delete(id);
+}
+
+async function createResource(mimeType) {
+  const id = crypto.randomUUID();
+  const dir = await (await tempRoot()).getDirectoryHandle(id, { create: true });
+  const resource = { id, dir, mimeType, writable: null, file: null, objectUrl: null };
+  resources.set(id, resource);
+  try {
+    resource.file = await dir.getFileHandle('payload', { create: true });
+    resource.writable = await resource.file.createWritable();
+    return resource;
+  } catch (error) {
+    await removeResource(id);
+    throw error;
+  }
+}
+
+async function publishResource(resource) {
+  await resource.writable.close();
+  resource.writable = null;
+  const file = await resource.file.getFile();
+  resource.objectUrl = URL.createObjectURL(file.slice(0, file.size, resource.mimeType));
+  resourceUrls.set(resource.objectUrl, resource.id);
+  // Persist ownership before returning the URL, including the gap before a
+  // download ID is known. Recovery matches the browser's in-progress URLs.
+  const metadata = await resource.dir.getFileHandle('resource.json', { create: true });
+  const writer = await metadata.createWritable();
+  try {
+    await writer.write(JSON.stringify({ objectUrl: resource.objectUrl }));
+    await writer.close();
+  } catch (error) {
+    await writer.abort();
+    throw error;
+  }
+  return { ok: true, objectUrl: resource.objectUrl, resourceId: resource.id };
+}
+
+async function recoverResources(activeUrls) {
+  if (!Array.isArray(activeUrls)) return { ok: false, reason: 'invalid_data' };
+  const active = new Set(activeUrls);
+  const root = await tempRoot();
+  for await (const [id, dir] of root.entries()) {
+    if (dir.kind !== 'directory' || !/^[a-f0-9-]{36}$/.test(id)) continue;
+    let objectUrl;
+    try {
+      const metadata = await (await dir.getFileHandle('resource.json')).getFile();
+      objectUrl = JSON.parse(await metadata.text()).objectUrl;
+    } catch (error) {
+      if (error?.name !== 'NotFoundError' && !(error instanceof SyntaxError)) throw error;
     }
-  } catch (e) {}
+    if (objectUrl && active.has(objectUrl)) {
+      if (!resources.has(id)) resources.set(id, { id, dir, objectUrl, writable: null });
+      resourceUrls.set(objectUrl, id);
+    } else {
+      await removeResource(id);
+      if (state.sessionId === id) {
+        state.active = false;
+        state.writable = null;
+        state.sessionId = null;
+        state.entries = [];
+        state.currentEntry = null;
+      }
+    }
+  }
+  // Legacy versions used a single directory without ownership metadata. Do not
+  // remove it while any extension blob download could still be using it.
+  if (active.size === 0) {
+    try {
+      await (await navigator.storage.getDirectory()).removeEntry('smd_zip_temp', { recursive: true });
+    } catch (error) {
+      if (error?.name !== 'NotFoundError') throw error;
+    }
+  }
+  return { ok: true };
 }
 
 async function closeAndCleanupZip() {
-  if (state.writable) {
-    try { await state.writable.abort(); } catch (e) {}
-    state.writable = null;
-  }
-  state.currentEntry = null;
+  const id = state.sessionId;
   state.active = false;
-  await cleanupOpfs();
+  if (id) await removeResource(id);
+  state.writable = null;
+  state.currentEntry = null;
+  state.entries = [];
+  state.tempDirHandle = null;
+  state.zipFileHandle = null;
+  state.sessionId = null;
 }
 
 async function resetState() {
+  // Finished resources belong to their browser downloads, not the next ZIP.
+  if (state.active || state.writable) await closeAndCleanupZip();
   state.active = false;
   state.entries = [];
   state.currentEntry = null;
@@ -191,37 +284,29 @@ async function resetState() {
   state.cancelled = false;
   state.lastPct = -1;
   state.entrySequence = 0;
-
-  if (state.writable) {
-    try { await state.writable.abort(); } catch (e) {}
-    state.writable = null;
-  }
-
-  await cleanupOpfs();
-
+  state.sessionId = null;
   try {
-    if (typeof navigator === 'undefined' || !navigator.storage || typeof navigator.storage.getDirectory !== 'function') {
+    if (typeof navigator === 'undefined' || !navigator.storage?.getDirectory) {
       return { ok: false, reason: 'opfs_unavailable' };
     }
-
-    const root = await navigator.storage.getDirectory();
-    state.tempDirHandle = await root.getDirectoryHandle('smd_zip_temp', { create: true });
-    state.zipFileHandle = await state.tempDirHandle.getFileHandle('archive.zip', { create: true });
-    state.writable = await state.zipFileHandle.createWritable();
+    const resource = await createResource('application/zip');
+    state.sessionId = resource.id;
+    state.tempDirHandle = resource.dir;
+    state.zipFileHandle = resource.file;
+    state.writable = resource.writable;
     state.active = true;
-    return { ok: true, storage: 'opfs', maxBytes: MAX_ZIP_BYTES };
+    return { ok: true, sessionId: resource.id, storage: 'opfs', maxBytes: MAX_ZIP_BYTES };
   } catch (error) {
-    state.tempDirHandle = null;
-    state.zipFileHandle = null;
-    state.writable = null;
-    await cleanupOpfs();
+    await closeAndCleanupZip();
     return { ok: false, reason: dataErrorReason(error, 'opfs_unavailable') };
   }
 }
 
 function base64ToBytes(b64) {
   if (typeof b64 !== 'string') throw new Error('invalid_data');
+  if (typeof b64 !== 'string' || b64.length > Math.ceil(MAX_CHUNK_BYTES / 3) * 4) throw new Error('invalid_data');
   const bin = atob(b64);
+  if (bin.length > MAX_CHUNK_BYTES) throw new Error('invalid_data');
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   return bytes;
@@ -246,7 +331,7 @@ async function beginEntry(name) {
   const minimumFinalSize = state.currentOffset + localHeader.byteLength + ZIP_DATA_DESCRIPTOR_BYTES + 46 + nameBytes.length + 22;
   if (minimumFinalSize > MAX_ZIP_BYTES) return { ok: false, reason: 'size_limit', jobBytes: state.currentOffset };
 
-  const entryId = `entry_${++state.entrySequence}`;
+  const entryId = `${state.sessionId}_${++state.entrySequence}`;
   const offset = state.currentOffset;
   try {
     await writeBytes(localHeader);
@@ -385,92 +470,79 @@ async function finishZip(zipFilename, discard) {
     }
 
     await writeBytes(createEocdRecord(state.entries.length, cdSize, cdStartOffset));
-    await state.writable.close();
+    const published = await publishResource(resources.get(state.sessionId));
     state.writable = null;
+    state.entries = [];
+    state.zipFileHandle = null;
+    state.tempDirHandle = null;
     reportProgress({ status: 'PACKAGING_ZIP', zipPercent: 100 });
-
-    const zipBlob = await state.zipFileHandle.getFile();
-    const objectUrl = URL.createObjectURL(zipBlob);
-    state.lastObjectUrl = objectUrl;
-    clearTimeout(state.revokeTimer);
-    state.revokeTimer = setTimeout(() => {
-      if (state.lastObjectUrl) {
-        URL.revokeObjectURL(state.lastObjectUrl);
-        state.lastObjectUrl = null;
-      }
-      cleanupOpfs().catch(() => {});
-    }, 600_000);
-
-    return { ok: true, objectUrl, completed: state.completed, size: finalSize };
+    return { ...published, completed: state.completed, size: finalSize };
   } catch (error) {
     await closeAndCleanupZip();
     return { ok: false, reason: dataErrorReason(error, 'zip_failed'), completed: state.completed };
   }
 }
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (!message) return;
-
-  switch (message.type) {
-    case 'OFFSCREEN_BEGIN_ZIP':
-      resetState().then(sendResponse).catch((error) => sendResponse({ ok: false, reason: dataErrorReason(error, 'opfs_unavailable') }));
-      return true;
-
-    case 'OFFSCREEN_BEGIN_ENTRY':
-      beginEntry(message.name).then(sendResponse).catch((error) => sendResponse({ ok: false, reason: dataErrorReason(error) }));
-      return true;
-
-    case 'OFFSCREEN_WRITE_CHUNK':
-      writeChunk(message.entryId, message.dataB64).then(sendResponse).catch((error) => sendResponse({ ok: false, reason: dataErrorReason(error) }));
-      return true;
-
-    case 'OFFSCREEN_END_ENTRY':
-      endEntry(message.entryId).then(sendResponse).catch((error) => sendResponse({ ok: false, reason: dataErrorReason(error) }));
-      return true;
-
-    case 'OFFSCREEN_ABORT_ENTRY':
-      abortEntry(message.entryId).then(sendResponse).catch((error) => sendResponse({ ok: false, reason: dataErrorReason(error) }));
-      return true;
-
-    case 'OFFSCREEN_FINISH_ZIP':
-      finishZip(message.zipFilename, message.discard).then(sendResponse).catch((error) => sendResponse({ ok: false, reason: dataErrorReason(error) }));
-      return true;
-
-    case 'OFFSCREEN_ABORT_ZIP':
-      state.cancelled = true;
-      closeAndCleanupZip().then(() => sendResponse({ ok: true })).catch(() => sendResponse({ ok: false, reason: 'opfs_cleanup_failed' }));
-      return true;
-
-    // Creates a blob URL for generated artifacts (muxed MP4, RedGifs transcodes).
-    // The service worker cannot call URL.createObjectURL itself. Binary arrives
-    // base64-encoded because chrome.runtime.sendMessage JSON-serializes messages.
-    case 'OFFSCREEN_CREATE_BLOB_URL': {
-      try {
-        if (typeof message.dataB64 !== 'string' || message.dataB64.length === 0) {
-          sendResponse({ ok: false, reason: 'invalid_data' });
-          return;
-        }
-        const bytes = base64ToBytes(message.dataB64);
-        const blob = new Blob([bytes], { type: message.mimeType || 'application/octet-stream' });
-        const objectUrl = URL.createObjectURL(blob);
-        state.generatedBlobUrls.add(objectUrl);
-        sendResponse({ ok: true, objectUrl });
-      } catch (error) {
-        sendResponse({ ok: false, reason: error?.message || 'blob_url_failed' });
-      }
-      return;
-    }
-
-    case 'OFFSCREEN_REVOKE_BLOB_URLS': {
-      const urls = Array.isArray(message.urls) ? message.urls : [];
-      for (const url of urls) {
-        if (state.generatedBlobUrls.has(url)) {
-          URL.revokeObjectURL(url);
-          state.generatedBlobUrls.delete(url);
-        }
-      }
-      sendResponse({ ok: true });
-      return;
-    }
+async function handleMessage(message) {
+  const { type, sessionId, resourceId } = message;
+  if (type === 'OFFSCREEN_ABORT_ZIP' && sessionId && !resources.has(sessionId)) return { ok: true };
+  if (['OFFSCREEN_BEGIN_ENTRY', 'OFFSCREEN_WRITE_CHUNK', 'OFFSCREEN_END_ENTRY',
+       'OFFSCREEN_ABORT_ENTRY', 'OFFSCREEN_FINISH_ZIP', 'OFFSCREEN_ABORT_ZIP'].includes(type) &&
+      (!sessionId || sessionId !== state.sessionId)) {
+    return { ok: false, reason: 'stale_session' };
   }
+  switch (type) {
+    case 'OFFSCREEN_BEGIN_ZIP': return resetState();
+    case 'OFFSCREEN_BEGIN_ENTRY': return beginEntry(message.name);
+    case 'OFFSCREEN_WRITE_CHUNK': return writeChunk(message.entryId, message.dataB64);
+    case 'OFFSCREEN_END_ENTRY': return endEntry(message.entryId);
+    case 'OFFSCREEN_ABORT_ENTRY': return abortEntry(message.entryId);
+    case 'OFFSCREEN_FINISH_ZIP': return finishZip(message.zipFilename, message.discard);
+    case 'OFFSCREEN_ABORT_ZIP':
+      // A published file may already be read by the browser, even before the
+      // download() callback supplies an ID. Its URL owns terminal cleanup.
+      if (resources.get(sessionId)?.objectUrl) return { ok: true };
+      state.cancelled = true;
+      await closeAndCleanupZip();
+      return { ok: true };
+    case 'OFFSCREEN_RECOVER_RESOURCES': return recoverResources(message.activeUrls);
+    case 'OFFSCREEN_BEGIN_BLOB': {
+      const resource = await createResource(message.mimeType || 'application/octet-stream');
+      return { ok: true, resourceId: resource.id };
+    }
+    case 'OFFSCREEN_WRITE_BLOB_CHUNK': {
+      const resource = resources.get(resourceId);
+      if (!resource?.writable || resourceId === state.sessionId) return { ok: false, reason: 'resource_not_active' };
+      await resource.writable.write(base64ToBytes(message.dataB64));
+      return { ok: true };
+    }
+    case 'OFFSCREEN_END_BLOB': {
+      const resource = resources.get(resourceId);
+      if (!resource?.writable || resourceId === state.sessionId) return { ok: false, reason: 'resource_not_active' };
+      try { return await publishResource(resource); }
+      catch (error) { await removeResource(resourceId); throw error; }
+    }
+    case 'OFFSCREEN_ABORT_BLOB':
+      if (resources.has(resourceId) && resourceId !== state.sessionId) await removeResource(resourceId);
+      return { ok: true };
+    case 'OFFSCREEN_REVOKE_BLOB_URLS':
+      if (!Array.isArray(message.urls)) return { ok: false, reason: 'invalid_data' };
+      for (const url of message.urls) {
+        const id = resourceUrls.get(url);
+        if (id) await removeResource(id);
+      }
+      return { ok: true };
+    default: return { ok: false, reason: 'unsupported_message' };
+  }
+}
+
+let messageQueue = Promise.resolve();
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (!message?.type?.startsWith('OFFSCREEN_')) return;
+  // Content scripts cannot create/delete extension-owned files.
+  if (sender.tab || (sender.id && sender.id !== chrome.runtime.id)) return;
+  const operation = messageQueue.then(() => handleMessage(message));
+  messageQueue = operation.catch(() => {});
+  operation.then(sendResponse, (error) => sendResponse({ ok: false, reason: dataErrorReason(error, 'opfs_operation_failed') }));
+  return true;
 });

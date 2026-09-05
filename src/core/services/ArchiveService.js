@@ -5,6 +5,7 @@
 
 export class ArchiveService {
   static CHUNK_BYTES = 512 * 1024;
+  static sessionId = null;
   static entryQueue = Promise.resolve();
 
   /**
@@ -30,11 +31,11 @@ export class ArchiveService {
 
   /**
    * Initializes a new ZIP packaging session in the offscreen document.
-   * @returns {Promise<{ ok: boolean, reason?: string, storage?: string, maxBytes?: number }>}
+   * @returns {Promise<{ ok: boolean, reason?: string, sessionId?: string, storage?: string, maxBytes?: number }>}
    */
   static async begin() {
     const res = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_BEGIN_ZIP' });
-    ArchiveService.entryQueue = Promise.resolve();
+    ArchiveService.sessionId = res?.sessionId || null;
     return res || { ok: false, reason: 'no_response' };
   }
 
@@ -63,8 +64,8 @@ export class ArchiveService {
    * @param {string} name
    * @returns {Promise<{ ok: boolean, entryId?: string, reason?: string }>}
    */
-  static async beginEntry(name) {
-    const res = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_BEGIN_ENTRY', name });
+  static async beginEntry(name, sessionId = ArchiveService.sessionId) {
+    const res = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_BEGIN_ENTRY', name, sessionId });
     return res || { ok: false, reason: 'no_response' };
   }
 
@@ -74,10 +75,11 @@ export class ArchiveService {
    * @param {Uint8Array} bytes
    * @returns {Promise<{ ok: boolean, reason?: string, jobBytes?: number }>}
    */
-  static async writeChunk(entryId, bytes) {
+  static async writeChunk(entryId, bytes, sessionId = ArchiveService.sessionId) {
     if (!(bytes instanceof Uint8Array)) return { ok: false, reason: 'invalid_data' };
     const res = await ArchiveService.sendToOffscreen({
       type: 'OFFSCREEN_WRITE_CHUNK',
+      sessionId,
       entryId,
       dataB64: ArchiveService.bytesToBase64(bytes)
     });
@@ -89,8 +91,8 @@ export class ArchiveService {
    * @param {string} entryId
    * @returns {Promise<{ ok: boolean, reason?: string }>}
    */
-  static async abortEntry(entryId) {
-    const res = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_ABORT_ENTRY', entryId });
+  static async abortEntry(entryId, sessionId = ArchiveService.sessionId) {
+    const res = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_ABORT_ENTRY', entryId, sessionId });
     return res || { ok: false, reason: 'no_response' };
   }
 
@@ -99,8 +101,8 @@ export class ArchiveService {
    * @param {string} entryId
    * @returns {Promise<{ ok: boolean, reason?: string, size?: number, crc32?: number }>}
    */
-  static async endEntry(entryId) {
-    const res = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_END_ENTRY', entryId });
+  static async endEntry(entryId, sessionId = ArchiveService.sessionId) {
+    const res = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_END_ENTRY', entryId, sessionId });
     return res || { ok: false, reason: 'no_response' };
   }
 
@@ -114,40 +116,65 @@ export class ArchiveService {
    * @param {Response | ReadableStream | Blob | ArrayBuffer | ArrayBufferView | string} source
    * @returns {Promise<{ ok: boolean, reason?: string, jobBytes?: number, size?: number }>}
    */
-  static async addFileStream(name, source) {
+  static async addFileStream(name, source, signal = undefined, sessionId = ArchiveService.sessionId) {
     return ArchiveService.withEntryLock(async () => {
-      const begin = await ArchiveService.beginEntry(name);
-      if (!begin?.ok || !begin.entryId) return begin || { ok: false, reason: 'no_response' };
-
-      const entryId = begin.entryId;
+      let entryId;
       try {
-        const reader = ArchiveService.getReader(source);
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            if (value instanceof Uint8Array && value.byteLength > 0) {
-              const result = await ArchiveService.writeChunked(entryId, value);
-              if (!result.ok) throw Object.assign(new Error(result.reason || 'chunk_write_failed'), { reason: result.reason });
-            }
-          }
-        } else {
-          const bytes = await ArchiveService.toBytes(source);
-          if (!bytes) throw new Error('invalid_data');
-          const result = await ArchiveService.writeChunked(entryId, bytes);
-          if (!result.ok) throw Object.assign(new Error(result.reason || 'chunk_write_failed'), { reason: result.reason });
-        }
-
-        const end = await ArchiveService.endEntry(entryId);
-        if (!end?.ok) {
-          await ArchiveService.abortEntry(entryId);
-        }
-        return end || { ok: false, reason: 'no_response' };
+        signal?.throwIfAborted();
+        if (sessionId !== ArchiveService.sessionId) throw new Error('stale_session');
+        const begin = await ArchiveService.beginEntry(name, sessionId);
+        if (!begin?.ok || !begin.entryId) throw new Error(begin?.reason || 'no_response');
+        entryId = begin.entryId;
+        await ArchiveService.pipeSource(source,
+          (bytes) => ArchiveService.writeChunk(entryId, bytes, sessionId), signal);
+        const end = await ArchiveService.endEntry(entryId, sessionId);
+        if (!end?.ok) throw new Error(end?.reason || 'no_response');
+        return end;
       } catch (error) {
-        await ArchiveService.abortEntry(entryId);
-        return { ok: false, reason: error?.reason || error?.message || 'stream_failed' };
+        if (entryId) await ArchiveService.abortEntry(entryId, sessionId);
+        // A queued response may never have acquired a reader.
+        const body = /** @type {any} */ (source)?.body || source;
+        if (body?.cancel && !body.locked) await body.cancel().catch(() => {});
+        return { ok: false, reason: signal?.aborted ? 'cancelled' : error?.message || 'stream_failed' };
       }
     });
+  }
+
+  /** Consume one source with bounded transport, acknowledgements and cancellation. */
+  static async pipeSource(source, write, signal = undefined) {
+    const reader = ArchiveService.getReader(source);
+    const cancel = () => { if (reader) void reader.cancel().catch(() => {}); };
+    signal?.addEventListener('abort', cancel, { once: true });
+    try {
+      const send = async (bytes) => {
+        if (!(bytes instanceof Uint8Array)) throw new Error('invalid_data');
+        for (let offset = 0; offset < bytes.byteLength; offset += ArchiveService.CHUNK_BYTES) {
+          signal?.throwIfAborted();
+          const result = await write(bytes.subarray(offset, offset + ArchiveService.CHUNK_BYTES));
+          if (!result?.ok) throw new Error(result?.reason || 'no_response');
+        }
+      };
+      signal?.throwIfAborted();
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          signal?.throwIfAborted();
+          if (done) break;
+          await send(value);
+        }
+      } else {
+        const bytes = await ArchiveService.toBytes(source);
+        if (!bytes) throw new Error('invalid_data');
+        await send(bytes);
+      }
+      signal?.throwIfAborted();
+    } catch (error) {
+      if (reader) await reader.cancel().catch(() => {});
+      throw error;
+    } finally {
+      signal?.removeEventListener('abort', cancel);
+      reader?.releaseLock();
+    }
   }
 
   /**
@@ -192,15 +219,6 @@ export class ArchiveService {
     return null;
   }
 
-  static async writeChunked(entryId, bytes) {
-    for (let offset = 0; offset < bytes.byteLength; offset += ArchiveService.CHUNK_BYTES) {
-      const chunk = bytes.subarray(offset, Math.min(offset + ArchiveService.CHUNK_BYTES, bytes.byteLength));
-      const result = await ArchiveService.writeChunk(entryId, chunk);
-      if (!result?.ok) return result || { ok: false, reason: 'no_response' };
-    }
-    return { ok: true };
-  }
-
   static base64ToBytes(b64) {
     const binary = atob(b64);
     const bytes = new Uint8Array(binary.length);
@@ -214,9 +232,10 @@ export class ArchiveService {
    * @param {boolean} [discard=false]
    * @returns {Promise<{ ok: boolean, objectUrl?: string, reason?: string, completed?: number }>}
    */
-  static async finish(zipFilename, discard = false) {
+  static async finish(zipFilename, discard = false, sessionId = ArchiveService.sessionId) {
     const res = await ArchiveService.sendToOffscreen({
       type: 'OFFSCREEN_FINISH_ZIP',
+      sessionId,
       zipFilename,
       discard
     });
@@ -227,49 +246,53 @@ export class ArchiveService {
    * Aborts an active ZIP job in the offscreen packager.
    * @returns {Promise<boolean>}
    */
-  static async abort() {
-    const res = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_ABORT_ZIP' });
+  static async abort(sessionId = ArchiveService.sessionId) {
+    const res = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_ABORT_ZIP', sessionId });
     return !!(res && res.ok);
   }
 
   /**
    * Creates a Blob URL inside the offscreen document (the service worker has no
    * URL.createObjectURL). Used for generated artifacts such as muxed MP4 videos.
-   * Data is base64-encoded here because runtime.sendMessage JSON-serializes:
+   * Each bounded chunk is base64-encoded because runtime.sendMessage JSON-serializes:
    * raw binary would arrive as {} in the offscreen document.
    * @param {Blob | ArrayBuffer | Uint8Array} data
    * @param {string} [mimeType='application/octet-stream']
    * @returns {Promise<{ ok: boolean, objectUrl?: string, reason?: string }>}
    */
-  static async createBlobUrl(data, mimeType = 'application/octet-stream') {
-    let bytes = null;
-    if (typeof Blob !== 'undefined' && data instanceof Blob) {
-      bytes = new Uint8Array(await data.arrayBuffer());
-    } else if (data instanceof ArrayBuffer) {
-      bytes = new Uint8Array(data);
-    } else if (data && typeof data === 'object' && ArrayBuffer.isView(data)) {
-      bytes = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+  static async createBlobUrl(data, mimeType = 'application/octet-stream', signal = undefined) {
+    let resourceId;
+    try {
+      signal?.throwIfAborted();
+      const begin = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_BEGIN_BLOB', mimeType });
+      resourceId = begin?.resourceId;
+      if (!begin?.ok || !resourceId) throw new Error(begin?.reason || 'no_response');
+      await ArchiveService.pipeSource(data, (bytes) => ArchiveService.sendToOffscreen({
+        type: 'OFFSCREEN_WRITE_BLOB_CHUNK', resourceId, dataB64: ArchiveService.bytesToBase64(bytes)
+      }), signal);
+      const result = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_END_BLOB', resourceId });
+      if (!result?.ok) throw new Error(result?.reason || 'no_response');
+      signal?.throwIfAborted();
+      return result;
+    } catch (error) {
+      if (resourceId) {
+        const cleanup = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_ABORT_BLOB', resourceId });
+        if (!cleanup?.ok) return { ok: false, reason: 'opfs_cleanup_failed' };
+      }
+      return { ok: false, reason: signal?.aborted ? 'cancelled' : error?.message || 'blob_url_failed' };
     }
-    if (!bytes) {
-      return { ok: false, reason: 'invalid_data' };
-    }
-    const res = await ArchiveService.sendToOffscreen({
-      type: 'OFFSCREEN_CREATE_BLOB_URL',
-      dataB64: ArchiveService.bytesToBase64(bytes),
-      mimeType
-    });
-    return res || { ok: false, reason: 'no_response' };
   }
 
   /**
-   * Revokes specific Blob URLs created by OFFSCREEN_CREATE_BLOB_URL.
+   * Releases ZIP and generated-file URLs and their owned OPFS directories.
    * Called when the corresponding download reaches a terminal state.
    * @param {string[]} urls
    * @returns {Promise<void>}
    */
   static async revokeBlobUrls(urls) {
     if (!Array.isArray(urls) || urls.length === 0) return;
-    await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_REVOKE_BLOB_URLS', urls });
+    const result = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_REVOKE_BLOB_URLS', urls });
+    if (!result?.ok) throw new Error(result?.reason || 'opfs_cleanup_failed');
   }
 
   /**

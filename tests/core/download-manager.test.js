@@ -43,10 +43,10 @@ function installChromeStub({ downloadImpl, offscreenReply } = {}) {
         if (typeof cb === 'function') {
           const response = offscreenReply
             ? offscreenReply(serialized)
-            : { ok: true, objectUrl: 'blob:stubbed' };
+            : { ok: true, objectUrl: 'blob:stubbed', resourceId: 'stub-resource', sessionId: 'stub-session' };
           cb(response);
         }
-        return Promise.resolve(offscreenReply ? offscreenReply(serialized) : { ok: true, objectUrl: 'blob:stubbed' });
+        return Promise.resolve(offscreenReply ? offscreenReply(serialized) : { ok: true, objectUrl: 'blob:stubbed', resourceId: 'stub-resource', sessionId: 'stub-session' });
       }
     },
     tabs: {
@@ -255,13 +255,14 @@ export async function runDownloadManagerTests() {
     assert.strictEqual(recorded.downloads.length, 1);
     const blobUrl = recorded.downloads[0].url;
     assert.ok(blobUrl.startsWith('blob:'), 'download should use the offscreen blob URL');
-    assert.ok(dm.blobUrlDownloadIds.has(blobUrl), 'blob URL should be tracked');
+    assert.ok(dm.downloadBlobUrls.has(recorded.downloads.length), 'blob URL should be tracked');
 
     dm.handleDownloadChanged({ id: recorded.downloads.length, state: { current: 'complete' } });
     const revokeMsg = recorded.offscreenMessages.find((m) => m.type === 'OFFSCREEN_REVOKE_BLOB_URLS');
     assert.ok(revokeMsg, 'offscreen revoke message should be sent on completion');
     assert.deepStrictEqual(revokeMsg.urls, [blobUrl]);
-    assert.ok(!dm.blobUrlDownloadIds.has(blobUrl));
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.ok(!dm.downloadBlobUrls.has(recorded.downloads.length));
     uninstallChromeStub();
   }
 
@@ -272,6 +273,7 @@ export async function runDownloadManagerTests() {
     let entryNumber = 0;
     const recorded = installChromeStub({
       offscreenReply: (msg) => {
+        if (msg.type === 'OFFSCREEN_BEGIN_ZIP') return { ok: true, sessionId: 'test-session' };
         if (msg.type === 'OFFSCREEN_BEGIN_ENTRY') {
           entryNumber++;
           return { ok: true, entryId: `stub-entry-${entryNumber}`, jobBytes: 100 };
@@ -343,6 +345,7 @@ export async function runDownloadManagerTests() {
     let entryNumber = 0;
     installChromeStub({
       offscreenReply: (msg) => {
+        if (msg.type === 'OFFSCREEN_BEGIN_ZIP') return { ok: true, sessionId: 'test-session' };
         if (msg.type === 'OFFSCREEN_BEGIN_ENTRY') {
           entryNumber++;
           return { ok: true, entryId: `failed-entry-${entryNumber}` };
@@ -379,8 +382,8 @@ export async function runDownloadManagerTests() {
     const recorded = installChromeStub();
     const dm = new DownloadManager(registry);
     await dm.downloadGeneratedBlob(new Uint8Array([1, 2, 3, 4]), 'SMD/Test/v.mp4');
-    const createMsg = recorded.offscreenMessages.find((m) => m.type === 'OFFSCREEN_CREATE_BLOB_URL');
-    assert.ok(createMsg, 'CREATE_BLOB_URL message must be sent');
+    const createMsg = recorded.offscreenMessages.find((m) => m.type === 'OFFSCREEN_WRITE_BLOB_CHUNK');
+    assert.ok(createMsg, 'WRITE_BLOB_CHUNK message must be sent');
     assert.strictEqual(typeof createMsg.dataB64, 'string', 'blob payload must be base64 string');
     const decoded = Buffer.from(createMsg.dataB64, 'base64');
     assert.deepStrictEqual([...decoded], [1, 2, 3, 4], 'blob bytes must survive the round-trip');
@@ -425,9 +428,9 @@ export async function runDownloadManagerTests() {
       revokeCalled = urls.length === 1 && urls[0] === 'blob:failed';
     };
     const recorded = installChromeStub({
-      offscreenReply: (msg) => msg.type === 'OFFSCREEN_CREATE_BLOB_URL'
+      offscreenReply: (msg) => msg.type === 'OFFSCREEN_END_BLOB'
         ? { ok: true, objectUrl: 'blob:failed' }
-        : { ok: true },
+        : { ok: true, resourceId: 'failed-resource' },
       downloadImpl: (_options, cb) => {
         chromeRef.chrome.runtime.lastError = { message: 'download denied' };
         cb(undefined);

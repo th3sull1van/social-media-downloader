@@ -4,6 +4,7 @@
  */
 import { defaultRegistry } from '../core/application/PluginRegistry.js';
 import { DownloadManager } from '../core/application/DownloadManager.js';
+import { ArchiveService } from '../core/services/ArchiveService.js';
 import { StorageService } from '../core/services/StorageService.js';
 import { InstagramPlugin } from '../plugins/instagram/InstagramPlugin.js';
 import { FacebookPlugin } from '../plugins/facebook/FacebookPlugin.js';
@@ -60,6 +61,32 @@ async function ensureOffscreenDocument() {
   offscreenCreating = null;
 }
 
+// Reconcile once per worker lifetime, before accepting any new resource producer.
+// A failed browser query fails closed: never delete files on an unknown snapshot.
+let resourceRecovery = null;
+function recoverTemporaryResources() {
+  if (!resourceRecovery) {
+    resourceRecovery = (async () => {
+      await ensureOffscreenDocument();
+      const downloads = await chrome.downloads.search({ state: 'in_progress' });
+      const prefix = `blob:${chrome.runtime.getURL('')}`;
+      const activeUrls = downloads.flatMap((item) => [item.url, item.finalUrl]).filter((url) => url?.startsWith(prefix));
+      const result = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_RECOVER_RESOURCES', activeUrls });
+      if (!result?.ok) throw new Error(result?.reason || 'opfs_cleanup_failed');
+    })().catch((error) => { resourceRecovery = null; throw error; });
+  }
+  return resourceRecovery;
+}
+let preparingResources = null;
+function prepareTemporaryResources() {
+  if (!preparingResources) preparingResources = (async () => {
+    if (!await hasOffscreenDocument()) resourceRecovery = null;
+    await recoverTemporaryResources();
+  })().finally(() => { preparingResources = null; });
+  return preparingResources;
+}
+void prepareTemporaryResources().catch((error) => downloadManager.logger.warn('Temporary resource recovery failed:', error));
+
 // 4. Register Chrome Download Listeners
 // Keep filename selection inside chrome.downloads.download({ filename }). Do not
 // register onDeterminingFilename: competing download managers such as IDM may
@@ -67,7 +94,17 @@ async function ensureOffscreenDocument() {
 if (typeof chrome !== 'undefined') {
   if (chrome.downloads?.onChanged) {
     chrome.downloads.onChanged.addListener((delta) => {
+      const tracked = downloadManager.downloadBlobUrls.has(delta.id);
       downloadManager.handleDownloadChanged(delta);
+      if (!tracked && ['complete', 'interrupted'].includes(delta.state?.current)) {
+        // The URL->ID map is volatile; query the browser after a worker restart.
+        void prepareTemporaryResources().then(async () => {
+          const [item] = await chrome.downloads.search({ id: delta.id });
+          const prefix = `blob:${chrome.runtime.getURL('')}`;
+          const urls = [item?.url, item?.finalUrl].filter((url) => url?.startsWith(prefix));
+          await ArchiveService.revokeBlobUrls(urls);
+        }).catch((error) => downloadManager.logger.warn('Temporary download cleanup failed:', error));
+      }
     });
   }
 }
@@ -76,11 +113,12 @@ if (typeof chrome !== 'undefined') {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message) return;
   const type = message.type || message.action;
+  if (type?.startsWith('OFFSCREEN_')) return;
 
   switch (type) {
     case 'START_DOWNLOAD': {
       const { platform, targetName, items, format, options } = message.payload || message;
-      ensureOffscreenDocument().then(() => {
+      prepareTemporaryResources().then(() => {
         return downloadManager.startDownload({ platform, targetName, items, format, options });
       }).then(sendResponse).catch((err) => {
         sendResponse({ success: false, error: err.message });
@@ -157,8 +195,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // progress UI stuck on "Compactando... 100% Cancelar". Only apply progress
       // patches while the job is still running.
       if (downloadManager.activeJob && message.patch &&
+          message.sessionId === downloadManager.activeJob.archiveSessionId &&
           ['QUEUED', 'DOWNLOADING', 'DOWNLOADING_BLOBS', 'PACKAGING_ZIP'].includes(downloadManager.activeJob.status)) {
-        Object.assign(downloadManager.activeJob, message.patch);
+        // The manager owns per-item counters. Offscreen entry acknowledgements
+        // can arrive before/after worker increments and must not overwrite them.
+        const { completed, failed, ...patch } = message.patch;
+        Object.assign(downloadManager.activeJob, patch);
         downloadManager.updateBadge(`${downloadManager.activeJob.completed}/${downloadManager.activeJob.total}`);
         downloadManager.broadcastProgress();
       }

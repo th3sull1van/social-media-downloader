@@ -8,6 +8,16 @@
 export class StorageService {
   /** @type {Map<string, any>} */
   static _memoryStore = new Map();
+  static historyRevision = 0;
+  static historyWrites = Promise.resolve();
+
+  /** One bounded snapshot per job; clearing history invalidates existing snapshots. */
+  static async getHistorySnapshot() {
+    const revision = StorageService.historyRevision;
+    await StorageService.historyWrites;
+    const history = await StorageService.get('core.dedup_history', []);
+    return { revision, signatures: new Set(Array.isArray(history) ? history : []) };
+  }
 
   /**
    * Reads a namespaced key from storage.
@@ -117,19 +127,24 @@ export class StorageService {
    * @param {string[]} signatures
    * @returns {Promise<void>}
    */
-  static async addHistoricalSignatures(signatures) {
+  static async addHistoricalSignatures(signatures, revision = StorageService.historyRevision) {
     if (!Array.isArray(signatures) || signatures.length === 0) return;
-    const history = await StorageService.get('core.dedup_history', []);
-    const set = new Set(Array.isArray(history) ? history : []);
-    for (const sig of signatures) {
-      if (sig) set.add(sig);
-    }
-    // Cap history at 50,000 entries to prevent unbounded storage growth
-    let array = Array.from(set);
-    if (array.length > 50000) {
-      array = array.slice(array.length - 50000);
-    }
-    await StorageService.set('core.dedup_history', array);
+    const operation = StorageService.historyWrites.then(async () => {
+      if (revision !== StorageService.historyRevision) return;
+      const history = await StorageService.get('core.dedup_history', []);
+      const set = new Set(Array.isArray(history) ? history : []);
+      for (const sig of signatures) {
+        if (sig) set.add(sig);
+      }
+      // Cap history at 50,000 entries to prevent unbounded storage growth
+      let array = Array.from(set);
+      if (array.length > 50000) {
+        array = array.slice(array.length - 50000);
+      }
+      if (revision === StorageService.historyRevision) await StorageService.set('core.dedup_history', array);
+    });
+    StorageService.historyWrites = operation.catch(() => {});
+    await operation;
   }
 
   /**
@@ -137,6 +152,9 @@ export class StorageService {
    * @returns {Promise<boolean>}
    */
   static async clearHistory() {
-    return StorageService.set('core.dedup_history', []);
+    StorageService.historyRevision++;
+    const operation = StorageService.historyWrites.then(() => StorageService.set('core.dedup_history', []));
+    StorageService.historyWrites = operation.then(() => {});
+    return operation;
   }
 }

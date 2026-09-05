@@ -119,6 +119,29 @@ function buildMp4(trackId, mdatPayload, tkhdVersion = 0) {
 }
 
 export async function runMuxerTests() {
+  const savedFetch = globalThis.fetch;
+  try {
+    for (const announced of [0, 2, 8]) {
+      const body = new ReadableStream({ start(controller) {
+        controller.enqueue(new Uint8Array([1, 2, 3, 4])); controller.close();
+      } });
+      anyFetch.fetch = async () => new Response(body, { headers: { 'content-length': String(announced) } });
+      const result = await RedditVideoMuxer.fetchStreamWithProgress('https://example.com/media', undefined);
+      assert.deepEqual([...new Uint8Array(result)], [1, 2, 3, 4], 'incorrect content-length must not corrupt media');
+      assert.equal(body.locked, false);
+    }
+    let cancelled = false;
+    const body = new ReadableStream({ cancel() { cancelled = true; } });
+    anyFetch.fetch = async () => new Response(body);
+    const abort = new AbortController();
+    const pending = RedditVideoMuxer.fetchStreamWithProgress('https://example.com/media', undefined, 0, 100, abort.signal);
+    await new Promise((resolve) => setImmediate(resolve));
+    abort.abort();
+    await assert.rejects(pending);
+    assert.equal(cancelled, true);
+    assert.equal(body.locked, false);
+  } finally { globalThis.fetch = savedFetch; }
+
   // 1. parseMp4Boxes finds top-level boxes with 32-bit sizes
   {
     const ftyp = box('ftyp', new Uint8Array(8));

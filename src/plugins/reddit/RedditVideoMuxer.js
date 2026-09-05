@@ -4,11 +4,12 @@
  */
 
 export class RedditVideoMuxer {
-  static async checkUrlExists(url) {
+  static async checkUrlExists(url, signal = undefined) {
     try {
-      const res = await fetch(url, { method: 'HEAD', cache: 'no-cache' });
+      const res = await fetch(url, { method: 'HEAD', cache: 'no-cache', signal });
       return res.ok;
     } catch {
+      signal?.throwIfAborted();
       return false;
     }
   }
@@ -19,7 +20,7 @@ export class RedditVideoMuxer {
    * @param {string} [fallbackUrl]
    * @returns {Promise<{ videoUrl: string | null, audioUrl: string | null, hasAudio: boolean }>}
    */
-  static async resolveStreams(baseUrl, fallbackUrl) {
+  static async resolveStreams(baseUrl, fallbackUrl, signal = undefined) {
     const base = baseUrl.replace(/\/DASH_[^\/?#]+.*$/, '').replace(/\/?$/, '/');
     const videoResolutions = ['DASH_1080.mp4', 'DASH_720.mp4', 'DASH_480.mp4', 'DASH_360.mp4', 'DASH_240.mp4'];
     const audioCandidates = ['DASH_AUDIO_128.mp4', 'DASH_audio.mp4', 'DASH_AUDIO_64.mp4', 'DASH_AUDIO_32.mp4'];
@@ -29,7 +30,7 @@ export class RedditVideoMuxer {
 
     for (const res of videoResolutions) {
       const candidate = base + res;
-      if (await RedditVideoMuxer.checkUrlExists(candidate)) {
+      if (await RedditVideoMuxer.checkUrlExists(candidate, signal)) {
         bestVideoUrl = candidate;
         break;
       }
@@ -41,7 +42,7 @@ export class RedditVideoMuxer {
 
     for (const aud of audioCandidates) {
       const candidate = base + aud;
-      if (await RedditVideoMuxer.checkUrlExists(candidate)) {
+      if (await RedditVideoMuxer.checkUrlExists(candidate, signal)) {
         audioUrl = candidate;
         break;
       }
@@ -62,8 +63,8 @@ export class RedditVideoMuxer {
    * @param {number} [weightPct=100]
    * @returns {Promise<ArrayBuffer>}
    */
-  static async fetchStreamWithProgress(url, onProgress, startPct = 0, weightPct = 100) {
-    const res = await fetch(url);
+  static async fetchStreamWithProgress(url, onProgress, startPct = 0, weightPct = 100, signal = undefined) {
+    const res = await fetch(url, { signal });
     if (!res.ok) throw new Error(`HTTP ${res.status} when fetching ${url}`);
 
     const contentLength = res.headers.get('content-length');
@@ -79,11 +80,15 @@ export class RedditVideoMuxer {
     // over-read; only the pre-sized array is returned when sizes agree.
     let received = 0;
     let totalBuffer = total > 0 ? new Uint8Array(total) : null;
-    const chunks = totalBuffer ? null : [];
+    const chunks = [];
 
+    const cancel = () => { void reader.cancel().catch(() => {}); };
+    signal?.addEventListener('abort', cancel, { once: true });
     try {
+      signal?.throwIfAborted();
       while (true) {
         const { done, value } = await reader.read();
+        signal?.throwIfAborted();
         if (done) break;
         if (totalBuffer) {
           if (received + value.length > totalBuffer.length) {
@@ -110,6 +115,9 @@ export class RedditVideoMuxer {
       // underlying resource (AGENTS §96 cancellation propagation).
       reader.cancel().catch(() => {});
       throw err;
+    } finally {
+      signal?.removeEventListener('abort', cancel);
+      reader.releaseLock();
     }
 
     if (!totalBuffer) {
@@ -122,7 +130,7 @@ export class RedditVideoMuxer {
     } else if (received < totalBuffer.length) {
       // Content-length overstated the payload (truncated body). Return only the
       // bytes actually streamed, discarding the zero-filled tail.
-      totalBuffer = totalBuffer.subarray(0, received);
+      totalBuffer = totalBuffer.slice(0, received);
     }
 
     return totalBuffer.buffer;
@@ -135,20 +143,21 @@ export class RedditVideoMuxer {
    * @param {Function} [onProgress]
    * @returns {Promise<Blob>}
    */
-  static async downloadMuxedVideo(videoUrl, audioUrl, onProgress) {
+  static async downloadMuxedVideo(videoUrl, audioUrl, onProgress, signal = undefined) {
     if (!audioUrl) {
       if (onProgress) onProgress(10, 'Downloading video...');
-      const videoBuffer = await RedditVideoMuxer.fetchStreamWithProgress(videoUrl, onProgress, 10, 85);
+      const videoBuffer = await RedditVideoMuxer.fetchStreamWithProgress(videoUrl, onProgress, 10, 85, signal);
       if (onProgress) onProgress(100, 'Ready!');
       return new Blob([videoBuffer], { type: 'video/mp4' });
     }
 
     if (onProgress) onProgress(5, 'Downloading video track...');
-    const videoBuffer = await RedditVideoMuxer.fetchStreamWithProgress(videoUrl, onProgress, 5, 55);
+    const videoBuffer = await RedditVideoMuxer.fetchStreamWithProgress(videoUrl, onProgress, 5, 55, signal);
 
     if (onProgress) onProgress(60, 'Downloading audio track...');
-    const audioBuffer = await RedditVideoMuxer.fetchStreamWithProgress(audioUrl, onProgress, 60, 30);
+    const audioBuffer = await RedditVideoMuxer.fetchStreamWithProgress(audioUrl, onProgress, 60, 30, signal);
 
+    signal?.throwIfAborted();
     if (onProgress) onProgress(90, 'Multiplexing tracks...');
 
     try {

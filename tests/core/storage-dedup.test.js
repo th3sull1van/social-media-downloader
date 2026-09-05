@@ -60,6 +60,34 @@ export async function runStorageDedupTests() {
     assert.strictEqual(await StorageService.isHistoricallyDownloaded(sig1), false);
   }
 
+  // Snapshot invalidation and a late writer must not undo a user clear.
+  {
+    await StorageService.addHistoricalSignatures(['old']);
+    const snapshot = await StorageService.getHistorySnapshot();
+    assert.equal(snapshot.signatures.has('old'), true);
+    await StorageService.clearHistory();
+    await StorageService.addHistoricalSignatures(['late'], snapshot.revision);
+    assert.notEqual(snapshot.revision, StorageService.historyRevision);
+    assert.deepEqual(await StorageService.get('core.dedup_history'), []);
+  }
+
+  {
+    const data = new Uint8Array([8, 9]);
+    await StorageService.addHistoricalSignatures([ArchiveService.getSignature(data)]);
+    const manager = new DownloadManager(/** @type {any} */ ({}));
+    manager.scheduleBadgeClear = () => {};
+    manager.broadcastProgress = () => {};
+    manager.updateBadge = () => {};
+    manager.downloadGeneratedBlob = async () => 1;
+    await manager.processIndividualDownloads({ resolveMedia: async () => {
+      await StorageService.clearHistory();
+      return { kind: 'generated', data };
+    } }, 'test', 'test', /** @type {any} */ ([{ id: 'cleared' }]), { deduplicate: true, historicalDedup: true });
+    assert.equal(manager.activeJob.completed, 1, 'cleared historical entry must be downloadable');
+    assert.equal(manager.activeJob.skippedDuplicates, 0);
+    assert.deepEqual(await StorageService.get('core.dedup_history'), [], 'old job must not repopulate cleared history');
+  }
+
   // 4. ArchiveService CRC-32 & signature generation
   {
     const dataA = new Uint8Array([1, 2, 3, 4, 5]);
@@ -92,7 +120,7 @@ export async function runStorageDedupTests() {
         lastError: null,
         sendMessage: (msg, cb) => {
           recordedOffscreen.push(msg);
-          if (msg.type === 'OFFSCREEN_BEGIN_ZIP') cb?.({ ok: true });
+          if (msg.type === 'OFFSCREEN_BEGIN_ZIP') cb?.({ ok: true, sessionId: 'test-session' });
           else if (msg.type === 'OFFSCREEN_BEGIN_ENTRY') cb?.({ ok: true, entryId: `entry-${recordedOffscreen.length}` });
           else if (msg.type === 'OFFSCREEN_WRITE_CHUNK') cb?.({ ok: true });
           else if (msg.type === 'OFFSCREEN_END_ENTRY') cb?.({ ok: true });
@@ -169,7 +197,7 @@ export async function runStorageDedupTests() {
         lastError: null,
         sendMessage: (msg, cb) => {
           recordedOffscreen.push(msg);
-          if (msg.type === 'OFFSCREEN_BEGIN_ZIP') cb?.({ ok: true });
+          if (msg.type === 'OFFSCREEN_BEGIN_ZIP') cb?.({ ok: true, sessionId: 'test-session' });
           else if (msg.type === 'OFFSCREEN_BEGIN_ENTRY') cb?.({ ok: true, entryId: `entry-${recordedOffscreen.length}` });
           else if (msg.type === 'OFFSCREEN_WRITE_CHUNK') cb?.({ ok: true });
           else if (msg.type === 'OFFSCREEN_END_ENTRY') cb?.({ ok: true });
@@ -225,4 +253,44 @@ export async function runStorageDedupTests() {
     delete globalThis.chrome;
     await StorageService.clearHistory();
   }
+  // A large job performs one history read for lookups, not one per media item.
+  {
+    const originalGet = StorageService.get;
+    const originalCreate = ArchiveService.createBlobUrl;
+    const originalChrome = /** @type {any} */ (globalThis).chrome;
+    let reads = 0;
+    let resolveCount = 0;
+    const payload = new Uint8Array([4, 3, 2, 1]);
+    await StorageService.clearHistory();
+    await StorageService.addHistoricalSignatures([ArchiveService.getSignature(payload)]);
+    StorageService.get = async (key, fallback) => {
+      if (key === 'core.dedup_history') reads++;
+      return originalGet.call(StorageService, key, fallback);
+    };
+    const manager = new DownloadManager(/** @type {any} */ ({}));
+    manager.scheduleBadgeClear = () => {};
+    manager.broadcastProgress = () => {};
+    manager.updateBadge = () => {};
+    try {
+      for (const count of [1000, 10000]) {
+        reads = 0;
+        const items = Array.from({ length: count }, (_, id) => ({ id: String(id) }));
+        await manager.processIndividualDownloads({ resolveMedia: async () => {
+          resolveCount++;
+          return { kind: 'generated', data: payload };
+        } }, 'test', 'test', /** @type {any} */ (items), { deduplicate: true, historicalDedup: true });
+        assert.equal(reads, 1);
+        assert.equal(manager.activeJob.skippedDuplicates, count);
+        assert.equal(manager.activeJob.completed, 0);
+        assert.equal(manager.activeJob.failed, 0);
+      }
+      assert.equal(resolveCount, 11000);
+    } finally {
+      StorageService.get = originalGet;
+      ArchiveService.createBlobUrl = originalCreate;
+      /** @type {any} */ (globalThis).chrome = originalChrome;
+      await StorageService.clearHistory();
+    }
+  }
+
 }

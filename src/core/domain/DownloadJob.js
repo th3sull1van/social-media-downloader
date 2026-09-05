@@ -23,6 +23,7 @@
  * @property {number} failed
  * @property {number=} skippedDuplicates Number of duplicate media items skipped
  * @property {JobStatus} status
+ * @property {string=} archiveSessionId
  * @property {number=} zipPercent
  * @property {string=} error
  * @property {number=} receiptDownloadId Last successful chrome download id (receipt "show in folder" anchor)

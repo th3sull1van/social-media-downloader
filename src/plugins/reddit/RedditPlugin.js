@@ -65,8 +65,8 @@ export class RedditPlugin {
 
   static async resolveMedia(item, context = {}) {
     if (item.metadata?.baseUrl) {
-      const streams = await RedditVideoMuxer.resolveStreams(item.metadata.baseUrl, item.metadata.fallbackUrl);
-      const muxedBlob = await RedditVideoMuxer.downloadMuxedVideo(streams.videoUrl, streams.audioUrl);
+      const streams = await RedditVideoMuxer.resolveStreams(item.metadata.baseUrl, item.metadata.fallbackUrl, context.signal);
+      const muxedBlob = await RedditVideoMuxer.downloadMuxedVideo(streams.videoUrl, streams.audioUrl, undefined, context.signal);
       const filename = RedditNaming.resolveRelativePath(item, undefined, true);
       return DownloadArtifactModel.generated(muxedBlob, filename, 'video/mp4');
     }
