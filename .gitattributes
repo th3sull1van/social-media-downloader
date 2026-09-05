@@ -1,0 +1,2 @@
+# Fixture manifests record byte sizes; keep deterministic bytes on Windows too.
+tests/fixtures/extracted/**/*.json text eol=lf
