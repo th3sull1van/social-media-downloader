@@ -40,7 +40,9 @@ inspects `metadata.isRedGifs` / `sourceType` / `baseUrl` to decide behavior.
   bodies are transferred in bounded chunks; ZIP entry order is serialized by
   `ArchiveService` while the network fetch workers remain concurrent.
 - `processIndividualDownloads()`: concurrency limits (default 6), per-item
-  progress, cancellation-aware worker pool.
+  progress, cancellation-aware worker pool. A batch with no successful or
+  duplicate-skipped items and at least one failure ends as `FAILED`; mixed
+  batches retain their completed/failed counters.
 - Cancellation propagates from `CANCEL_DOWNLOAD` to the job status and is never
   reported as success (SPEC §40, AGENTS §96).
 - Progress is reported by stage and normalized (SPEC §41, AGENTS §97).
@@ -60,3 +62,5 @@ Generic path uniquification and filename sanitization are owned by Core
 (`FilenameService`, `uniquifyArchivePath`). ArchiveService consumes generic
 `ArchiveEntry { path, binary }` and knows nothing about any platform (SPEC §44,
 §166, AGENTS §49).
+Collision suffixes apply to the final filename, including extensionless files
+inside directories whose names contain periods.

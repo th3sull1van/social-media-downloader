@@ -193,7 +193,7 @@ export class DownloadManager {
       usedPaths.add(path);
       return path;
     }
-    const lastDot = path.lastIndexOf('.');
+    const lastDot = path.lastIndexOf('.') > path.lastIndexOf('/') + 1 ? path.lastIndexOf('.') : -1;
     const stem = lastDot > 0 ? path.slice(0, lastDot) : path;
     const ext = lastDot > 0 ? path.slice(lastDot) : '';
     let n = 2;
@@ -517,11 +517,14 @@ export class DownloadManager {
       return;
     }
 
-    if (job) {
-      job.status = 'COMPLETED';
-    }
-
     if (signal.aborted || this.activeJob !== job) return;
+    if (job.completed === 0 && skippedDuplicates === 0 && job.failed > 0) {
+      job.status = 'FAILED';
+      this.updateBadge('ERR', '#FF0000');
+      this.broadcastProgress();
+      return;
+    }
+    job.status = 'COMPLETED';
     this.updateBadge('✓', '#4BB543');
     this.scheduleBadgeClear(job);
     this.broadcastProgress();

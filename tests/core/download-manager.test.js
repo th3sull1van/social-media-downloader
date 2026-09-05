@@ -6,6 +6,7 @@
 import assert from 'node:assert';
 import { DownloadManager } from '../../src/core/application/DownloadManager.js';
 import { ArchiveService } from '../../src/core/services/ArchiveService.js';
+import { MediaItemModel } from '../../src/core/domain/MediaItem.js';
 
 /**
  * Installs a controllable chrome.* stub. Returns the stub and recorded calls.
@@ -103,6 +104,31 @@ export async function runDownloadManagerTests() {
 
   // Small registry double — avoids importing the real one's global singleton side effects.
   const registry = /** @type {any} */ ({ get: () => fakePlugin });
+
+  {
+    const used = new Set();
+    assert.equal(DownloadManager.uniquifyArchivePath('album.v1/photo', used), 'album.v1/photo');
+    assert.equal(DownloadManager.uniquifyArchivePath('album.v1/photo', used), 'album.v1/photo_2');
+  }
+
+  {
+    const recorded = installChromeStub({ downloadImpl: (_options, cb) => {
+      chromeRef.chrome.runtime.lastError = { message: 'download denied' };
+      cb(undefined);
+      chromeRef.chrome.runtime.lastError = null;
+    } });
+    const dm = new DownloadManager(registry);
+    dm.logger.warn = () => {};
+    dm.scheduleBadgeClear = () => {};
+    try {
+      await dm.processIndividualDownloads(fakePlugin, 'testplatform', 'Test',
+        [MediaItemModel.create({ id: 'denied', platform: 'testplatform', type: 'image',
+          sourceType: 'post', url: 'https://example.com/denied.jpg' })]);
+      assert.equal(dm.activeJob.failed, 1);
+      assert.equal(dm.activeJob.status, 'FAILED', 'all rejected downloads must fail the batch');
+      assert.ok(recorded.badges.some(b => b.text === 'ERR'));
+    } finally { uninstallChromeStub(); }
+  }
 
   // 1. Badge updates (F-12): real text is set, not silently cleared.
   {
