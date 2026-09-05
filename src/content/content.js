@@ -2540,7 +2540,7 @@
       state.media.forEach((item) => {
         if (matchesActiveFilter(item)) state.selectedIds.add(item.id);
       });
-      renderModalGrid();
+      updateGridSelection();
     });
 
     uiGetById('smd-deselect-all')?.addEventListener('click', () => {
@@ -2552,7 +2552,7 @@
           if (matchesActiveFilter(item)) state.selectedIds.delete(item.id);
         });
       }
-      renderModalGrid();
+      updateGridSelection();
     });
 
     floatingModal.querySelectorAll('.smd-tab').forEach((tab) => {
@@ -2681,11 +2681,78 @@
     return cardImageObserver;
   }
 
+  const gridCards = new Map();
+
+  function updateGridSelection() {
+    for (const [id, record] of gridCards) {
+      const selected = state.selectedIds.has(id);
+      if (record.selected === selected) continue;
+      record.selected = selected;
+      record.card.classList.toggle('selected', selected);
+      record.card.setAttribute('aria-pressed', String(selected));
+      record.check.textContent = selected ? '\u2713' : '';
+    }
+    updateSelectionSummary();
+  }
+
+  function updateGridCard(record, item, observer) {
+    const thumb = item.thumbnailUrl || item.url;
+    const allowedThumb = isAllowedMediaUrl(thumb) ? thumb : '';
+    if (record.thumb !== allowedThumb) {
+      record.thumb = allowedThumb;
+      if (record.image) {
+        observer?.unobserve(record.image);
+        record.image.remove();
+        record.image = null;
+      }
+      if (allowedThumb) {
+        const image = document.createElement('img');
+        image.dataset.src = allowedThumb;
+        image.alt = t('mediaItemLabel');
+        image.loading = 'lazy';
+        image.decoding = 'async';
+        image.width = 130;
+        image.height = 130;
+        record.card.insertBefore(image, record.card.firstChild);
+        record.image = image;
+        if (observer) observer.observe(image); else image.src = allowedThumb;
+      }
+    }
+    const resolution = item.width && item.height ? `${item.width}x${item.height}` : '';
+    const label = resolution || t('mediaItemLabel');
+    if (record.label !== label) {
+      record.label = label;
+      record.card.setAttribute('aria-label', label);
+    }
+    const carousel = item.isCarousel || item.metadata?.isCarousel;
+    const tags = {
+      video: item.type === 'video' ? 'VIDEO' : '',
+      carousel: carousel ? `${item.slideIndex || item.metadata?.slideIndex || 1}/${item.slideTotal || item.metadata?.slideTotal || 1}` : '',
+      resolution
+    };
+    for (const [kind, text] of Object.entries(tags)) {
+      let tag = record.tags[kind];
+      if (!text) {
+        tag?.remove();
+        delete record.tags[kind];
+      } else {
+        if (!tag) {
+          tag = document.createElement('span');
+          tag.className = `smd-tag ${kind === 'resolution' ? 'smd-tag-res' : 'smd-tag-format'}`;
+          record.tags[kind] = tag;
+          const before = kind === 'video' ? record.tags.carousel || record.tags.resolution : kind === 'carousel' ? record.tags.resolution : null;
+          record.card.insertBefore(tag, before || null);
+        }
+        if (tag.textContent !== text) tag.textContent = text;
+      }
+    }
+  }
+
   function renderModalGrid() {
     if (!floatingModal) return;
-
-    // Update tab counts
     let all = 0, img = 0, vid = 0, st = 0, hl = 0, gal = 0, rg = 0;
+    const showGrid = floatingModal.style.display !== 'none';
+    const visible = new Set();
     state.media.forEach((m) => {
       all++;
       if (m.type === 'video') vid++; else img++;
@@ -2694,126 +2761,64 @@
       if (cat === 'highlights') hl++;
       if (m.sourceType === 'reddit_gallery' || m.metadata?.isGallery) gal++;
       if (m.sourceType === 'redgifs' || m.metadata?.isRedGifs) rg++;
+      if (showGrid && matchesActiveFilter(m)) visible.add(m.id);
     });
-
-    const setTabCount = (id, count) => {
-      const el = uiGetById(id);
-      if (el) el.textContent = `(${count})`;
-    };
-    setTabCount('smd-t-all', all);
-    setTabCount('smd-t-image', img);
-    setTabCount('smd-t-video', vid);
-    setTabCount('smd-t-stories', st);
-    setTabCount('smd-t-highlights', hl);
-    setTabCount('smd-t-gallery', gal);
-    setTabCount('smd-t-redgifs', rg);
-
+    const counts = { all, image: img, video: vid, stories: st, highlights: hl, gallery: gal, redgifs: rg };
+    for (const [kind, count] of Object.entries(counts)) {
+      const el = uiGetById(`smd-t-${kind}`);
+      const text = `(${count})`;
+      if (el && el.textContent !== text) el.textContent = text;
+    }
     const grid = uiGetById('smd-grid');
     const empty = uiGetById('smd-empty');
-
     if (!grid || !empty) return;
-
-    // Skip building DOM cards if modal is hidden
-    if (floatingModal.style.display === 'none') return;
-
-    const filtered = Array.from(state.media.values()).filter(matchesActiveFilter);
-
-    if (filtered.length === 0) {
-      grid.style.display = 'none';
-      empty.style.display = 'flex';
-    } else {
-      if (cardImageObserver) {
-        cardImageObserver.disconnect();
+    // Release obsolete cards and image observers even while the modal is closed.
+    for (const [id, record] of gridCards) {
+      if (!state.media.has(id) || (showGrid && !visible.has(id)) || record.card.parentNode !== grid) {
+        if (record.image) cardImageObserver?.unobserve(record.image);
+        record.card.remove();
+        gridCards.delete(id);
       }
-      grid.textContent = '';
-      grid.style.display = 'grid';
-      empty.style.display = 'none';
-      const fragment = document.createDocumentFragment();
-      const observer = getCardImageObserver(grid);
-
-      filtered.forEach((item) => {
-        const isSelected = state.selectedIds.has(item.id);
+    }
+    if (floatingModal.style.display === 'none') return;
+    grid.style.display = visible.size ? 'grid' : 'none';
+    empty.style.display = visible.size ? 'none' : 'flex';
+    const observer = visible.size ? getCardImageObserver(grid) : null;
+    let cursor = grid.firstElementChild;
+    for (const id of visible) {
+      const item = state.media.get(id);
+      let record = gridCards.get(id);
+      if (!record) {
         const card = document.createElement('div');
-        card.className = `smd-grid-item ${isSelected ? 'selected' : ''}`;
+        card.className = 'smd-grid-item';
         card.setAttribute('role', 'button');
         card.tabIndex = 0;
-        card.setAttribute('aria-pressed', String(isSelected));
-        card.setAttribute('aria-label', item.width && item.height ? `${item.width}x${item.height}` : t('mediaItemLabel'));
-        // Remote data is attached via DOM properties/text only (no innerHTML).
-        const thumb = item.thumbnailUrl || item.url;
-        if (isAllowedMediaUrl(thumb)) {
-          const img = document.createElement('img');
-          img.dataset.src = thumb;
-          img.alt = 'Preview';
-          img.loading = 'lazy';
-          img.decoding = 'async';
-          img.width = 130;
-          img.height = 130;
-          card.appendChild(img);
-          if (observer) {
-            observer.observe(img);
-          } else {
-            img.src = thumb;
-          }
-        }
-
         const check = document.createElement('div');
         check.className = 'smd-check-overlay';
-        if (isSelected) check.textContent = '✓';
         card.appendChild(check);
-
-        const isVid = item.type === 'video';
-        if (isVid) {
-          const tag = document.createElement('span');
-          tag.className = 'smd-tag smd-tag-format';
-          tag.textContent = 'VIDEO';
-          card.appendChild(tag);
-        }
-
-        const slideIndex = item.slideIndex || item.metadata?.slideIndex;
-        const slideTotal = item.slideTotal || item.metadata?.slideTotal;
-        if (item.isCarousel || item.metadata?.isCarousel) {
-          const tag = document.createElement('span');
-          tag.className = 'smd-tag smd-tag-format';
-          tag.textContent = `${slideIndex || 1}/${slideTotal || 1}`;
-          card.appendChild(tag);
-        }
-
-        if (item.width && item.height) {
-          const tag = document.createElement('span');
-          tag.className = 'smd-tag smd-tag-res';
-          tag.textContent = `${item.width}x${item.height}`;
-          card.appendChild(tag);
-        }
-
+        record = { card, check, tags: {}, image: null, thumb: null, label: null, selected: null };
+        gridCards.set(id, record);
         card.addEventListener('click', () => {
-          const nowSelected = !state.selectedIds.has(item.id);
-          if (nowSelected) {
-            state.selectedIds.add(item.id);
-          } else {
-            state.selectedIds.delete(item.id);
-          }
-          card.classList.toggle('selected', nowSelected);
-          card.setAttribute('aria-pressed', String(nowSelected));
-          const check = card.querySelector('.smd-check-overlay');
-          if (check) check.textContent = nowSelected ? '✓' : '';
+          const selected = !state.selectedIds.has(id);
+          if (selected) state.selectedIds.add(id); else state.selectedIds.delete(id);
+          record.selected = selected;
+          card.classList.toggle('selected', selected);
+          card.setAttribute('aria-pressed', String(selected));
+          check.textContent = selected ? '\u2713' : '';
           updateSelectionSummary();
         });
-
-        card.addEventListener('keydown', (ev) => {
-          if (ev.key === 'Enter' || ev.key === ' ') {
-            ev.preventDefault();
+        card.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
             card.click();
           }
         });
-
-        fragment.appendChild(card);
-      });
-
-      grid.appendChild(fragment);
+      }
+      updateGridCard(record, item, observer);
+      if (record.card === cursor) cursor = cursor.nextElementSibling;
+      else grid.insertBefore(record.card, cursor);
     }
-
-    updateSelectionSummary();
+    updateGridSelection();
   }
 
   function updateSelectionSummary() {

@@ -14,6 +14,7 @@ import { runDownloadManagerTests } from './core/download-manager.test.js';
 import { runStorageDedupTests } from './core/storage-dedup.test.js';
 import { runZipIntegrityTests } from './core/zip-integrity.test.js';
 import { runBackgroundResourceTests } from './core/background-resources.test.js';
+import { runGridPerformanceTests } from './core/grid-performance.test.js';
 import { runOffscreenZipTests } from './core/offscreen-zip.test.js';
 import { runContractTests } from './contracts/contracts.test.js';
 import { runInstagramNamingTests } from './contracts/instagram-naming.test.js';
@@ -63,6 +64,7 @@ export const suites = [
   { id: 'storage-dedup', name: 'Storage & Exact/Historical Deduplication Tests', fn: runStorageDedupTests },
   { id: 'zip-integrity', name: 'ZIP Integrity & PKZIP 2.0 Compliance Tests', fn: runZipIntegrityTests },
   { id: 'background-resources', name: 'Worker Restart & Temporary Resource Recovery', fn: runBackgroundResourceTests },
+  { id: 'grid-performance', name: 'Incremental Grid Rendering & Large Galleries', fn: runGridPerformanceTests },
   { id: 'offscreen-zip', name: 'Offscreen OPFS ZIP Streaming Tests', fn: runOffscreenZipTests },
   { id: 'reddit-scanner', name: 'Reddit Scanner (JSON API) Tests', fn: runRedditScannerTests },
   {
