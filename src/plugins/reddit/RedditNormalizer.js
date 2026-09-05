@@ -77,53 +77,63 @@ export class RedditNormalizer {
       return { uniqueItems: items || [], duplicatesCount: 0, removedItems: [] };
     }
 
-    const uniqueMap = new Map();
-    const removedItems = [];
+    const prepared = items.map(item => ({
+      ...item,
+      metadata: { ...item.metadata },
+      deduplicationKey: item.deduplicationKey || RedditNormalizer.getDeduplicationKey(item),
+      deduplicationPriority: typeof item.metadata?.score === 'number' ? item.metadata.score : 0
+    }));
+    const subreddits = new Map();
+    for (const item of prepared) {
+      if (!item.deduplicationKey) continue;
+      const subs = subreddits.get(item.deduplicationKey) || new Set();
+      if (item.metadata.subreddit) subs.add(item.metadata.subreddit);
+      for (const sub of Array.isArray(item.metadata.crossPostedSubreddits) ? item.metadata.crossPostedSubreddits : []) subs.add(sub);
+      subreddits.set(item.deduplicationKey, subs);
+    }
+    const result = MediaItemModel.deduplicate(prepared, options.keepHighestScore !== false);
+    for (const item of result.uniqueItems) {
+      const subs = subreddits.get(item.deduplicationKey);
+      if (subs?.size > 1) item.metadata.crossPostedSubreddits = Array.from(subs);
+    }
+    return result;
+  }
 
-    for (const item of items) {
-      const mediaId = RedditNormalizer.extractMediaIdentifier(item);
-      const cleanUrl = item.url ? RedditNormalizer.cleanMediaUrl(item.url) : '';
-      const key = (mediaId && mediaId !== 'media' && !mediaId.startsWith('media_'))
-        ? `${item.type || 'media'}_${mediaId}`
-        : (cleanUrl || item.id || `item_${Math.random()}`);
-
-      const itemScore = typeof item.metadata?.score === 'number' ? item.metadata.score : 0;
-      const sub = item.metadata?.subreddit || '';
-
-      if (!uniqueMap.has(key)) {
-        uniqueMap.set(key, {
-          item: { ...item },
-          score: itemScore,
-          subreddits: sub ? new Set([sub]) : new Set()
-        });
-      } else {
-        const existing = uniqueMap.get(key);
-        if (sub) existing.subreddits.add(sub);
-
-        if (options.keepHighestScore && itemScore > existing.score) {
-          removedItems.push(existing.item);
-          existing.item = { ...item };
-          existing.score = itemScore;
-        } else {
-          removedItems.push(item);
-        }
+  /** Identity for dedup only; filename identifiers remain independent.
+   * @param {any} item
+   * @returns {string}
+   */
+  static getDeduplicationKey(item) {
+    const raw = item.url || item.downloadUrl || item.previewUrl;
+    if (!raw) return '';
+    let url;
+    try { url = new URL(raw.replace(/&amp;/g, '&')); } catch { return ''; }
+    if (!['http:', 'https:'].includes(url.protocol)) return '';
+    const host = url.hostname;
+    const type = item.type || 'media';
+    let match;
+    if (['i.redd.it', 'preview.redd.it'].includes(host) &&
+        (match = url.pathname.match(/\/(?:[a-zA-Z0-9_-]+-v0-)?([a-zA-Z0-9_-]+)\.(jpg|jpeg|png|gif|webp)$/i))) {
+      return `${type}:reddit-image:${match[1]}`;
+    }
+    if (host === 'v.redd.it' && (match = url.pathname.match(/^\/([a-zA-Z0-9_-]+)(?:\/|$)/))) {
+      return `${type}:reddit-video:${match[1]}`;
+    }
+    if (['redgifs.com', 'www.redgifs.com'].includes(host) &&
+        (match = url.pathname.match(/^\/(?:watch|ifr|gifs)\/([a-zA-Z0-9_-]+)\/?$/i))) {
+      return `${type}:redgifs:${match[1].toLowerCase()}`;
+    }
+    if (['imgur.com', 'www.imgur.com', 'i.imgur.com'].includes(host)) {
+      if ((match = url.pathname.match(/^\/(a|gallery)\/([a-zA-Z0-9_-]+)\/?$/))) {
+        return `${type}:imgur:${match[1]}:${match[2]}`;
+      }
+      if ((match = url.pathname.match(/^\/([a-zA-Z0-9_-]+)(?:\.(?:jpg|jpeg|png|gif|webp|mp4))?$/i))) {
+        return `${type}:imgur-media:${match[1]}`;
       }
     }
-
-    const uniqueItems = Array.from(uniqueMap.values()).map(entry => {
-      const item = entry.item;
-      if (entry.subreddits.size > 1) {
-        if (!item.metadata) item.metadata = {};
-        item.metadata.crossPostedSubreddits = Array.from(entry.subreddits);
-      }
-      return item;
-    });
-
-    return {
-      uniqueItems,
-      duplicatesCount: removedItems.length,
-      removedItems
-    };
+    // Unknown origins retain path AND query: neither is proof of equivalence.
+    url.hash = '';
+    return `${type}:url:${url.href}`;
   }
 
   /**
@@ -151,6 +161,8 @@ export class RedditNormalizer {
       id: raw.id || `${postInfo.id || 'post'}_${raw.index || 1}`,
       platform: 'reddit',
       type: isVideo ? 'video' : 'image',
+      deduplicationKey: RedditNormalizer.getDeduplicationKey({ url: rawUrl, type: isVideo ? 'video' : 'image' }),
+      deduplicationPriority: typeof score === 'number' && Number.isFinite(score) ? score : 0,
       sourceType: isRedGifs ? 'redgifs' : (isGallery ? 'reddit_gallery' : (isVideo ? 'reddit_video' : 'reddit_image')),
       url: cleanUrl,
       downloadUrl: cleanUrl,

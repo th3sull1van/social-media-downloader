@@ -3,6 +3,9 @@
  * Tests detection, normalization, naming, and artifact resolution across all platforms.
  */
 import assert from 'node:assert';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import { MediaItemModel } from '../../src/core/domain/MediaItem.js';
 import { InstagramPlugin } from '../../src/plugins/instagram/InstagramPlugin.js';
 import { FacebookPlugin } from '../../src/plugins/facebook/FacebookPlugin.js';
 import { RedditPlugin } from '../../src/plugins/reddit/RedditPlugin.js';
@@ -97,4 +100,42 @@ export async function runPipelineTests() {
   const redditFilename = RedditPlugin.getFilename(dedupResult.uniqueItems[0]);
   assert.ok(redditFilename.startsWith('SMD/Reddit/u_user/r_aww/'));
   assert.ok(redditFilename.includes('jbx4ht0eptkh1.jpg'));
+  // Dedup identity is namespaced, immutable, stable, and shared with popup selection.
+  const cases = [
+    ['https://i.redd.it/abc123.jpg', 'https://i.imgur.com/abc123.jpg', 2],
+    ['https://imgur.com/a/first', 'https://imgur.com/a/second', 2],
+    ['https://imgur.com/a/first', 'https://imgur.com/gallery/first', 2],
+    ['https://one.example/image.jpg', 'https://two.example/image.jpg', 2],
+    ['https://one.example/image?id=1', 'https://one.example/image?id=2', 2],
+    ['https://preview.redd.it/title-v0-abc123.jpg?width=100', 'https://i.redd.it/abc123.jpg', 1],
+    ['https://v.redd.it/abc123/DASH_720.mp4', 'https://v.redd.it/abc123/DASH_1080.mp4', 1],
+    ['https://www.redgifs.com/watch/Abcdef', 'https://redgifs.com/ifr/abcdef', 1],
+    ['https://i.imgur.com/Abc123.jpg', 'https://imgur.com/Abc123', 1]
+  ];
+  for (const [first, second, count] of cases) {
+    const items = [first, second].map((url, i) => RedditNormalizer.normalizeItem(
+      { id: `case_${i}`, url, type: 'image' }, { score: i, subreddit: `sub_${i}` }));
+    const before = JSON.stringify(items);
+    const result = RedditNormalizer.deduplicateMediaItems(items);
+    assert.equal(result.uniqueItems.length, count, String(first));
+    assert.equal(JSON.stringify(items), before, 'caller metadata must remain unchanged');
+    assert.deepEqual(MediaItemModel.deduplicate(items).uniqueItems.map(item => item.id), result.uniqueItems.map(item => item.id));
+    if (count === 1) {
+      assert.equal(result.uniqueItems[0].id, 'case_1');
+      assert.deepEqual(result.uniqueItems[0].metadata.crossPostedSubreddits, ['sub_0', 'sub_1']);
+      assert.equal(RedditNormalizer.deduplicateMediaItems(items, { keepHighestScore: false }).uniqueItems[0].id, 'case_0');
+    }
+  }
+  const noIdentity = /** @type {any} */ ([{ id: 'same' }, { id: 'same' }]);
+  assert.equal(RedditNormalizer.deduplicateMediaItems(noIdentity).uniqueItems.length, 2);
+  assert.equal(MediaItemModel.deduplicate(noIdentity).uniqueItems.length, 2);
+  const popupSource = fs.readFileSync('src/popup/popup.js', 'utf8');
+  const visibleFunction = popupSource.slice(popupSource.indexOf('  function getVisibleMedia()'), popupSource.indexOf('  function renderGrid()'));
+  const context = vm.createContext({ MediaItemModel, allMedia: redditItems, matchesFilter: () => true, dedupEnabled: false, dedupActive: true });
+  assert.equal(vm.runInContext(visibleFunction + '\ngetVisibleMedia().length', context), 2, 'hidden dedup must keep both');
+  context.dedupEnabled = true;
+  assert.equal(vm.runInContext('getVisibleMedia()[0].metadata.score', context), 500);
+  context.dedupActive = false;
+  assert.equal(vm.runInContext('getVisibleMedia().length', context), 2);
+
 }

@@ -50,6 +50,8 @@
  * @property {number=} duration
  * @property {string=} title
  * @property {string=} caption
+ * @property {string=} deduplicationKey Opaque plugin identity, including origin and media type
+ * @property {number=} deduplicationPriority Higher values win; ties preserve first discovery
  * @property {AuthorInfo=} author
  * @property {CollectionInfo=} collection
  * @property {Object=} location
@@ -58,6 +60,26 @@
  */
 
 export class MediaItemModel {
+  /**
+   * Selects representatives using only the plugin-provided identity contract.
+   * Missing keys never discard media. Map insertion order preserves discovery order.
+   * @param {MediaItem[]} items
+   */
+  static deduplicate(items, keepHighestPriority = true) {
+    const entries = new Map();
+    const removedItems = [];
+    for (const item of items) {
+      const key = item.deduplicationKey || Symbol();
+      const previous = entries.get(key);
+      if (!previous) entries.set(key, item);
+      else if (keepHighestPriority && (item.deduplicationPriority || 0) > (previous.deduplicationPriority || 0)) {
+        removedItems.push(previous);
+        entries.set(key, item);
+      } else removedItems.push(item);
+    }
+    return { uniqueItems: Array.from(entries.values()), removedItems, duplicatesCount: removedItems.length };
+  }
+
   /**
    * Creates and validates a canonical MediaItem.
    * @param {Partial<MediaItem> & { id: string, platform: string, type: MediaType, sourceType: string }} data
@@ -88,6 +110,8 @@ export class MediaItemModel {
       platform: String(data.platform).toLowerCase(),
       type: data.type,
       sourceType: String(data.sourceType),
+      deduplicationKey: data.deduplicationKey,
+      deduplicationPriority: data.deduplicationPriority,
       url: data.url || data.downloadUrl || '',
       downloadUrl: data.downloadUrl || data.url || '',
       thumbnailUrl: data.thumbnailUrl || data.url || '',

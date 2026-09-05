@@ -1,3 +1,5 @@
+import { MediaItemModel } from '../core/domain/MediaItem.js';
+
 /**
  * Social Media Downloader — Popup Controller
  * Modular, multi-platform UI for Instagram, Facebook, and Reddit media downloading.
@@ -87,6 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let activeFilter = 'all';
   let currentSubreddit = 'all';
   let dedupActive = true;
+  let dedupEnabled = false;
   let isScanning = false;
   let subredditFilterEnabled = false;
   let pluginFilters = [];
@@ -258,7 +261,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Subreddit filter row + deduplicate button.
     showIf('subreddit-filter-container', subredditFilterEnabled);
-    showIf('btn-dedup', Boolean(processing.deduplication));
+    dedupEnabled = Boolean(processing.deduplication);
+    showIf('btn-dedup', dedupEnabled);
 
     if (!subredditFilterEnabled) currentSubreddit = 'all';
   }
@@ -355,25 +359,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     return true;
   }
 
-  function mediaKey(item) {
-    const mediaId = item.metadata?.mediaId ||
-      (item.downloadUrl || item.url || '').split('/').pop()?.split('?')[0] || '';
-    if (mediaId && mediaId !== 'media') return `${item.type || 'media'}_${mediaId}`;
-    return item.downloadUrl || item.url || item.id || '';
-  }
-
   function getVisibleMedia() {
-    let items = allMedia.filter(matchesFilter);
-    if (dedupActive) {
-      const seen = new Set();
-      items = items.filter((item) => {
-        const key = mediaKey(item);
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-    }
-    return items;
+    const items = allMedia.filter(matchesFilter);
+    return dedupEnabled && dedupActive ? MediaItemModel.deduplicate(items).uniqueItems : items;
   }
 
   function renderGrid() {

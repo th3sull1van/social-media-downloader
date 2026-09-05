@@ -121,6 +121,7 @@ function isDownscaledRender(query) {
 function replayReddit(source) {
   const posts = typeof source === 'string' ? extractRedditPosts(source).posts : (source.posts || []);
   const stats = { posts: posts.length, items: 0, byType: {}, iconLeak: 0, violations: [] };
+  const scannedItems = [];
 
   for (const p of posts) {
     const openTag = p.html.match(/^<shreddit-post\s([^>]*)>/);
@@ -161,6 +162,7 @@ function replayReddit(source) {
         continue;
       }
       if (!item) continue;
+      scannedItems.push(item);
       stats.items++;
       stats.byType[item.sourceType] = (stats.byType[item.sourceType] || 0) + 1;
 
@@ -191,6 +193,13 @@ function replayReddit(source) {
       }
     }
   }
+  // Exercise dedup on real DOM -> scanner -> normalizer output from compact and raw captures.
+  const before = JSON.stringify(scannedItems);
+  const first = RedditNormalizer.deduplicateMediaItems(scannedItems);
+  const replay = RedditNormalizer.deduplicateMediaItems([...scannedItems, ...scannedItems]);
+  assert.equal(JSON.stringify(scannedItems), before, 'dedup must not mutate scanner output');
+  assert.deepEqual(replay.uniqueItems, first.uniqueItems, 'repeated capture must preserve IDs, URLs, dimensions, ordering and metadata');
+  assert.deepEqual(MediaItemModel.deduplicate(scannedItems).uniqueItems.map(item => item.id), first.uniqueItems.map(item => item.id));
   return stats;
 }
 
