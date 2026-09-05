@@ -7,7 +7,7 @@ Per AGENTS §53, every host permission documents its owner plugin, purpose, and 
 | Permission | Purpose |
 |---|---|
 | `downloads` | Core DownloadManager calls `chrome.downloads.download/cancel` and listens to `onChanged`. Filenames are passed via the `filename` option of `download()` (no `onDeterminingFilename` listener — see DownloadManager). |
-| `storage` + `unlimitedStorage` | Reserved for future settings/state (nothing writes `chrome.storage` today). |
+| `storage` + `unlimitedStorage` | Core persists settings and deduplication history in `chrome.storage.local`; temporary ZIP/generated media uses extension-origin OPFS. See [storage lifecycle](storage.md). |
 | `activeTab` | Popup requests the active tab URL to detect the platform. |
 | `scripting` | Popup re-injects `src/content/content.js` when the content script is not yet present. |
 | `offscreen` | Creates the offscreen document for ZIP packaging (hand-written STORE engine in `src/offscreen/offscreen.js`, `URL.createObjectURL`). |

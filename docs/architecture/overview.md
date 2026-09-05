@@ -68,4 +68,4 @@ The system is designed around a plugin architecture:
    - User profile submissions and subreddit feed scraping with cross-post deduplication.
 
 4. **Meta Shared (`src/plugins/meta-shared/`)**:
-   - Shared token harvest (`fb_dtsg`, `jazoest`, `csrftoken`, `appId`), authenticated GraphQL transport, and CDN URL upscaling.
+   - CDN URL handling (`MetaCdn`) and media-node classification (`MetaNode`). Authentication and GraphQL transport remain in the owning platform implementation.
