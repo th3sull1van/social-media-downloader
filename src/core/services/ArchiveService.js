@@ -336,11 +336,12 @@ export class ArchiveService {
   }
 
   /**
-   * Generates a unique content signature for exact deduplication.
+   * Versioned SHA-256 content signature; CRC-32 remains ZIP-only.
    * @param {Uint8Array} bytes
-   * @returns {string}
+   * @returns {Promise<string>}
    */
-  static getSignature(bytes) {
-    return `${ArchiveService.computeCrc32(bytes)}_${bytes.length}`;
+  static async getSignature(bytes) {
+    const digest = await crypto.subtle.digest('SHA-256', /** @type {Uint8Array<ArrayBuffer>} */ (bytes));
+    return `sha256:v1:${Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')}`;
   }
 }

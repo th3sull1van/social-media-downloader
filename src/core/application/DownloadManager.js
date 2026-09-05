@@ -357,6 +357,41 @@ export class DownloadManager {
     }
   }
 
+  /** Wait for disk completion, including an event that preceded registration.
+   * @param {number} downloadId
+   * @param {AbortSignal} signal
+   * @returns {Promise<void>}
+   */
+  waitForDownloadCompletion(downloadId, signal) {
+    return new Promise((resolve, reject) => {
+      signal.throwIfAborted();
+      if (typeof chrome === 'undefined' || !chrome.downloads?.onChanged || !chrome.downloads.search) {
+        reject(new Error('Download completion tracking unavailable'));
+        return;
+      }
+      const finish = (error = null) => {
+        chrome.downloads.onChanged.removeListener(onChanged);
+        signal.removeEventListener('abort', onAbort);
+        if (error) reject(error); else resolve();
+      };
+      const onAbort = () => finish(signal.reason || new Error('Download cancelled'));
+      const onChanged = (delta) => {
+        if (delta.id !== downloadId) return;
+        if (delta.state?.current === 'complete') finish();
+        if (delta.state?.current === 'interrupted') finish(new Error('Browser download interrupted'));
+      };
+      chrome.downloads.onChanged.addListener(onChanged);
+      signal.addEventListener('abort', onAbort, { once: true });
+      try {
+        chrome.downloads.search({ id: downloadId }, (items) => {
+          if (chrome.runtime.lastError || !items?.length) {
+            finish(new Error('Cannot verify browser download'));
+          } else onChanged({ id: downloadId, state: { current: items[0].state } });
+        });
+      } catch (error) { finish(error); }
+    });
+  }
+
   /**
    * Processes individual file downloads.
    * @param {any} plugin
@@ -370,7 +405,6 @@ export class DownloadManager {
   async processIndividualDownloads(plugin, platform, targetName, items, { deduplicate = false, historicalDedup = false } = {}) {
     const total = items.length;
     const sessionSignatures = new Set();
-    const newHistoricalSignatures = [];
     let skippedDuplicates = 0;
 
     this.activeJob = DownloadJobModel.create({
@@ -390,7 +424,8 @@ export class DownloadManager {
     this.updateBadge(`0/${total}`);
     this.broadcastProgress();
 
-    const concurrency = 6;
+    // ponytail: one full payload at a time with dedup; incremental OPFS hashing if one file exceeds memory.
+    const concurrency = deduplicate ? 1 : 6;
     let index = 0;
 
     const worker = async () => {
@@ -422,7 +457,7 @@ export class DownloadManager {
 
             signal.throwIfAborted();
             if (bytes) {
-              const sig = ArchiveService.getSignature(bytes);
+              const sig = await ArchiveService.getSignature(bytes);
               if (sessionSignatures.has(sig) || (history && history.revision === StorageService.historyRevision && history.signatures.has(sig))) {
                 skippedDuplicates++;
                 if (job) {
@@ -432,9 +467,10 @@ export class DownloadManager {
                 this.broadcastProgress();
                 continue;
               }
-              sessionSignatures.add(sig);
-              newHistoricalSignatures.push(sig);
               downloadId = await this.downloadGeneratedBlob(bytes, targetFilename, signal);
+              await this.waitForDownloadCompletion(downloadId, signal);
+              sessionSignatures.add(sig);
+              if (historicalDedup) await StorageService.addHistoricalSignatures([sig], historyRevision);
               ok = true;
             } else {
               downloadId = await this.downloadItem(plugin, item, targetFilename, signal);
@@ -483,9 +519,6 @@ export class DownloadManager {
 
     if (job) {
       job.status = 'COMPLETED';
-      if (historicalDedup && newHistoricalSignatures.length > 0) {
-        await StorageService.addHistoricalSignatures(newHistoricalSignatures, historyRevision);
-      }
     }
 
     if (signal.aborted || this.activeJob !== job) return;
@@ -546,7 +579,8 @@ export class DownloadManager {
       sessionId = begin.sessionId;
       job.archiveSessionId = sessionId;
       signal.throwIfAborted();
-      const concurrency = 6;
+      // ponytail: one full payload at a time with dedup; incremental OPFS hashing if one file exceeds memory.
+      const concurrency = deduplicate ? 1 : 6;
       let index = 0;
       let sizeLimitHit = false;
       /** @type {Set<string>} */
@@ -569,6 +603,7 @@ export class DownloadManager {
             let dataPayload = null;
             let streamSource = null;
             let bytesForSignature = null;
+            let signature = null;
 
             if (plugin && typeof plugin.resolveMedia === 'function') {
               const artifact = await plugin.resolveMedia(item, { signal });
@@ -602,7 +637,7 @@ export class DownloadManager {
 
             signal.throwIfAborted();
             if (deduplicate && bytesForSignature) {
-              const sig = ArchiveService.getSignature(bytesForSignature);
+              const sig = await ArchiveService.getSignature(bytesForSignature);
               if (sessionSignatures.has(sig) || (history && history.revision === StorageService.historyRevision && history.signatures.has(sig))) {
                 skippedDuplicates++;
                 if (job) {
@@ -612,8 +647,7 @@ export class DownloadManager {
                 this.broadcastProgress();
                 continue;
               }
-              sessionSignatures.add(sig);
-              newHistoricalSignatures.push(sig);
+              signature = sig;
             }
 
             if (streamSource || dataPayload) {
@@ -625,6 +659,10 @@ export class DownloadManager {
                 }
                 if (addRes && addRes.reason === 'cancelled') return;
                 throw new Error(addRes?.reason || 'Offscreen rejected file');
+              }
+              if (signature) {
+                sessionSignatures.add(signature);
+                newHistoricalSignatures.push(signature);
               }
               ok = true;
             }
@@ -658,6 +696,13 @@ export class DownloadManager {
         throw new Error('No media could be added to the ZIP archive (all items failed)');
       }
 
+      if (!sizeLimitHit && job.completed === 0 && skippedDuplicates > 0 && job.failed === 0) {
+        job.status = 'COMPLETED';
+        this.updateBadge('✓', '#4BB543');
+        this.scheduleBadgeClear(job);
+        this.broadcastProgress();
+        return;
+      }
       const finish = await ArchiveService.finish(zipFilename, sizeLimitHit, sessionId);
 
       if (signal.aborted) {
@@ -691,6 +736,7 @@ export class DownloadManager {
         job.receiptDownloadId = zipDownloadId;
       }
       handedOff = true;
+      if (deduplicate) await this.waitForDownloadCompletion(zipDownloadId, signal);
 
       if (historicalDedup && newHistoricalSignatures.length > 0) {
         await StorageService.addHistoricalSignatures(newHistoricalSignatures, historyRevision);

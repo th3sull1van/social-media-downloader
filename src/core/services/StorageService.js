@@ -110,7 +110,7 @@ export class StorageService {
 
   /**
    * Checks whether a binary signature is in the historical deduplication registry.
-   * @param {string} signature - "${crc32}_${byteLength}"
+   * @param {string} signature - Versioned content digest (sha256:v1:...)
    * @returns {Promise<boolean>}
    */
   static async isHistoricallyDownloaded(signature) {

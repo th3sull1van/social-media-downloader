@@ -2,7 +2,7 @@
  * Social Media Downloader — Storage & Exact/Historical Deduplication Unit Tests
  * Verifies:
  * 1. StorageService persistence, settings, and memory fallback.
- * 2. Exact Deduplication (real-time CRC-32 + size signature).
+ * 2. Exact Deduplication (versioned SHA-256 signature).
  * 3. Historical Deduplication across multiple batches.
  */
 import assert from 'node:assert';
@@ -73,12 +73,13 @@ export async function runStorageDedupTests() {
 
   {
     const data = new Uint8Array([8, 9]);
-    await StorageService.addHistoricalSignatures([ArchiveService.getSignature(data)]);
+    await StorageService.addHistoricalSignatures([await ArchiveService.getSignature(data)]);
     const manager = new DownloadManager(/** @type {any} */ ({}));
     manager.scheduleBadgeClear = () => {};
     manager.broadcastProgress = () => {};
     manager.updateBadge = () => {};
     manager.downloadGeneratedBlob = async () => 1;
+    manager.waitForDownloadCompletion = async () => {};
     await manager.processIndividualDownloads({ resolveMedia: async () => {
       await StorageService.clearHistory();
       return { kind: 'generated', data };
@@ -101,10 +102,10 @@ export async function runStorageDedupTests() {
     assert.strictEqual(crcA, crcB, 'Identical bytes must produce identical CRC-32');
     assert.notStrictEqual(crcA, crcC, 'Different bytes should produce different CRC-32');
 
-    const sigA = ArchiveService.getSignature(dataA);
-    const sigB = ArchiveService.getSignature(dataB);
+    const sigA = await ArchiveService.getSignature(dataA);
+    const sigB = await ArchiveService.getSignature(dataB);
     assert.strictEqual(sigA, sigB);
-    assert.strictEqual(sigA, `${crcA}_5`);
+    assert.match(sigA, /^sha256:v1:[a-f0-9]{64}$/);
   }
 
   // 5. DownloadManager Exact Deduplication in ZIP mode
@@ -133,7 +134,8 @@ export async function runStorageDedupTests() {
           recordedDownloads.push(opts);
           cb?.(101);
         },
-        search: () => {},
+        onChanged: { addListener: () => {}, removeListener: () => {} },
+        search: (query, cb) => cb([{ state: 'complete', filename: 'test.zip' }]),
         show: () => {}
       }
     };
@@ -183,7 +185,7 @@ export async function runStorageDedupTests() {
     await StorageService.clearHistory();
 
     const data1 = new Uint8Array([11, 22, 33]);
-    const sig1 = ArchiveService.getSignature(data1);
+    const sig1 = await ArchiveService.getSignature(data1);
     // Pre-populate history with sig1
     await StorageService.addHistoricalSignatures([sig1]);
 
@@ -210,7 +212,8 @@ export async function runStorageDedupTests() {
           recordedDownloads.push(opts);
           cb?.(102);
         },
-        search: () => {},
+        onChanged: { addListener: () => {}, removeListener: () => {} },
+        search: (query, cb) => cb([{ state: 'complete', filename: 'test.zip' }]),
         show: () => {}
       }
     };
@@ -245,7 +248,7 @@ export async function runStorageDedupTests() {
 
     // Verify item_new was saved into history
     const dataNew = new Uint8Array([99, 88, 77]);
-    const sigNew = ArchiveService.getSignature(dataNew);
+    const sigNew = await ArchiveService.getSignature(dataNew);
     assert.strictEqual(await StorageService.isHistoricallyDownloaded(sigNew), true, 'New item must be saved to history');
 
     // Clean up chrome stub
@@ -262,7 +265,7 @@ export async function runStorageDedupTests() {
     let resolveCount = 0;
     const payload = new Uint8Array([4, 3, 2, 1]);
     await StorageService.clearHistory();
-    await StorageService.addHistoricalSignatures([ArchiveService.getSignature(payload)]);
+    await StorageService.addHistoricalSignatures([await ArchiveService.getSignature(payload)]);
     StorageService.get = async (key, fallback) => {
       if (key === 'core.dedup_history') reads++;
       return originalGet.call(StorageService, key, fallback);
@@ -288,6 +291,129 @@ export async function runStorageDedupTests() {
     } finally {
       StorageService.get = originalGet;
       ArchiveService.createBlobUrl = originalCreate;
+      /** @type {any} */ (globalThis).chrome = originalChrome;
+      await StorageService.clearHistory();
+    }
+  }
+
+  // Equal size and CRC-32 do not prove equal contents; legacy history is not trusted.
+  {
+    const left = new Uint8Array([70, 178, 139, 196, 242, 211, 60, 228]);
+    const right = new Uint8Array([81, 51, 61, 69, 235, 119, 37, 225]);
+    assert.equal(ArchiveService.computeCrc32(left), ArchiveService.computeCrc32(right));
+    assert.notEqual(await ArchiveService.getSignature(left), await ArchiveService.getSignature(right));
+    assert.equal(await ArchiveService.getSignature(new TextEncoder().encode('abc')),
+      'sha256:v1:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+    assert.equal(await ArchiveService.getSignature(new Uint8Array([0, ...left, 0]).subarray(1, 9)), await ArchiveService.getSignature(left));
+    await StorageService.clearHistory();
+    await StorageService.addHistoricalSignatures([`${ArchiveService.computeCrc32(left)}_${left.length}`]);
+    assert.equal((await StorageService.getHistorySnapshot()).signatures.has(await ArchiveService.getSignature(left)), false);
+  }
+
+  // Browser completion may arrive before registration, later, interrupted, or cancelled.
+  {
+    const originalChrome = /** @type {any} */ (globalThis).chrome;
+    const listeners = new Set();
+    let state = 'in_progress';
+    /** @type {any} */ (globalThis).chrome = {
+      runtime: { lastError: null },
+      downloads: {
+        onChanged: { addListener: fn => listeners.add(fn), removeListener: fn => listeners.delete(fn) },
+        search: (query, cb) => cb([{ state }])
+      }
+    };
+    try {
+      const manager = new DownloadManager(null);
+      const controller = new AbortController();
+      let complete = false;
+      const pending = manager.waitForDownloadCompletion(1, controller.signal).then(() => { complete = true; });
+      await Promise.resolve();
+      assert.equal(complete, false);
+      for (const fn of listeners) fn({ id: 2, state: { current: 'complete' } });
+      assert.equal(listeners.size, 1, 'unrelated download must not resolve');
+      for (const fn of listeners) fn({ id: 1, state: { current: 'complete' } });
+      await pending;
+      assert.equal(listeners.size, 0);
+      state = 'complete';
+      await manager.waitForDownloadCompletion(1, controller.signal);
+      state = 'interrupted';
+      await assert.rejects(manager.waitForDownloadCompletion(1, controller.signal), /interrupted/);
+      state = 'in_progress';
+      const cancelled = manager.waitForDownloadCompletion(1, controller.signal);
+      controller.abort();
+      await assert.rejects(cancelled);
+      assert.equal(listeners.size, 0);
+    } finally { /** @type {any} */ (globalThis).chrome = originalChrome; }
+  }
+
+  // A failed/interrupted first copy must not suppress a successful later copy.
+  {
+    const originalChrome = /** @type {any} */ (globalThis).chrome;
+    const originalAdd = ArchiveService.addFileStream;
+    const originalBegin = ArchiveService.begin;
+    const originalFinish = ArchiveService.finish;
+    const originalAbort = ArchiveService.abort;
+    let browserState = 'complete';
+    /** @type {any} */ (globalThis).chrome = {
+      runtime: { lastError: null },
+      downloads: {
+        onChanged: { addListener() {}, removeListener() {} },
+        search: (query, cb) => cb([{ state: browserState, filename: 'test.zip' }])
+      }
+    };
+    const data = new Uint8Array([77, 88, 99]);
+    const signature = await ArchiveService.getSignature(data);
+    const items = /** @type {any} */ ([{ id: 'first' }, { id: 'second' }, { id: 'third' }]);
+    const plugin = { resolveMedia: async () => ({ kind: 'generated', data }) };
+    try {
+      for (const failure of ['creation', 'interruption']) {
+        await StorageService.clearHistory();
+        const manager = new DownloadManager(null);
+        manager.scheduleBadgeClear = manager.broadcastProgress = manager.updateBadge = () => {};
+        manager.logger.warn = () => {};
+        let attempts = 0;
+        manager.downloadGeneratedBlob = async () => {
+          attempts++;
+          assert.equal(await StorageService.isHistoricallyDownloaded(signature), false);
+          if (attempts === 1 && failure === 'creation') throw new Error('blob creation failed');
+          browserState = attempts === 1 ? 'interrupted' : 'complete';
+          return attempts;
+        };
+        await manager.processIndividualDownloads(plugin, 'test', 'test', items, { deduplicate: true, historicalDedup: true });
+        assert.equal(attempts, 2);
+        assert.equal(manager.activeJob.failed, 1);
+        assert.equal(manager.activeJob.completed, 1);
+        assert.equal(manager.activeJob.skippedDuplicates, 1);
+        assert.equal(await StorageService.isHistoricallyDownloaded(signature), true);
+      }
+      for (const state of ['complete', 'interrupted']) {
+        await StorageService.clearHistory();
+        browserState = state;
+        let writes = 0;
+        ArchiveService.begin = async () => ({ ok: true, sessionId: 'dedup-test' });
+        ArchiveService.addFileStream = async () => ({ ok: ++writes > 1, reason: writes === 1 ? 'write_failed' : undefined });
+        ArchiveService.finish = async () => ({ ok: true, objectUrl: 'blob:dedup-test' });
+        ArchiveService.abort = async () => true;
+        const manager = new DownloadManager(null);
+        manager.scheduleBadgeClear = manager.broadcastProgress = manager.updateBadge = () => {};
+        manager.logger.warn = manager.logger.error = () => {};
+        manager.downloadBlobUrl = async () => {
+          assert.equal(await StorageService.isHistoricallyDownloaded(signature), false);
+          return 1;
+        };
+        await manager.processZipDownload(plugin, 'test', 'test', items, { deduplicate: true, historicalDedup: true });
+        assert.equal(writes, 2, 'failed entry releases identity for next copy');
+        assert.equal(manager.activeJob.failed, 1);
+        assert.equal(manager.activeJob.completed, 1);
+        assert.equal(manager.activeJob.skippedDuplicates, 1);
+        assert.equal(await StorageService.isHistoricallyDownloaded(signature), state === 'complete');
+        assert.equal(manager.activeJob.status, state === 'complete' ? 'COMPLETED' : 'FAILED');
+      }
+    } finally {
+      ArchiveService.addFileStream = originalAdd;
+      ArchiveService.begin = originalBegin;
+      ArchiveService.finish = originalFinish;
+      ArchiveService.abort = originalAbort;
       /** @type {any} */ (globalThis).chrome = originalChrome;
       await StorageService.clearHistory();
     }
