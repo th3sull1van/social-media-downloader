@@ -335,7 +335,7 @@ export async function replayContentScriptData({ nodes, storyItems, highlightItem
  * receives avatar data through the main-world batch bridge, while Reddit gets
  * it through the plugin-owned lightweight message.
  *
- * @param {{ platform: 'facebook'|'reddit', location: { hostname: string, pathname: string, search?: string, origin: string, href: string }, facebookPayload?: any, facebookPayloads?: any[], facebookInitialPayloads?: any[], redditAvatarUrl?: string }} options
+ * @param {{ platform: 'facebook'|'reddit', location: { hostname: string, pathname: string, search?: string, origin: string, href: string }, title?: string, navigation?: {url: string, title: string}[], facebookPayload?: any, facebookPayloads?: any[], facebookInitialPayloads?: any[], redditAvatarUrl?: string }} options
  * @returns {Promise<{ avatarUrl: string, targetName: string, media: any[], messages: any[] }>}
  */
 export async function replayTargetAvatarContentScript(options) {
@@ -395,7 +395,7 @@ export async function replayTargetAvatarContentScript(options) {
       head: fakeElement('head'),
       documentElement: fakeElement('html'),
       body: fakeElement('body'),
-      title: '',
+      title: options.title || '',
       createElement: (tag) => fakeElement(tag),
       getElementById: () => null,
       querySelector: () => null,
@@ -449,6 +449,14 @@ export async function replayTargetAvatarContentScript(options) {
   await new Promise((resolve) => setImmediate(resolve));
 
   let pageState = /** @type {any} */ (null);
+  for (const step of options.navigation || []) {
+    for (const listener of onMessageListeners) {
+      listener({ type: 'GET_PAGE_STATE' }, {}, () => {});
+    }
+    const next = new URL(step.url);
+    Object.assign(location, { href: next.href, pathname: next.pathname, search: next.search });
+    sandbox.document.title = step.title;
+  }
   for (const listener of onMessageListeners) {
     listener({ type: 'GET_PAGE_STATE' }, {}, (response) => { pageState = response; });
   }

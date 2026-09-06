@@ -229,6 +229,10 @@
   let facebookDisplayName = '';
   let facebookDisplayNameTarget = '';
 
+  function isFacebookCollectionRoute() {
+    return /\/(?:media\/set|albums|photo|photos|photos_by|photos_of|photos_albums)(?:\/|$)/i.test(window.location.pathname);
+  }
+
   function facebookTargetKey(url = window.location.href) {
     if (!isFacebook) return '';
     let parsed;
@@ -239,6 +243,7 @@
       : null;
     if (profileId) return `profile:${profileId}`;
     const parts = pathname.split('/').filter(Boolean);
+    if (/^(?:media|albums|photo|photos|photos_by|photos_of|photos_albums)$/i.test(parts[0] || '')) return '';
     if (parts[0]?.toLowerCase() === 'pages') {
       if (/^\d+$/.test(parts[2] || '')) return `profile:${parts[2]}`;
       if (parts[1]) return `profile:${parts[1].toLowerCase()}`;
@@ -445,6 +450,10 @@
           (!name || fbNameLooksRouteDerived(name))) {
         name = facebookDisplayName;
       }
+      if (facebookDisplayName && isFacebookCollectionRoute() &&
+          (!currentFacebookTarget || currentFacebookTarget === facebookDisplayNameTarget)) {
+        name = facebookDisplayName;
+      }
 
       // SPA photo-viewer dialogs wipe document.title to a generic value; when
       // neither the DOM nor the URL yields an identity, KEEP the previous
@@ -465,6 +474,10 @@
       const nextTarget = name.replace(/^slug:/i, '').trim() || 'Facebook_Media';
       state.targetName = nextTarget;
       state.username = nextTarget;
+      if (currentFacebookTarget && !isFacebookCollectionRoute() && !fbIsGenericTerm(nextTarget)) {
+        facebookDisplayName = nextTarget;
+        facebookDisplayNameTarget = currentFacebookTarget;
+      }
     } else if (isReddit) {
       // Mirror redditTargetInfo(): user → subreddit → post, keeping the raw id.
       const m = pathname.match(/\/(?:user|u)\/([^/?#]+)/);
@@ -1482,6 +1495,7 @@
 
   function fbAdoptTargetDisplayName(obj) {
     if (!fbObjectMatchesTarget(obj)) return;
+    if (!fbProfileImageCandidate(obj) && !obj.cover_photo) return;
 
     const candidate = fbCleanTitle(obj?.name || obj?.display_name || obj?.short_name || '');
     if (!candidate) return;
@@ -2031,7 +2045,12 @@
 
   async function scanFacebookAllTabs() {
     state.isScanning = true;
+    detectTarget();
     facebookScanTargetKey = facebookTargetKey();
+    if (facebookScanTargetKey && !fbIsGenericTerm(state.targetName)) {
+      facebookDisplayName = state.targetName;
+      facebookDisplayNameTarget = facebookScanTargetKey;
+    }
     updateScanStatusUI(true, t('scanning'));
     try {
       const visitedTabKeys = new Set();

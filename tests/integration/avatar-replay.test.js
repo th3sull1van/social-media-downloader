@@ -8,6 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { readCompactFixture } from '../../tools/fixture-replay.js';
 import { replayTargetAvatarContentScript } from '../../tools/replay-content.js';
+import { FacebookPlugin } from '../../src/plugins/facebook/FacebookPlugin.js';
 
 function findFacebookProfilePictureOwner(root, depth = 0) {
   if (!root || typeof root !== 'object' || depth > 40) return null;
@@ -94,6 +95,30 @@ export async function runAvatarReplayTests() {
   assert.ok(profileItem.downloadUrl.includes('ctp=s1080x1080'), 'profilePicLarge must use the signed max render');
   assert.strictEqual(privateHeader.avatarUrl, profileItem.downloadUrl, 'header preview and profile download must use the same URL');
   assert.strictEqual(privateHeader.media.some((item) => item.id === '100000000000002'), false, 'friend facepile avatar must not leak into downloads');
+
+  for (const route of ['/media/set/?set=a.123', '/albums/123', '/photo/?fbid=123', '/example.profile/photos_albums']) {
+    const album = await replayTargetAvatarContentScript({
+      platform: 'facebook',
+      location: { hostname: 'www.facebook.com', origin: 'https://www.facebook.com',
+        pathname: '/example.profile', href: 'https://www.facebook.com/example.profile' },
+      title: 'Example Profile | Facebook',
+      facebookPayload: { name: 'Avaliações_feitas', owner: { url: 'https://www.facebook.com/example.profile' } },
+      navigation: [{ url: `https://www.facebook.com${route}`, title: 'Avaliações_feitas - Fotos | Facebook' }]
+    });
+    assert.strictEqual(album.targetName, 'Example Profile', `collection ${route} must retain the displayed profile name`);
+    const media = { id: '123', type: 'image', url: 'https://scontent.example.fbcdn.net/123_456_n.jpg' };
+    assert.strictEqual(FacebookPlugin.getFilename(media, { targetName: album.targetName }), 'SMD/Facebook/Example_Profile/123_456_n.jpg');
+    assert.strictEqual(FacebookPlugin.getArchivePath(media, { targetName: album.targetName }), 'Example_Profile/123_456_n.jpg');
+  }
+
+  const changedProfile = await replayTargetAvatarContentScript({
+    platform: 'facebook',
+    location: { hostname: 'www.facebook.com', origin: 'https://www.facebook.com',
+      pathname: '/example.profile', href: 'https://www.facebook.com/example.profile' },
+    title: 'Example Profile | Facebook',
+    navigation: [{ url: 'https://www.facebook.com/another.profile', title: 'Another Profile | Facebook' }]
+  });
+  assert.strictEqual(changedProfile.targetName, 'Another Profile', 'a different profile must replace the pinned identity');
 
   let redditAvatar = 'https://www.redditstatic.com/avatars/defaults/v2/avatar_default_3.png';
   const redditFixturePath = path.resolve('tests/fixtures/extracted/reddit/reddit-private-profile.json');
