@@ -1159,6 +1159,7 @@
   }
 
   async function scanHighlights(isIndependent = true) {
+    let failed = false;
     if (isIndependent) {
       state.isScanning = true;
       updateScanStatusUI(true, t('scanningHighlights'));
@@ -1166,21 +1167,23 @@
     try {
       if (!state.profileInfo?.id) await scanProfileAvatar(false);
       const userId = state.profileInfo?.id;
-      if (!userId) return;
+      if (!userId) throw new Error('instagram_profile_unavailable');
 
       const res = await sendToInjected('FETCH_IG_HIGHLIGHTS', { userId });
+      if (!res.success) throw new Error('instagram_highlights_failed');
       if (res.success && res.payload?.items) {
         for (const it of res.payload.items) {
           processInstagramStoryItem(it, 'highlights', it._highlightTitle);
         }
       }
     } catch (e) {
+      failed = true;
       console.warn('[SMD Content] Highlights scan error:', e);
       updateScanStatusUI(true, t('scanFailed'), true);
     } finally {
       if (isIndependent) {
         state.isScanning = false;
-        updateScanStatusUI(false);
+        if (!failed) updateScanStatusUI(false);
       }
     }
   }

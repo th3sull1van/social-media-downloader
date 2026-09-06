@@ -81,10 +81,10 @@ export async function replayContentFixture(fixturePath) {
 
 /**
  * Runs the real content script against already extracted replay data.
- * @param {{ nodes: any[], storyItems: any[], sourcePath?: string }} input
+ * @param {{ nodes: any[], storyItems: any[], highlightItems?: any[], sourcePath?: string }} input
  * @returns {Promise<Object>} replay results
  */
-export async function replayContentScriptData({ nodes, storyItems, sourcePath = 'compact-fixture' }) {
+export async function replayContentScriptData({ nodes, storyItems, highlightItems = [], sourcePath = 'compact-fixture' }) {
 
   const contentSource = fs.readFileSync(
     new URL('../src/content/content.js', import.meta.url),
@@ -258,6 +258,8 @@ export async function replayContentScriptData({ nodes, storyItems, sourcePath = 
   await new Promise((r) => setImmediate(r));
   const sizeAfterStories = (pageState()?.media || []).length;
 
+  deliver({ source: 'SMD_IG_BATCH_HIGHLIGHTS', nonce: expectedNonce, payload: { items: highlightItems } });
+
   const contentItems = pageState()?.media || [];
 
   // --- canonical parity ---
@@ -280,7 +282,7 @@ export async function replayContentScriptData({ nodes, storyItems, sourcePath = 
   for (const n of nodes) {
     for (const item of InstagramNormalizer.normalizePost(n)) bump(item);
   }
-  for (const it of storyItems) {
+  for (const it of [...storyItems, ...highlightItems]) {
     const item = InstagramNormalizer.normalizeStory(
       it,
       it._highlightTitle ? 'highlights' : 'stories',

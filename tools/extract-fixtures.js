@@ -25,6 +25,7 @@ import {
 import { FacebookNormalizer } from '../src/plugins/facebook/FacebookNormalizer.js';
 import { MetaCdn } from '../src/plugins/meta-shared/MetaCdn.js';
 import { validateCompactFixture } from './validation/fixture-validation.js';
+import { readHighlightCapture } from './replay-instagram-highlights.js';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outputRoot = path.join(rootDir, 'tests', 'fixtures', 'extracted');
@@ -305,6 +306,55 @@ function extractInstagramFixture(harPath) {
       highlightTitles: stories.highlightTitles.size
     }
   };
+}
+
+function extractInstagramHighlightsFixture(harPath) {
+  const capture = readHighlightCapture(harPath);
+  const anonymizer = createAnonymizer();
+  const reelId = id => `highlight:${anonymizer.number('highlight', id)}`;
+  const queries = capture.queries.map(query => {
+    const tray = query.body.data?.highlights;
+    const connection = tray || query.body.data?.xdt_api__v1__feed__reels_media__connection;
+    if (!Array.isArray(connection?.edges)) throw new Error('Unsupported highlight connection');
+    const edges = connection.edges.map(({ node }, index) => ({ node: {
+      id: reelId(node.id), title: `Fixture Highlight ${index + 1}`,
+      ...(tray ? {} : { items: node.items.map((item, i) => projectInstagramStory(item, anonymizer, i)) })
+    } }));
+    const variables = tray ? { user_id: '1000000000000001' } : {
+      initial_reel_id: reelId(query.variables.initial_reel_id),
+      reel_ids: query.variables.reel_ids.map(reelId),
+      first: query.variables.first, last: query.variables.last,
+      __relay_internal__pv__PolarisCommunityNoteStoriesLabelEnabledrelayprovider: true
+    };
+    return { name: query.name, docId: query.docId, variables, body: { data: {
+      [tray ? 'highlights' : 'xdt_api__v1__feed__reels_media__connection']: {
+        edges, page_info: { has_next_page: !!connection.page_info?.has_next_page,
+          has_previous_page: !!connection.page_info?.has_previous_page,
+          start_cursor: connection.page_info?.start_cursor ? reelId(connection.page_info.start_cursor) : null,
+          end_cursor: connection.page_info?.end_cursor ? reelId(connection.page_info.end_cursor) : null }
+      }
+    } } };
+  });
+  const feed = capture.profileFeed;
+  if (!feed) throw new Error('Captured profile feed is required');
+  const rawNodes = feed.body.data.xdt_api__v1__feed__user_timeline_graphql_connection.edges.map(edge => edge.node);
+  const target = rawNodes.find(node => node.user?.username === feed.variables.username);
+  if (!target) throw new Error('Captured profile author is required');
+  const node = projectInstagramNode(target, anonymizer, 0);
+  node.user = { pk: '1000000000000001', username: 'example_user',
+    profile_pic_url: sanitizeUrl(target.user.profile_pic_url, 'instagram', anonymizer) };
+  return { ...baseFixture('instagram', 'instagram-replay', 'instagram-highlights-v3',
+    'Captured highlight tray and GraphQL media queries through the real main-world scanner'),
+    capturedAt: '2026-09-05', queries, nodes: [node], storyItems: [],
+    profileFeed: { name: feed.name, docId: feed.docId,
+      variables: { data: { count: 33, include_reel_media_seen_timestamp: true,
+        include_relationship_info: true, latest_besties_reel_media: true, latest_reel_media: true },
+        username: 'example_user', __relay_internal__pv__PolarisMultiCaptionCarouselEnabledrelayprovider: true,
+        __relay_internal__pv__PolarisShortDramaEnabledrelayprovider: false,
+        __relay_internal__pv__PolarisReelsRecoDebugOverlayEnabledrelayprovider: false },
+      body: { data: { xdt_api__v1__feed__user_timeline_graphql_connection: {
+        edges: [{ node }], page_info: { has_next_page: false, end_cursor: null }
+      } } } } };
 }
 
 function htmlMediaUrls(html) {
@@ -723,6 +773,11 @@ function main() {
   if (requestedSource) {
     const source = path.resolve(rootDir, requestedSource);
     if (!fs.existsSync(source)) throw new Error(`HAR source does not exist: ${source}`);
+    if (process.argv.includes('--highlights')) {
+      writeFixture('instagram/instagram-highlights-v3.json', extractInstagramHighlightsFixture(source));
+      writeFixtureManifest();
+      return;
+    }
     const platform = /instagram/i.test(source) ? 'instagram' : (/facebook/i.test(source) ? 'facebook' : 'reddit');
     const fixture = platform === 'instagram'
       ? extractInstagramFixture(source)

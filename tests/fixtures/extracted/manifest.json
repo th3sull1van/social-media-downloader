@@ -32,6 +32,13 @@
       "bytes": 200390
     },
     {
+      "path": "instagram/instagram-highlights-v3.json",
+      "platform": "instagram",
+      "fixtureType": "instagram-replay",
+      "sourceCaptureId": "instagram-highlights-v3",
+      "bytes": 166607
+    },
+    {
       "path": "instagram/instagram-profile-v2.json",
       "platform": "instagram",
       "fixtureType": "instagram-replay",
@@ -88,5 +95,5 @@
       "bytes": 8865
     }
   ],
-  "totalBytes": 5490043
+  "totalBytes": 5656650
 }

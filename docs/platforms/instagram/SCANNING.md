@@ -16,3 +16,9 @@
 The heavy lifting lives in the content script + main-world bridge
 (`src/content/content.js`, `main-world/injected.js`); the plugin owns the
 normalization contract and capabilities.
+
+When REST profile lookup fails (including HTTP 429), one existing GraphQL
+feed page can recover the target ID from an author with the exact requested
+username. The viewer ID is never substituted. Highlights report unavailable
+profile/tray/media responses as failures, while a valid empty tray remains
+an empty result. Starting an independent highlight scan clears prior cancellation.

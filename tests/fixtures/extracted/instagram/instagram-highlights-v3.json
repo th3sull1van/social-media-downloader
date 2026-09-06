@@ -1,0 +1,2759 @@
+{
+  "fixtureVersion": 1,
+  "fixtureType": "instagram-replay",
+  "extractionVersion": 1,
+  "sanitizationVersion": 1,
+  "platform": "instagram",
+  "scenario": "instagram-highlights-v3",
+  "sourceCaptureId": "instagram-highlights-v3",
+  "capturedAt": "2026-09-05",
+  "browser": "Chrome",
+  "sanitized": true,
+  "source": "local-har-extraction",
+  "purpose": "Captured highlight tray and GraphQL media queries through the real main-world scanner",
+  "queries": [
+    {
+      "name": "PolarisProfileStoryHighlightsTrayContentQuery",
+      "docId": "26970053832668570",
+      "variables": {
+        "user_id": "1000000000000001"
+      },
+      "body": {
+        "data": {
+          "highlights": {
+            "edges": [
+              {
+                "node": {
+                  "id": "highlight:1000000000000001",
+                  "title": "Fixture Highlight 1"
+                }
+              },
+              {
+                "node": {
+                  "id": "highlight:1000000000000002",
+                  "title": "Fixture Highlight 2"
+                }
+              },
+              {
+                "node": {
+                  "id": "highlight:1000000000000003",
+                  "title": "Fixture Highlight 3"
+                }
+              }
+            ],
+            "page_info": {
+              "has_next_page": false,
+              "has_previous_page": false,
+              "start_cursor": null,
+              "end_cursor": null
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "PolarisStoriesV3HighlightsPageQuery",
+      "docId": "28730445686541844",
+      "variables": {
+        "initial_reel_id": "highlight:1000000000000001",
+        "reel_ids": [
+          "highlight:1000000000000001",
+          "highlight:1000000000000002",
+          "highlight:1000000000000003"
+        ],
+        "first": 3,
+        "last": 2,
+        "__relay_internal__pv__PolarisCommunityNoteStoriesLabelEnabledrelayprovider": true
+      },
+      "body": {
+        "data": {
+          "xdt_api__v1__feed__reels_media__connection": {
+            "edges": [
+              {
+                "node": {
+                  "id": "highlight:1000000000000001",
+                  "title": "Fixture Highlight 1",
+                  "items": [
+                    {
+                      "id": "story_001",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_001.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 1080,
+                            "height": 1920
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_001.jpg?stp=dst-jpg_p720x720&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 720,
+                            "height": 1280
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_001.jpg?stp=dst-jpg_p640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1138
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_001.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 853
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_001.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 569
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_001.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 427
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_001.jpg?stp=dst-jpg_c0.420.1080.1080a_s1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 1080,
+                            "height": 1080
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_001.jpg?stp=dst-jpg_c0.420.1080.1080a_s750x750&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 750,
+                            "height": 750
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_001.jpg?stp=dst-jpg_c0.420.1080.1080a_s640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_001.jpg?stp=dst-jpg_c0.420.1080.1080a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_001.jpg?stp=dst-jpg_c0.420.1080.1080a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_001.jpg?stp=dst-jpg_c0.420.1080.1080a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_001.jpg?stp=dst-jpg_c0.420.1080.1080a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_002.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_002.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_002.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001000
+                    },
+                    {
+                      "id": "story_002",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_003.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_003.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_003.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_003.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_003.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_003.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_003.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_003.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_003.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_003.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_003.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_004.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_004.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_004.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001001
+                    },
+                    {
+                      "id": "story_003",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_005.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_005.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_005.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_005.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_005.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_005.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_005.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_005.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_005.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_005.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_005.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_006.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_006.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_006.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001002
+                    },
+                    {
+                      "id": "story_004",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_007.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_007.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_007.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_007.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_007.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_007.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_007.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_007.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_007.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_007.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_007.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_008.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_008.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_008.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001003
+                    },
+                    {
+                      "id": "story_005",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_009.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_009.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_009.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_009.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_009.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_009.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_009.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_009.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_009.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_009.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_009.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_010.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_010.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_010.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001004
+                    },
+                    {
+                      "id": "story_006",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_011.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_011.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_011.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_011.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_011.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_011.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_011.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_011.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_011.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_011.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_011.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_012.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_012.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_012.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001005
+                    },
+                    {
+                      "id": "story_007",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_013.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_013.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_013.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_013.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_013.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_013.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_013.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_013.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_013.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_013.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_013.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_014.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_014.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_014.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001006
+                    },
+                    {
+                      "id": "story_008",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_015.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_015.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_015.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_015.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_015.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_015.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_015.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_015.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_015.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_015.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_015.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_016.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_016.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_016.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001007
+                    },
+                    {
+                      "id": "story_009",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_017.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_017.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_017.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_017.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_017.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_017.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_017.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_017.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_017.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_017.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_017.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_018.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_018.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_018.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001008
+                    },
+                    {
+                      "id": "story_010",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_019.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_019.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_019.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_019.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_019.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_019.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_019.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_019.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_019.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_019.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_019.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_020.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_020.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_020.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001009
+                    },
+                    {
+                      "id": "story_011",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_021.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_021.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_021.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_021.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_021.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_021.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_021.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_021.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_021.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_021.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_021.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_022.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_022.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_022.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001010
+                    },
+                    {
+                      "id": "story_012",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_023.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_023.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_023.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_023.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_023.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_023.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_023.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_023.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_023.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_023.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_023.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_024.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_024.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_024.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001011
+                    },
+                    {
+                      "id": "story_013",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_025.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_025.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_025.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_025.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_025.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_025.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_025.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_025.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_025.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_025.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_025.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_026.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_026.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_026.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001012
+                    },
+                    {
+                      "id": "story_014",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_027.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 1170,
+                            "height": 2080
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_027.jpg?stp=dst-jpg_p720x720&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 720,
+                            "height": 1280
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_027.jpg?stp=dst-jpg_p640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1138
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_027.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 853
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_027.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 569
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_027.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 427
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_027.jpg?stp=dst-jpg_c0.455.1170.1170a_s1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 1080,
+                            "height": 1080
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_027.jpg?stp=dst-jpg_c0.455.1170.1170a_s750x750&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 750,
+                            "height": 750
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_027.jpg?stp=dst-jpg_c0.455.1170.1170a_s640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_027.jpg?stp=dst-jpg_c0.455.1170.1170a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_027.jpg?stp=dst-jpg_c0.455.1170.1170a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_027.jpg?stp=dst-jpg_c0.455.1170.1170a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_027.jpg?stp=dst-jpg_c0.455.1170.1170a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_028.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_028.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_028.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001013
+                    },
+                    {
+                      "id": "story_015",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_029.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_029.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_029.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_029.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_029.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_029.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_029.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_029.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_029.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_029.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_029.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_030.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_030.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_030.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001014
+                    },
+                    {
+                      "id": "story_016",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_031.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_031.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_031.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_031.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_031.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_031.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_031.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_031.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_031.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_031.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_031.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_032.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_032.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_032.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001015
+                    },
+                    {
+                      "id": "story_017",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_033.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_033.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_033.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_033.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_033.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_033.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_033.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_033.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_033.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_033.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_033.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_034.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_034.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_034.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001016
+                    },
+                    {
+                      "id": "story_018",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_035.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_035.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_035.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_035.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_035.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_035.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_035.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_035.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_035.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_035.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_035.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_036.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_036.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_036.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001017
+                    }
+                  ]
+                }
+              },
+              {
+                "node": {
+                  "id": "highlight:1000000000000002",
+                  "title": "Fixture Highlight 2",
+                  "items": [
+                    {
+                      "id": "story_019",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_037.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_037.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_037.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_037.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_037.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_037.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_037.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_037.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_037.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_037.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_037.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_038.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_038.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_038.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001000
+                    },
+                    {
+                      "id": "story_020",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_039.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_039.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_039.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_039.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_039.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_039.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_039.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_039.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_039.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_039.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_039.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_040.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_040.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_040.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001001
+                    },
+                    {
+                      "id": "story_021",
+                      "media_type": 1,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_041.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 1170,
+                            "height": 2080
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_041.jpg?stp=dst-jpg_p720x720&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 720,
+                            "height": 1280
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_041.jpg?stp=dst-jpg_p640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1138
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_041.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 853
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_041.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 569
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_041.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 427
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_041.jpg?stp=dst-jpg_c0.455.1170.1170a_s1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 1080,
+                            "height": 1080
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_041.jpg?stp=dst-jpg_c0.455.1170.1170a_s750x750&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 750,
+                            "height": 750
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_041.jpg?stp=dst-jpg_c0.455.1170.1170a_s640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_041.jpg?stp=dst-jpg_c0.455.1170.1170a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_041.jpg?stp=dst-jpg_c0.455.1170.1170a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_041.jpg?stp=dst-jpg_c0.455.1170.1170a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_041.jpg?stp=dst-jpg_c0.455.1170.1170a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "taken_at": 1700001002
+                    },
+                    {
+                      "id": "story_022",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_042.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_042.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_042.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_042.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_042.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_042.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_042.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_042.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_042.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_042.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_042.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_043.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_043.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_043.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001003
+                    },
+                    {
+                      "id": "story_023",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1138
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 854
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 569
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 427
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_c0.249.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_c0.249.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_c0.249.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_c0.249.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_c0.249.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_c0.249.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_c0.249.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_045.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_045.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_045.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001004
+                    },
+                    {
+                      "id": "story_024",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_047.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_047.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_047.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001005
+                    }
+                  ]
+                }
+              },
+              {
+                "node": {
+                  "id": "highlight:1000000000000003",
+                  "title": "Fixture Highlight 3",
+                  "items": [
+                    {
+                      "id": "story_023",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1138
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 854
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 569
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 427
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_c0.249.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_c0.249.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_c0.249.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_c0.249.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_c0.249.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_c0.249.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_044.jpg?stp=dst-jpg_c0.249.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_045.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_045.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_045.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001000
+                    },
+                    {
+                      "id": "story_024",
+                      "media_type": 2,
+                      "image_versions2": {
+                        "candidates": [
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 1136
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 852
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 568
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 426
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_c0.248.640.640a_s640x639&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 640,
+                            "height": 640
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_c0.248.640.640a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 480,
+                            "height": 480
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_c0.248.640.640a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 320,
+                            "height": 320
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_c0.248.640.640a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 240,
+                            "height": 240
+                          },
+                          {
+                            "url": "https://cdninstagram.com/fixture/asset_046.jpg?stp=dst-jpg_c0.248.640.640a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                            "width": 150,
+                            "height": 150
+                          }
+                        ]
+                      },
+                      "video_versions": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_047.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_047.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_047.mp4?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe"
+                        }
+                      ],
+                      "taken_at": 1700001001
+                    }
+                  ]
+                }
+              }
+            ],
+            "page_info": {
+              "has_next_page": false,
+              "has_previous_page": false,
+              "start_cursor": "highlight:1000000000000001",
+              "end_cursor": "highlight:1000000000000003"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "ig_post_001",
+      "code": "shortcode_001",
+      "media_type": 8,
+      "taken_at": 1700000000,
+      "caption": {
+        "text": "fixture caption 1"
+      },
+      "image_versions2": {
+        "candidates": [
+          {
+            "url": "https://cdninstagram.com/fixture/asset_048.webp?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+            "width": 1440,
+            "height": 1800
+          },
+          {
+            "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+            "width": 1080,
+            "height": 1350
+          },
+          {
+            "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p720x720&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+            "width": 720,
+            "height": 900
+          },
+          {
+            "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+            "width": 640,
+            "height": 800
+          },
+          {
+            "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+            "width": 480,
+            "height": 600
+          },
+          {
+            "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+            "width": 320,
+            "height": 400
+          },
+          {
+            "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+            "width": 240,
+            "height": 300
+          },
+          {
+            "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+            "width": 1080,
+            "height": 1080
+          },
+          {
+            "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s750x750&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+            "width": 750,
+            "height": 750
+          },
+          {
+            "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+            "width": 640,
+            "height": 640
+          },
+          {
+            "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+            "width": 480,
+            "height": 480
+          },
+          {
+            "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+            "width": 320,
+            "height": 320
+          },
+          {
+            "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+            "width": 240,
+            "height": 240
+          },
+          {
+            "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+            "width": 150,
+            "height": 150
+          }
+        ]
+      },
+      "carousel_media": [
+        {
+          "id": "media_025",
+          "media_type": 1,
+          "image_versions2": {
+            "candidates": [
+              {
+                "url": "https://cdninstagram.com/fixture/asset_048.webp?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 1440,
+                "height": 1800
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 1080,
+                "height": 1350
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p720x720&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 720,
+                "height": 900
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 640,
+                "height": 800
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 480,
+                "height": 600
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 320,
+                "height": 400
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 240,
+                "height": 300
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 1080,
+                "height": 1080
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s750x750&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 750,
+                "height": 750
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 640,
+                "height": 640
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 480,
+                "height": 480
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 320,
+                "height": 320
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 240,
+                "height": 240
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 150,
+                "height": 150
+              }
+            ]
+          }
+        },
+        {
+          "id": "media_026",
+          "media_type": 1,
+          "image_versions2": {
+            "candidates": [
+              {
+                "url": "https://cdninstagram.com/fixture/asset_049.webp?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 1440,
+                "height": 1800
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_p1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 1080,
+                "height": 1350
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_p720x720&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 720,
+                "height": 900
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_p640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 640,
+                "height": 800
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 480,
+                "height": 600
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 320,
+                "height": 400
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 240,
+                "height": 300
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_c0.180.1440.1440a_s1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 1080,
+                "height": 1080
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_c0.180.1440.1440a_s750x750&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 750,
+                "height": 750
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_c0.180.1440.1440a_s640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 640,
+                "height": 640
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_c0.180.1440.1440a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 480,
+                "height": 480
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_c0.180.1440.1440a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 320,
+                "height": 320
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_c0.180.1440.1440a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 240,
+                "height": 240
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_c0.180.1440.1440a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 150,
+                "height": 150
+              }
+            ]
+          }
+        },
+        {
+          "id": "media_027",
+          "media_type": 1,
+          "image_versions2": {
+            "candidates": [
+              {
+                "url": "https://cdninstagram.com/fixture/asset_050.webp?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 1440,
+                "height": 1800
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_p1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 1080,
+                "height": 1350
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_p720x720&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 720,
+                "height": 900
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_p640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 640,
+                "height": 800
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 480,
+                "height": 600
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 320,
+                "height": 400
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 240,
+                "height": 300
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_c0.180.1440.1440a_s1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 1080,
+                "height": 1080
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_c0.180.1440.1440a_s750x750&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 750,
+                "height": 750
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_c0.180.1440.1440a_s640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 640,
+                "height": 640
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_c0.180.1440.1440a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 480,
+                "height": 480
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_c0.180.1440.1440a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 320,
+                "height": 320
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_c0.180.1440.1440a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 240,
+                "height": 240
+              },
+              {
+                "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_c0.180.1440.1440a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                "width": 150,
+                "height": 150
+              }
+            ]
+          }
+        }
+      ],
+      "user": {
+        "pk": "1000000000000001",
+        "username": "example_user",
+        "profile_pic_url": "https://cdninstagram.com/fixture/asset_051.jpg?stp=dst-jpg_s150x150&_nc_cat=1&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe&_nc_sid=synthetic-sid"
+      }
+    }
+  ],
+  "storyItems": [],
+  "profileFeed": {
+    "name": "PolarisProfilePostsQuery",
+    "docId": "26519258537772635",
+    "variables": {
+      "data": {
+        "count": 33,
+        "include_reel_media_seen_timestamp": true,
+        "include_relationship_info": true,
+        "latest_besties_reel_media": true,
+        "latest_reel_media": true
+      },
+      "username": "example_user",
+      "__relay_internal__pv__PolarisMultiCaptionCarouselEnabledrelayprovider": true,
+      "__relay_internal__pv__PolarisShortDramaEnabledrelayprovider": false,
+      "__relay_internal__pv__PolarisReelsRecoDebugOverlayEnabledrelayprovider": false
+    },
+    "body": {
+      "data": {
+        "xdt_api__v1__feed__user_timeline_graphql_connection": {
+          "edges": [
+            {
+              "node": {
+                "id": "ig_post_001",
+                "code": "shortcode_001",
+                "media_type": 8,
+                "taken_at": 1700000000,
+                "caption": {
+                  "text": "fixture caption 1"
+                },
+                "image_versions2": {
+                  "candidates": [
+                    {
+                      "url": "https://cdninstagram.com/fixture/asset_048.webp?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                      "width": 1440,
+                      "height": 1800
+                    },
+                    {
+                      "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                      "width": 1080,
+                      "height": 1350
+                    },
+                    {
+                      "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p720x720&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                      "width": 720,
+                      "height": 900
+                    },
+                    {
+                      "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                      "width": 640,
+                      "height": 800
+                    },
+                    {
+                      "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                      "width": 480,
+                      "height": 600
+                    },
+                    {
+                      "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                      "width": 320,
+                      "height": 400
+                    },
+                    {
+                      "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                      "width": 240,
+                      "height": 300
+                    },
+                    {
+                      "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                      "width": 1080,
+                      "height": 1080
+                    },
+                    {
+                      "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s750x750&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                      "width": 750,
+                      "height": 750
+                    },
+                    {
+                      "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                      "width": 640,
+                      "height": 640
+                    },
+                    {
+                      "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                      "width": 480,
+                      "height": 480
+                    },
+                    {
+                      "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                      "width": 320,
+                      "height": 320
+                    },
+                    {
+                      "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                      "width": 240,
+                      "height": 240
+                    },
+                    {
+                      "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                      "width": 150,
+                      "height": 150
+                    }
+                  ]
+                },
+                "carousel_media": [
+                  {
+                    "id": "media_025",
+                    "media_type": 1,
+                    "image_versions2": {
+                      "candidates": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_048.webp?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 1440,
+                          "height": 1800
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 1080,
+                          "height": 1350
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p720x720&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 720,
+                          "height": 900
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 640,
+                          "height": 800
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 480,
+                          "height": 600
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 320,
+                          "height": 400
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 240,
+                          "height": 300
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 1080,
+                          "height": 1080
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s750x750&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 750,
+                          "height": 750
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 640,
+                          "height": 640
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 480,
+                          "height": 480
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 320,
+                          "height": 320
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 240,
+                          "height": 240
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_048.webp?stp=dst-webp_c0.180.1440.1440a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 150,
+                          "height": 150
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "media_026",
+                    "media_type": 1,
+                    "image_versions2": {
+                      "candidates": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_049.webp?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 1440,
+                          "height": 1800
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_p1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 1080,
+                          "height": 1350
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_p720x720&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 720,
+                          "height": 900
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_p640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 640,
+                          "height": 800
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 480,
+                          "height": 600
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 320,
+                          "height": 400
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 240,
+                          "height": 300
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_c0.180.1440.1440a_s1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 1080,
+                          "height": 1080
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_c0.180.1440.1440a_s750x750&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 750,
+                          "height": 750
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_c0.180.1440.1440a_s640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 640,
+                          "height": 640
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_c0.180.1440.1440a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 480,
+                          "height": 480
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_c0.180.1440.1440a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 320,
+                          "height": 320
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_c0.180.1440.1440a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 240,
+                          "height": 240
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_049.webp?stp=dst-webp_c0.180.1440.1440a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 150,
+                          "height": 150
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "media_027",
+                    "media_type": 1,
+                    "image_versions2": {
+                      "candidates": [
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_050.webp?_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 1440,
+                          "height": 1800
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_p1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 1080,
+                          "height": 1350
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_p720x720&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 720,
+                          "height": 900
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_p640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 640,
+                          "height": 800
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_p480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 480,
+                          "height": 600
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_p320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 320,
+                          "height": 400
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_p240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 240,
+                          "height": 300
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_c0.180.1440.1440a_s1080x1080&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 1080,
+                          "height": 1080
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_c0.180.1440.1440a_s750x750&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 750,
+                          "height": 750
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_c0.180.1440.1440a_s640x640&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 640,
+                          "height": 640
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_c0.180.1440.1440a_s480x480&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 480,
+                          "height": 480
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_c0.180.1440.1440a_s320x320&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 320,
+                          "height": 320
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_c0.180.1440.1440a_s240x240&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 240,
+                          "height": 240
+                        },
+                        {
+                          "url": "https://cdninstagram.com/fixture/asset_050.webp?stp=dst-webp_c0.180.1440.1440a_s150x150&_nc_cat=1&_nc_sid=synthetic-sid&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe",
+                          "width": 150,
+                          "height": 150
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "user": {
+                  "pk": "1000000000000001",
+                  "username": "example_user",
+                  "profile_pic_url": "https://cdninstagram.com/fixture/asset_051.jpg?stp=dst-jpg_s150x150&_nc_cat=1&_nc_ohc=synthetic-ohc&oh=synthetic-oh&oe=synthetic-oe&_nc_sid=synthetic-sid"
+                }
+              }
+            }
+          ],
+          "page_info": {
+            "has_next_page": false,
+            "end_cursor": null
+          }
+        }
+      }
+    }
+  }
+}

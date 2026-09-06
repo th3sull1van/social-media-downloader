@@ -24,6 +24,7 @@ import { runRedditMessageRoutingTests } from './contracts/reddit-message-routing
 import { runPipelineTests } from './integration/pipeline.test.js';
 import { runHarExtractionTests } from './integration/har-extraction.test.js';
 import { runCompactInstagramReplayTests } from './integration/fixture-replay.test.js';
+import { runInstagramHighlightsTests } from './integration/instagram-highlights.test.js';
 import { runCompactPlatformReplayTests } from './integration/har-replay-platforms.test.js';
 import { runAvatarReplayTests } from './integration/avatar-replay.test.js';
 import { runFbFullResTests } from './integration/fb-fullres.test.js';
@@ -44,6 +45,7 @@ function passingValidation(check, message) {
 }
 
 export const suites = [
+  { id: 'instagram-highlights', name: 'Instagram Highlights GraphQL and Rate-Limited Profile Replay', fn: runInstagramHighlightsTests },
   {
     id: 'i18n-parity',
     name: 'i18n & 22 Locales Parity Tests',

@@ -15,7 +15,8 @@
     IG_ProfilePageContent: '28191674790485375',
     IG_ProfilePosts: '26519258537772635',
     IG_ProfilePostsTabContent_connection: '27672504985785333',
-    IG_ProfileStoryHighlightsTray: '26970053832668570'
+    IG_ProfileStoryHighlightsTray: '26970053832668570',
+    IG_StoriesHighlightsPage: '28730445686541844'
   };
 
   const session = {
@@ -205,6 +206,20 @@
       }
     } catch (e) {
       console.warn('[SMD IG Injected] web_profile_info error:', e);
+    }
+
+    // web_profile_info can be rate-limited while the profile's GraphQL feed works.
+    // A single existing feed page provides the target ID; never use the viewer ID.
+    if (!targetUserId) {
+      const nodes = await fetchAllPosts(username, 1);
+      const user = nodes.map(node => node.user).find(user =>
+        user?.username?.toLowerCase() === username.toLowerCase() && (user.pk || user.id));
+      if (user) {
+        targetUserId = String(user.pk || user.id);
+        fallbackInfo = { id: targetUserId, pk: targetUserId, username: user.username,
+          fullName: user.full_name, profilePicUrl: user.profile_pic_url,
+          hdProfilePicUrl: user.hd_profile_pic_url_info?.url || user.profile_pic_url };
+      }
     }
 
     // Step 2: Query PolarisProfilePageContentQuery using target's numeric ID to extract true 1080x1080 uncropped avatar
@@ -416,7 +431,8 @@
   }
 
   async function fetchHighlights(userId, onBatch = null) {
-    if (!userId) return [];
+    if (!userId) throw new Error('instagram_profile_unavailable');
+    isScanCancelled = false;
     refreshSessionTokens();
 
     const allHighlightItems = [];
@@ -430,7 +446,8 @@
       );
 
       const highlightsData = trayRes.data?.highlights;
-      const edges = highlightsData?.edges || [];
+      const edges = highlightsData?.edges;
+      if (trayRes.errors?.length || !Array.isArray(edges)) throw new Error('instagram_highlights_tray_failed');
 
       if (!edges.length) {
         console.info('[SMD IG Injected] No highlight albums found.');
@@ -445,14 +462,29 @@
         return (matchingEdge?.node?.title) || 'Destaques';
       };
 
-      // 2. Query reels_media in batches of 10
-      const BATCH_SIZE = 10;
+      // Match the three-reel window observed in PolarisStoriesV3HighlightsPageQuery.
+      const BATCH_SIZE = 3;
       for (let i = 0; i < highlightIds.length; i += BATCH_SIZE) {
         if (isScanCancelled) break;
         const batchIds = highlightIds.slice(i, i + BATCH_SIZE);
 
         let reelsById = null;
         try {
+          const result = await performGraphQLQuery(DOC_IDS.IG_StoriesHighlightsPage,
+            'PolarisStoriesV3HighlightsPageQuery', {
+              initial_reel_id: batchIds[0], reel_ids: batchIds, first: batchIds.length, last: 2,
+              __relay_internal__pv__PolarisCommunityNoteStoriesLabelEnabledrelayprovider: true
+            });
+          const reelEdges = result.data?.xdt_api__v1__feed__reels_media__connection?.edges;
+          if (!result.errors?.length && Array.isArray(reelEdges)) {
+            reelsById = Object.fromEntries(reelEdges.filter(edge => edge.node?.id).map(edge => [edge.node.id, edge.node]));
+          }
+        } catch (err) {
+          console.warn('[SMD IG Injected] Highlight GraphQL failed; trying reels_media.');
+        }
+        if (isScanCancelled) break;
+        // Preserve compatibility with the older REST shape when GraphQL is unavailable.
+        if (!reelsById || batchIds.some(id => !Array.isArray(reelsById[id]?.items))) {
           const url = `https://www.instagram.com/api/v1/feed/reels_media/?reel_ids=${encodeURIComponent(batchIds.join(','))}`;
           const headers = {
             'X-IG-App-ID': session.appId,
@@ -466,8 +498,10 @@
             const json = await res.json();
             reelsById = json.reels || (json.data && json.data.reels) || null;
           }
-        } catch (err) {
-          console.warn('[SMD IG Injected] Batched reels_media failed:', err);
+        }
+        if (isScanCancelled) break;
+        if (!reelsById || batchIds.some(id => !Array.isArray(reelsById[id]?.items))) {
+          throw new Error('instagram_highlights_media_failed');
         }
 
         if (reelsById && Object.keys(reelsById).length > 0) {
@@ -489,7 +523,7 @@
         await new Promise(r => setTimeout(r, 250));
       }
     } catch (e) {
-      console.warn('[SMD IG Injected] Error fetching highlights:', e);
+      throw new Error('instagram_highlights_failed');
     }
 
     return allHighlightItems;
@@ -538,10 +572,14 @@
         break;
       }
       case 'FETCH_IG_HIGHLIGHTS': {
-        const items = await fetchHighlights(payload?.userId, (batch) => {
-          postBatch('SMD_IG_BATCH_HIGHLIGHTS', { items: batch });
-        });
-        reply({ success: true, payload: { items } });
+        try {
+          const items = await fetchHighlights(payload?.userId, (batch) => {
+            postBatch('SMD_IG_BATCH_HIGHLIGHTS', { items: batch });
+          });
+          reply({ success: true, payload: { items } });
+        } catch (error) {
+          reply({ success: false, error: 'instagram_highlights_failed' });
+        }
         break;
       }
       case 'CANCEL_SCAN': {
