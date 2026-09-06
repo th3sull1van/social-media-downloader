@@ -17,6 +17,9 @@
   if (window.__SOCIAL_MEDIA_DOWNLOADER_CONTENT__) return;
   window.__SOCIAL_MEDIA_DOWNLOADER_CONTENT__ = true;
 
+  // Old tabs retain avatar timers after an extension reload invalidates runtime APIs.
+  const fallbackIconUrl = chrome.runtime.getURL('assets/icons/icon32.png');
+
   const hostname = window.location.hostname.toLowerCase().replace(/\.+$/, '');
   const isHostOnDomain = (host, domain) => host === domain || host.endsWith('.' + domain);
   const isInstagram = isHostOnDomain(hostname, 'instagram.com');
@@ -863,7 +866,7 @@
   }
 
   function getAvatarUrl() {
-    const fallbackIcon = chrome.runtime.getURL('assets/icons/icon32.png');
+    const fallbackIcon = fallbackIconUrl;
     if (isAllowedMediaUrl(state.targetAvatarUrl)) return state.targetAvatarUrl;
     if (isAllowedMediaUrl(state.profileInfo?.hdProfilePicUrl)) return state.profileInfo.hdProfilePicUrl;
     if (isAllowedMediaUrl(state.profileInfo?.profilePicUrl)) return state.profileInfo.profilePicUrl;
@@ -885,7 +888,7 @@
       avatarEl.src = isFacebook ? getFacebookTargetAvatarUrl() : getAvatarUrl();
       avatarEl.onerror = function () {
         this.onerror = null;
-        this.src = chrome.runtime.getURL('assets/icons/icon32.png');
+        this.src = fallbackIconUrl;
       };
     }
   }
@@ -911,7 +914,7 @@
   }
 
   function getFacebookTargetAvatarUrl() {
-    const fallbackIcon = chrome.runtime.getURL('assets/icons/icon32.png');
+    const fallbackIcon = fallbackIconUrl;
     if (isAllowedMediaUrl(state.targetAvatarUrl)) return state.targetAvatarUrl;
     const main = document.querySelector('div[role="main"]') || document.body;
     const images = main?.querySelectorAll?.('img, image') || [];
@@ -962,7 +965,7 @@
   }
 
   function getRedditTargetAvatarUrl() {
-    const fallbackIcon = chrome.runtime.getURL('assets/icons/icon32.png');
+    const fallbackIcon = fallbackIconUrl;
     if (isAllowedMediaUrl(state.targetAvatarUrl)) return state.targetAvatarUrl;
 
     const target = redditTargetInfo();
@@ -2313,7 +2316,7 @@
 
     const chipClass = isFacebook ? 'smd-chip-fb' : (isReddit ? 'smd-chip-reddit' : '');
     const platformLabel = isInstagram ? 'Instagram' : (isFacebook ? 'Facebook' : 'Reddit');
-    const fallbackIcon = chrome.runtime.getURL('assets/icons/icon32.png');
+    const fallbackIcon = fallbackIconUrl;
 
     // Static shell only: trusted strings + translations. Remote data is rendered via DOM APIs.
     let scanButtons = '';

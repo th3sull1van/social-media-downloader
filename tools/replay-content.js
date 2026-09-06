@@ -335,7 +335,7 @@ export async function replayContentScriptData({ nodes, storyItems, highlightItem
  * receives avatar data through the main-world batch bridge, while Reddit gets
  * it through the plugin-owned lightweight message.
  *
- * @param {{ platform: 'facebook'|'reddit', location: { hostname: string, pathname: string, search?: string, origin: string, href: string }, title?: string, navigation?: {url: string, title: string}[], facebookPayload?: any, facebookPayloads?: any[], facebookInitialPayloads?: any[], redditAvatarUrl?: string }} options
+ * @param {{ platform: 'facebook'|'reddit', location: { hostname: string, pathname: string, search?: string, origin: string, href: string }, getResourceURL?: (path: string) => string, title?: string, navigation?: {url: string, title: string}[], facebookPayload?: any, facebookPayloads?: any[], facebookInitialPayloads?: any[], redditAvatarUrl?: string }} options
  * @returns {Promise<{ avatarUrl: string, targetName: string, media: any[], messages: any[] }>}
  */
 export async function replayTargetAvatarContentScript(options) {
@@ -350,7 +350,7 @@ export async function replayTargetAvatarContentScript(options) {
   const redditAvatarUrl = options.redditAvatarUrl || '';
   const chromeStub = {
     runtime: {
-      getURL: (p) => 'chrome-extension://smd/' + p,
+      getURL: options.getResourceURL || ((p) => 'chrome-extension://smd/' + p),
       lastError: null,
       sendMessage: (msg, cb) => {
         messages.push(msg);

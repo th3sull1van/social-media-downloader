@@ -29,6 +29,22 @@ function findFacebookProfilePictureOwner(root, depth = 0) {
 }
 
 export async function runAvatarReplayTests() {
+  // The icon address is static. Later avatar refreshes must not require a
+  // live extension context (old tabs survive extension reloads).
+  let iconLookups = 0;
+  await replayTargetAvatarContentScript({
+    platform: 'facebook',
+    location: { hostname: 'www.facebook.com', pathname: '/example/photos',
+      origin: 'https://www.facebook.com', href: 'https://www.facebook.com/example/photos' },
+    getResourceURL(resource) {
+      if (resource === 'assets/icons/icon32.png' && ++iconLookups > 1) {
+        throw new Error('Extension context invalidated.');
+      }
+      return `chrome-extension://smd/${resource}`;
+    }
+  });
+  assert.strictEqual(iconLookups, 1, 'avatar refreshes must reuse the initialized icon URL');
+
   const facebookFixturePath = path.resolve('tests/fixtures/extracted/facebook/facebook-profile.json');
   let facebookOwner = null;
   if (fs.existsSync(facebookFixturePath)) {
