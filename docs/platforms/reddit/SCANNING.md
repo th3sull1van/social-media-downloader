@@ -18,3 +18,7 @@
   `media.image/gallery/video/audio`, and media-processing capabilities.
 - **Message routing:** Reddit scan work is served to the service worker through
   the plugin (`handleMessage('REDDIT_SCAN')`), keeping the SW platform-neutral.
+- API loops retain items collected before a later transport/HTTP failure and
+  return `partial` (or `network_failure` when none were collected). The content
+  scan uses a generation and navigation key so late responses and DOM fallback
+  work cannot update a newer target or a cancelled scan.

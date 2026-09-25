@@ -13,17 +13,35 @@ const ALLOWED_TYPES = new Set([
   'reddit-replay',
   'reddit-api'
 ]);
+const MAX_SERIALIZED_JSON_CHARS = 1_000_000;
 
 /**
  * @param {any} value
  * @param {string} location
  * @param {string[]} findings
  */
-function scanValue(value, location, findings) {
+function scanValue(value, location, findings, jsonDepth = 0) {
   if (typeof value !== 'string') return;
   if (SENSITIVE_VALUE.test(value)) findings.push(location);
   if (PRIVATE_URL_VALUE.test(value)) findings.push(location);
   if (FORBIDDEN_HTML.test(value)) findings.push(location);
+
+  // Fixture payloads often preserve an API body as a JSON string. Inspect a
+  // small, bounded tree inside those strings too, without treating ordinary
+  // response text as a credential-bearing document.
+  if (jsonDepth >= 4) return;
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return;
+  if (trimmed.length > MAX_SERIALIZED_JSON_CHARS) {
+    findings.push(location);
+    return;
+  }
+  try {
+    const parsed = JSON.parse(trimmed);
+    scanTree(parsed, `${location}.$json`, findings, jsonDepth + 1);
+  } catch {
+    // Non-JSON strings are handled by the scalar checks above.
+  }
 }
 
 /**
@@ -31,20 +49,20 @@ function scanValue(value, location, findings) {
  * @param {string} location
  * @param {string[]} findings
  */
-function scanTree(value, location, findings) {
+function scanTree(value, location, findings, jsonDepth = 0) {
   if (typeof value === 'string') {
-    scanValue(value, location, findings);
+    scanValue(value, location, findings, jsonDepth);
     return;
   }
   if (!value || typeof value !== 'object') return;
   if (Array.isArray(value)) {
-    value.forEach((entry, index) => scanTree(entry, `${location}[${index}]`, findings));
+    value.forEach((entry, index) => scanTree(entry, `${location}[${index}]`, findings, jsonDepth));
     return;
   }
   for (const [key, child] of Object.entries(value)) {
     const childLocation = `${location}.${key}`;
     if (SENSITIVE_KEY.test(key)) findings.push(childLocation);
-    scanTree(child, childLocation, findings);
+    scanTree(child, childLocation, findings, jsonDepth);
   }
 }
 

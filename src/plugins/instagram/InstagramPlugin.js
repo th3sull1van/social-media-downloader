@@ -10,7 +10,7 @@ import { ScanResultModel } from '../../core/domain/ScanResult.js';
 
 export class InstagramPlugin {
   static id = 'instagram';
-  static version = '1.2.0';
+  static version = '1.2.1';
 
   /**
    * Matches whether context belongs to Instagram.

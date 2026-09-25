@@ -47,6 +47,45 @@ export async function runInstagramHighlightsTests() {
   wrongAuthor.profileFeed.body.data.xdt_api__v1__feed__user_timeline_graphql_connection.edges[0].node.user.username = 'another_user';
   assert.equal((await createHighlightReplay(wrongAuthor).send('FETCH_IG_PROFILE', { username: 'example_user' })).payload.profile.id, undefined);
 
+  // Resolve target numeric user ID from page script when REST profile lookup is rate-limited and user has 0 posts.
+  const scriptDomReplay = createHighlightReplay(capture, null, undefined, {
+    querySelectorAll: selector => selector.includes('script')
+      ? [{ textContent: '{"page_id":"profilePage_2199952056","profile_id":"2199952056","username":"zero_post_user"}' }]
+      : [],
+    querySelector: selector => selector.includes('og:image')
+      ? { getAttribute: () => 'https://scontent.cdninstagram.com/v/test_avatar.jpg' }
+      : null
+  });
+  const scriptProfile = await scriptDomReplay.send('FETCH_IG_PROFILE', { username: 'zero_post_user' });
+  assert.equal(scriptProfile.payload.profile.id, '2199952056');
+  assert.equal(scriptProfile.payload.profile.hdProfilePicUrl, 'https://scontent.cdninstagram.com/v/test_avatar.jpg');
+
+  // Posts and stories expose transport failures instead of converting them to
+  // successful empty scans; already collected post nodes remain partial.
+  {
+    const postsReplay = createHighlightReplay(capture, async request => {
+      if (request.name === 'PolarisProfilePostsQuery') {
+        const body = structuredClone(capture.profileFeed.body);
+        const timeline = body.data.xdt_api__v1__feed__user_timeline_graphql_connection;
+        timeline.edges = timeline.edges.slice(0, 1);
+        timeline.page_info = { has_next_page: true, end_cursor: 'synthetic-next' };
+        return { ok: true, json: async () => body };
+      }
+      return { ok: false, status: 429 };
+    });
+    const posts = await postsReplay.send('FETCH_IG_POSTS', { username: 'example_user', maxCount: 5000 });
+    assert.equal(posts.success, false);
+    assert.equal(posts.status, 'partial');
+    assert.ok(posts.payload.nodes.length > 0);
+
+    const storiesReplay = createHighlightReplay(capture, async request =>
+      request.name ? { ok: false, status: 500 } : { ok: false, status: 429 });
+    const stories = await storiesReplay.send('FETCH_IG_STORIES', { userId: 'synthetic-user' });
+    assert.equal(stories.success, false);
+    assert.equal(stories.status, 'network_failure');
+    assert.equal(stories.payload.items.length, 0);
+  }
+
   for (const mode of ['empty', 'tray-error', 'media-error', 'legacy', 'cancel']) {
     let harness;
     harness = createHighlightReplay(capture, async request => {

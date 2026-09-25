@@ -25,7 +25,8 @@ export function readHighlightCapture(harPath) {
 }
 
 export function createHighlightReplay(capture, respond = null,
-  source = fs.readFileSync(new URL('../src/plugins/instagram/main-world/injected.js', import.meta.url), 'utf8')) {
+  source = fs.readFileSync(new URL('../src/plugins/instagram/main-world/injected.js', import.meta.url), 'utf8'),
+  domOverrides = {}) {
   const messages = [];
   const requests = [];
   let sequence = 0;
@@ -33,7 +34,7 @@ export function createHighlightReplay(capture, respond = null,
   const context = vm.createContext({
     URLSearchParams,
     console: { log() {}, info() {}, warn() {}, error() {} },
-    document: { cookie: '', querySelector: () => null, querySelectorAll: () => [] },
+    document: { cookie: '', querySelector: () => null, querySelectorAll: () => [], ...domOverrides },
     setTimeout: (fn) => { queueMicrotask(fn); return 0; },
     addEventListener: (type, fn) => { if (type === 'message') listener = fn; },
     postMessage: message => messages.push(message),

@@ -68,16 +68,28 @@ function moovWithTrack(trackId, chunkOffsets, tkhdVersion = 0) {
   new DataView(tkhd.buffer).setUint32(0, tkhd.length);
   tkhd.set([116, 107, 104, 100], 4); // 'tkhd'
   tkhd[8] = tkhdVersion & 0xff;
-  const trackIdOffset = tkhdVersion === 1 ? 24 : 16;
+  const trackIdOffset = tkhdVersion === 1 ? 28 : 20;
   new DataView(tkhd.buffer).setUint32(trackIdOffset, trackId);
+
+  const tkhdView = new DataView(tkhd.buffer);
+  if (tkhdVersion === 1) {
+    tkhdView.setBigUint64(12, BigInt(trackId + 100));
+    tkhdView.setBigUint64(20, BigInt(trackId + 200));
+  } else {
+    tkhdView.setUint32(12, trackId + 100);
+    tkhdView.setUint32(16, trackId + 200);
+  }
 
   // Real structure: trak contains tkhd AND mdia (siblings, both inside trak).
   const trakBody = new Uint8Array(tkhd.length + mdia.length);
   trakBody.set(tkhd, 0);
   trakBody.set(mdia, tkhd.length);
   const trak = box('trak', trakBody);
+  const mvhd = new Uint8Array(tkhdVersion === 1 ? 112 : 104);
+  mvhd[0] = tkhdVersion;
+  new DataView(mvhd.buffer).setUint32(tkhdVersion === 1 ? 108 : 96, 99);
 
-  return box('moov', trak);
+  return box('moov', new Uint8Array([...box('mvhd', mvhd), ...trak]));
 }
 
 function findBoxDeep(bytes, start, end, targetType) {
@@ -233,11 +245,20 @@ export async function runMuxerTests() {
       const tkhd = findBoxDeep(bytes, tr.start + 8, tr.end, 'tkhd');
       assert.ok(tkhd, 'trak must contain a tkhd');
       const version = bytes[tkhd.start + 8] & 0xff;
-      const idOff = version === 1 ? tkhd.start + 24 : tkhd.start + 16;
+      const idOff = version === 1 ? tkhd.start + 28 : tkhd.start + 20;
       return view.getUint32(idOff);
     });
     assert.notStrictEqual(trackIds[0], trackIds[1], 'audio and video track ids must differ (no collision)');
     assert.ok(trackIds.every((id) => id >= 1), 'track ids must be positive');
+    const mvhd = findBoxDeep(bytes, moovStart + 8, moovEnd, 'mvhd');
+    assert.ok(mvhd, 'moov must contain mvhd');
+    assert.equal(view.getUint32(mvhd.start + 104), Math.max(...trackIds) + 1, 'next_track_ID must follow assigned ids');
+    for (const tr of traks) {
+      const tkhd = findBoxDeep(bytes, tr.start + 8, tr.end, 'tkhd');
+      const version = bytes[tkhd.start + 8];
+      const creation = view.getUint32(tkhd.start + 12);
+      assert.notEqual(creation, view.getUint32(version === 1 ? tkhd.start + 28 : tkhd.start + 20), 'timestamps must not be confused with track IDs');
+    }
 
     // Every stco offset in each trak must now point inside this file's final mdat region.
     traks.forEach((tr) => {
@@ -273,12 +294,26 @@ export async function runMuxerTests() {
       const type = String.fromCharCode(bytes[t + 4], bytes[t + 5], bytes[t + 6], bytes[t + 7]);
       if (type === 'trak') {
         const tkhd = findBoxDeep(bytes, t + 8, t + size, 'tkhd');
-        ids.push(view.getUint32(tkhd.start + 24));
+        ids.push(view.getUint32(tkhd.start + 28));
       }
       t += size;
     }
     assert.strictEqual(ids.length, 2);
     assert.notStrictEqual(ids[0], ids[1], 'v1 tkhd track ids must also be unique');
+  }
+
+  // 4d. A resolved audio URL must never silently degrade to video-only when the
+  // audio payload is empty or malformed.
+  {
+    const videoFile = buildMp4(1, new Uint8Array(8));
+    await assert.rejects(
+      RedditVideoMuxer.mergeMp4Streams(videoFile.buffer, new Uint8Array(0).buffer, true),
+      /Invalid audio MP4/
+    );
+    await assert.rejects(
+      RedditVideoMuxer.mergeMp4Streams(videoFile.buffer, box('mdat', new Uint8Array(4)).buffer, true),
+      /Invalid audio MP4/
+    );
   }
 
   // 5. mergeMp4Streams degrades to a valid video-only blob when audio is absent,

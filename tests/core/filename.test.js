@@ -19,6 +19,10 @@ export async function runFilenameTests() {
   // 3. DOS reserved names
   assert.strictEqual(FilenameService.sanitize('CON'), '_CON');
   assert.strictEqual(FilenameService.sanitize('aux'), '_aux');
+  assert.strictEqual(FilenameService.sanitizeFilename('CON.photos'), '_CON.photos');
+  assert.strictEqual(FilenameService.sanitizeFilename('CON.backup.jpg'), '_CON.backup.jpg');
+  assert.strictEqual(FilenameService.sanitizePath('CON.photos/image.png'), '_CON.photos/image.png');
+  assert.ok(FilenameService.sanitizeFilename('very-long-name.jpg', 5).length <= 5);
 
   // 4. Template rendering
   const rendered = FilenameService.render('r_{subreddit}_u_{author}_{id}.{ext}', {

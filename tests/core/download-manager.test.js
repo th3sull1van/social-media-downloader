@@ -5,20 +5,23 @@
  */
 import assert from 'node:assert';
 import { DownloadManager } from '../../src/core/application/DownloadManager.js';
+import { DownloadJobModel } from '../../src/core/domain/DownloadJob.js';
+import { StorageService } from '../../src/core/services/StorageService.js';
 import { ArchiveService } from '../../src/core/services/ArchiveService.js';
 import { MediaItemModel } from '../../src/core/domain/MediaItem.js';
 
 /**
  * Installs a controllable chrome.* stub. Returns the stub and recorded calls.
- * @param {{ downloadImpl?: Function, offscreenReply?: Function }} [options]
+ * @param {{ downloadImpl?: Function, offscreenReply?: Function, downloadState?: string }} [options]
  *   offscreenReply: (serializedMsg) => response object (default: {ok:true, objectUrl:'blob:stubbed'})
  */
-function installChromeStub({ downloadImpl, offscreenReply } = {}) {
+function installChromeStub({ downloadImpl, offscreenReply, downloadState = 'complete' } = {}) {
   const recorded = {
     badges: [],
     downloads: [],
     cancelled: [],
-    offscreenMessages: []
+    offscreenMessages: [],
+    changedListeners: []
   };
 
   // @ts-ignore test double installs the browser global
@@ -67,7 +70,18 @@ function installChromeStub({ downloadImpl, offscreenReply } = {}) {
         recorded.downloads.push(options);
         cb(recorded.downloads.length);
       }),
-      cancel: (id) => { recorded.cancelled.push(id); }
+      cancel: (id) => { recorded.cancelled.push(id); },
+      onChanged: {
+        addListener: (listener) => recorded.changedListeners.push(listener),
+        removeListener: (listener) => {
+          recorded.changedListeners = recorded.changedListeners.filter((entry) => entry !== listener);
+        }
+      },
+      search: (query, cb) => {
+        const result = [{ id: query.id, state: downloadState, filename: 'SMD/test.zip' }];
+        if (typeof cb === 'function') cb(result);
+        return Promise.resolve(result);
+      }
     }
   };
 
@@ -128,6 +142,99 @@ export async function runDownloadManagerTests() {
       assert.equal(dm.activeJob.status, 'FAILED', 'all rejected downloads must fail the batch');
       assert.ok(recorded.badges.some(b => b.text === 'ERR'));
     } finally { uninstallChromeStub(); }
+  }
+
+  // Restart recovery persists only the active job and browser IDs needed for status/cancel.
+  {
+    const recorded = installChromeStub({ downloadState: 'in_progress' });
+    const source = new DownloadManager(registry);
+    source.activeJob = DownloadJobModel.create({ platform: 'testplatform', targetName: 'T', total: 1 });
+    source.activeJob.status = 'DOWNLOADING';
+    source.activeDownloadIds.add(77);
+    await source.persistState();
+    const restarted = new DownloadManager(registry);
+    await restarted.restoreState();
+    assert.equal(restarted.activeJob.id, source.activeJob.id);
+    assert.deepEqual([...restarted.activeDownloadIds], [77]);
+    await restarted.cancelDownload();
+    assert.ok(recorded.cancelled.includes(77));
+    assert.equal(await StorageService.get('core.active_job', null), null);
+    uninstallChromeStub();
+  }
+
+  // Reconciliation turns restored terminal states into a single job outcome.
+  {
+    const recorded = installChromeStub({ downloadState: 'interrupted' });
+    const source = new DownloadManager(registry);
+    source.activeJob = DownloadJobModel.create({ platform: 'testplatform', targetName: 'T', total: 1 });
+    source.activeJob.status = 'DOWNLOADING';
+    source.activeDownloadIds.add(78);
+    await source.persistState();
+    const restarted = new DownloadManager(registry);
+    await restarted.reconcileState();
+    assert.equal(restarted.activeJob.status, 'FAILED');
+    assert.equal(restarted.activeJob.error, 'download_interrupted');
+    assert.equal(restarted.activeDownloadIds.size, 0);
+    uninstallChromeStub();
+  }
+
+  // A terminal event persisted before its item promise is accounted is recovered once.
+  {
+    installChromeStub({ downloadState: 'complete' });
+    const source = new DownloadManager(registry);
+    source.activeJob = DownloadJobModel.create({ platform: 'testplatform', targetName: 'T', total: 1 });
+    source.activeJob.status = 'DOWNLOADING';
+    source.downloadLedger.set(781, { state: 'complete', accounted: false });
+    await source.persistState();
+    const restarted = new DownloadManager(registry);
+    await restarted.reconcileState();
+    assert.equal(restarted.activeJob.completed, 1);
+    assert.equal(restarted.activeJob.status, 'COMPLETED');
+    uninstallChromeStub();
+  }
+
+  // An individual job without recoverable browser IDs is not left active.
+  {
+    installChromeStub({ downloadState: 'in_progress' });
+    const source = new DownloadManager(registry);
+    source.activeJob = DownloadJobModel.create({ platform: 'testplatform', targetName: 'T', total: 1 });
+    source.activeJob.status = 'DOWNLOADING';
+    await source.persistState();
+    const restarted = new DownloadManager(registry);
+    await restarted.reconcileState();
+    assert.equal(restarted.activeJob.status, 'FAILED');
+    assert.equal(restarted.activeJob.error, 'restart_missing_downloads');
+    assert.equal(await StorageService.get('core.active_job', null), null);
+    uninstallChromeStub();
+  }
+
+  // ZIP jobs are deliberately not resumed after a worker restart.
+  {
+    const recorded = installChromeStub({ downloadState: 'in_progress' });
+    const source = new DownloadManager(registry);
+    source.activeJob = DownloadJobModel.create({ platform: 'testplatform', targetName: 'T', total: 1, format: 'zip' });
+    source.activeJob.status = 'PACKAGING_ZIP';
+    source.activeDownloadIds.add(79);
+    await source.persistState();
+    const restarted = new DownloadManager(registry);
+    await restarted.reconcileState();
+    assert.equal(restarted.activeJob.status, 'FAILED');
+    assert.equal(restarted.activeJob.error, 'restart_unrecoverable_zip');
+    assert.deepEqual(recorded.cancelled, [79]);
+    uninstallChromeStub();
+  }
+
+  // Status polling in the live worker must not reconcile its own active ZIP job.
+  {
+    const recorded = installChromeStub({ downloadState: 'in_progress' });
+    const dm = new DownloadManager(registry);
+    dm.activeJob = DownloadJobModel.create({ platform: 'testplatform', targetName: 'T', total: 1, format: 'zip' });
+    dm.activeJob.status = 'PACKAGING_ZIP';
+    dm.activeDownloadIds.add(80);
+    await dm.reconcileState();
+    assert.equal(dm.activeJob.status, 'PACKAGING_ZIP');
+    assert.deepEqual(recorded.cancelled, []);
+    uninstallChromeStub();
   }
 
   // 1. Badge updates (F-12): real text is set, not silently cleared.
@@ -229,9 +336,34 @@ export async function runDownloadManagerTests() {
     uninstallChromeStub();
   }
 
+  // A browser ID alone is not completion: an in-progress item remains active
+  // until onChanged/search reports a terminal state.
+  {
+    const recorded = installChromeStub({ downloadState: 'in_progress' });
+    const dm = new DownloadManager(registry);
+    await dm.startDownload({
+      platform: 'testplatform',
+      targetName: 'T',
+      items: /** @type {any} */ ([makeItem('pending', 'https://cdn.test/pending.jpg')]),
+      format: 'individual'
+    });
+    await new Promise((resolve) => setTimeout(resolve, 15));
+    assert.equal(dm.activeJob.status, 'DOWNLOADING');
+    assert.equal(dm.activeJob.completed, 0);
+    for (const listener of [...recorded.changedListeners]) {
+      listener({ id: 1, state: { current: 'complete' } });
+    }
+    await new Promise((resolve) => {
+      const check = () => dm.activeJob.status === 'COMPLETED' ? resolve() : setTimeout(check, 10);
+      check();
+    });
+    assert.equal(dm.activeJob.completed, 1);
+    uninstallChromeStub();
+  }
+
   // 6. Cancellation marks the job CANCELLED and cancels active downloads.
   {
-    const recorded = installChromeStub();
+    const recorded = installChromeStub({ downloadState: 'in_progress' });
     const dm = new DownloadManager(registry);
     const items = /** @type {any} */ (Array.from({ length: 20 }, (_, i) => makeItem(`c_${i}`, `https://cdn.test/${i}.jpg`)));
     await dm.startDownload({ platform: 'testplatform', targetName: 'T', items, format: 'individual' });

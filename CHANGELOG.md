@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.2.1] — 2026-09-25
+
+### Fixed
+
+- **Instagram Zero-Post & Rate-Limited Resolution**:
+  - Implemented DOM script inspection (`profile_id`, `page_id`, `props.id`) in injected script to resolve the target numeric user ID directly when `web_profile_info` is rate-limited (HTTP 429).
+  - Added DOM metadata and header avatar fallback with CDN upgrading via `upgradeCdnUrl` for zero-post or unindexed profiles.
+  - Corrected `scanHighlights` and `scanAllPosts` to properly handle `status === 'empty'` without throwing false failure exceptions.
+- **Download Management**:
+  - Added state reconciliation, download ledger accounting, and interruption recovery in `DownloadManager`.
+- **Facebook Navigation**:
+  - Preserved authentic target profile name and metadata across album navigation.
+- **Content Context**:
+  - Safeguarded avatar icon URL reuse across extension context invalidation.
+
+### Security & Validation
+
+- Added strict HAR cookie value sanitization checks enforcing `<REDACTED>` placeholders.
+- Sanitized public HAR test fixtures and validated against compact and public HAR suites.
+
 ## [1.2.0] — 2026-08-31
 
 ### Added

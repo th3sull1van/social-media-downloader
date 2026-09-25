@@ -215,7 +215,30 @@ export async function runRedditScannerTests() {
       assert.deepStrictEqual(result.mediaItems.map((item) => item.metadata.postId), fixture.expected.postIds);
     }
 
-    // 10. Network failure is not silently treated as success
+    // 10. A rejected later page preserves the media already collected.
+    {
+      let calls = 0;
+      anyFetch.fetch = async () => {
+        calls++;
+        if (calls > 1) throw new Error('synthetic network failure');
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              after: 'next-page',
+              children: [{ data: { id: 'partial1', title: 'Partial', subreddit: 's', url: 'https://i.redd.it/partial.jpg' } }]
+            }
+          })
+        };
+      };
+      const result = await RedditScanner.fetchSubredditPosts('partial', { limit: 300 });
+      assert.equal(result.items.length, 1);
+      assert.equal(result.items[0].metadata.postId, 'partial1');
+      assert.equal(result.status, 'partial');
+      assert.equal(result.errorCode, 'REDDIT_API_HTTP_ERROR');
+    }
+
+    // 11. Network failure is not silently treated as success
     {
       anyFetch.fetch = async () => ({ ok: false, status: 403 });
       const result = await RedditScanner.fetchSubredditPosts('private', {});
@@ -225,7 +248,7 @@ export async function runRedditScannerTests() {
       assert.strictEqual(result.errorCode, 'REDDIT_API_HTTP_ERROR');
     }
 
-    // 11. Profile/community avatars come from the target about endpoint and
+    // 12. Profile/community avatars come from the target about endpoint and
     // are distinct from post media (the DOM may expose them as SVG <image>).
     {
       const requestedUrls = [];
@@ -248,7 +271,7 @@ export async function runRedditScannerTests() {
       assert.strictEqual(await RedditScanner.fetchTargetAvatar(/** @type {any} */ ('post'), 'abc'), '');
     }
 
-    // 12. Subreddit/community/user icon style assets must NOT become media items.
+    // 13. Subreddit/community/user icon style assets must NOT become media items.
     //     These leak into `img[src*=redditmedia.com]` DOM queries and would otherwise
     //     be downloaded as decorative avatars (see HAR analysis of reddit-feed fixtures).
     {
@@ -275,7 +298,7 @@ export async function runRedditScannerTests() {
       assert.strictEqual(data.mediaItems.length, 0, 'profile icon must not become a media item');
     }
 
-    // 13. Platform message delegation: RedditPlugin.handleMessage routes
+    // 14. Platform message delegation: RedditPlugin.handleMessage routes
     //     REDDIT_SCAN / RESOLVE_REDGIFS and returns undefined for generic types,
     //     so the service worker can delegate instead of routing on platform internals.
     {

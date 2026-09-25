@@ -24,6 +24,8 @@ function makeFixture(overrides = {}) {
 export function runFixtureValidationTests() {
   assert.doesNotThrow(() => validateCompactFixture(makeFixture({
     graphqlBodies: [{
+      body: '{"data":{"node":{"id":"fixture_001","label":"session preview"}}}'
+    }, {
       data: {
         node: {
           id: 'fb_photo_001',
@@ -37,7 +39,9 @@ export function runFixtureValidationTests() {
     ['cookie', 'session-value-that-must-never-be-committed'],
     ['authorization', 'Bearer abcdefghijklmnopqrstuvwxyz012345'],
     ['nested token query', 'https://cdn.example.test/photo.jpg?access_token=real-token-value'],
-    ['executable HTML', '<script>window.privateToken="x"</script>']
+    ['executable HTML', '<script>window.privateToken="x"</script>'],
+    ['serialized nested credential', '{"data":{"headers":{"authorization":"Bearer abcdefghijklmnopqrstuvwxyz012345"}}}'],
+    ['double serialized credential', JSON.stringify({ body: JSON.stringify({ password: 'synthetic-password-for-audit-only' }) })]
   ]) {
     assert.throws(
       () => validateCompactFixture(makeFixture({ diagnostic: { [name]: value } })),

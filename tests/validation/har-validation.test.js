@@ -7,6 +7,7 @@ import {
   createReport,
   validateFixtureSet
 } from '../../tools/validation/har-validation.js';
+import { checkManifestPermissions } from '../../tools/validation/manifest-check.js';
 
 export function runHarValidationUnitTests() {
   assert.equal(classifyHarPath('fixtures-private/www.instagram.com-example.har'), 'instagram');
@@ -18,6 +19,21 @@ export function runHarValidationUnitTests() {
     /sensitive/i
   );
   assert.throws(() => validateHarDocument({}), /log\.entries/i);
+  for (const entry of [
+    { request: { cookies: [{ name: 'sessionid', value: 'Bearer abcdefghijklmnopqrstuvwxyz012345' }] } },
+    { response: { cookies: [{ name: 'csrftoken', value: 'Bearer abcdefghijklmnopqrstuvwxyz012345' }] } },
+    { request: { queryString: [{ name: 'access_token', value: 'private' }] } },
+    { request: { postData: { text: '{"nested":{"authorization":"Bearer abcdefghijklmnopqrstuvwxyz012345"}}' } } },
+    { response: { content: { text: '{"secret":"private"}' } } },
+    { request: { cookies: [{ name: 'generic_cookie', value: 'opaque-cookie-value' }] } }
+  ]) {
+    assert.throws(() => validateHarDocument({ log: { entries: [entry] } }), /sensitive/i);
+  }
+  assert.doesNotThrow(() => validateHarDocument({ log: { entries: [
+    { request: { cookies: [{ name: 'generic_cookie', value: '<REDACTED>' }] } },
+    { response: { cookies: [{ name: 'another_cookie', value: 'synthetic-cookie' }] } },
+    { response: { content: { text: 'plain SessionId text is public fixture data' } } }
+  ] } }));
 
   const document = {
     log: {
@@ -41,6 +57,13 @@ export function runHarValidationUnitTests() {
   assert.deepEqual(report.fixtures.map((x) => x.fixture), ['a.har', 'b.har']);
   assert.equal(report.schemaVersion, 1);
   assert.ok(!JSON.stringify(report).includes('ok'));
+
+  const requiredPermissions = ['downloads', 'offscreen', 'scripting', 'storage', 'unlimitedStorage', 'activeTab'];
+  for (const permission of requiredPermissions) {
+    const manifest = { permissions: requiredPermissions.filter((entry) => entry !== permission) };
+    assert.ok(checkManifestPermissions(manifest).some((error) => error.endsWith(`: ${permission}`)));
+  }
+  assert.deepEqual(checkManifestPermissions({ permissions: requiredPermissions }), []);
 
   // The default inventory must not open fixtures-private, even when local raw
   // captures happen to be present. Reading them is reserved for --private.

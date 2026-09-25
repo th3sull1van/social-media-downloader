@@ -10,22 +10,34 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '../..');
 
-export function checkManifestIntegrity() {
-  const manifestPath = path.join(rootDir, 'manifest.json');
-  if (!fs.existsSync(manifestPath)) {
+export function checkManifestPermissions(manifest) {
+  const permissions = Array.isArray(manifest?.permissions) ? manifest.permissions : [];
+  const required = ['downloads', 'offscreen', 'scripting', 'storage', 'unlimitedStorage', 'activeTab'];
+  return required
+    .filter((permission) => !permissions.includes(permission))
+    .map((permission) => `Required runtime permission missing in manifest: ${permission}`);
+}
+
+/** @param {{manifest?: any, rootDir?: string}} [options] */
+export function checkManifestIntegrity({ manifest: suppliedManifest, rootDir: suppliedRootDir } = {}) {
+  const baseDir = suppliedRootDir || rootDir;
+  const manifestPath = path.join(baseDir, 'manifest.json');
+  if (!suppliedManifest && !fs.existsSync(manifestPath)) {
     return ['manifest.json not found'];
   }
 
-  let manifest;
-  try {
-    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-  } catch (err) {
-    return [`manifest.json is invalid JSON: ${err.message}`];
+  let manifest = suppliedManifest;
+  if (!manifest) {
+    try {
+      manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    } catch (err) {
+      return [`manifest.json is invalid JSON: ${err.message}`];
+    }
   }
-  const errors = [];
+  const errors = checkManifestPermissions(manifest);
 
   const checkFile = (relativePath, description) => {
-    if (!relativePath || !fs.existsSync(path.join(rootDir, relativePath))) {
+    if (!relativePath || !fs.existsSync(path.join(baseDir, relativePath))) {
       errors.push(`${description} missing: ${relativePath || '(empty path)'}`);
     }
   };
@@ -65,7 +77,7 @@ export function checkManifestIntegrity() {
   // Check icons
   if (manifest.icons) {
     for (const [size, iconPath] of Object.entries(manifest.icons)) {
-      if (!iconPath || !fs.existsSync(path.join(rootDir, iconPath))) {
+      if (!iconPath || !fs.existsSync(path.join(baseDir, iconPath))) {
         errors.push(`Extension icon (${size}px) missing: ${iconPath || '(empty path)'}`);
       }
     }
@@ -73,7 +85,7 @@ export function checkManifestIntegrity() {
 
   if (manifest.action?.default_icon) {
     for (const [size, iconPath] of Object.entries(manifest.action.default_icon)) {
-      if (!iconPath || !fs.existsSync(path.join(rootDir, iconPath))) {
+      if (!iconPath || !fs.existsSync(path.join(baseDir, iconPath))) {
         errors.push(`Action icon (${size}px) missing: ${iconPath || '(empty path)'}`);
       }
     }

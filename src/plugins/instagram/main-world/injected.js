@@ -30,6 +30,17 @@
   };
 
   let isScanCancelled = false;
+  let scanGeneration = 0;
+
+  function beginScan(generation) {
+    scanGeneration = Number.isInteger(generation) ? generation : scanGeneration + 1;
+    isScanCancelled = false;
+    return scanGeneration;
+  }
+
+  function scanIsCurrent(generation) {
+    return generation === scanGeneration && !isScanCancelled;
+  }
 
   function calculateJazoest(dtsg) {
     if (!dtsg) return null;
@@ -168,7 +179,7 @@
     }
   }
 
-  async function fetchProfile(username) {
+  async function fetchProfile(username, generation = undefined) {
     refreshSessionTokens();
 
     let targetUserId = null;
@@ -208,10 +219,38 @@
       console.warn('[SMD IG Injected] web_profile_info error:', e);
     }
 
+    // web_profile_info can be rate-limited (HTTP 429).
+    // Inspect DOM inline scripts for target user numeric ID before attempting feed fetches.
+    if (!targetUserId && typeof document !== 'undefined') {
+      try {
+        const scripts = document.querySelectorAll('script:not([src])');
+        for (const s of scripts) {
+          const text = s.textContent || '';
+          if (!text) continue;
+          const lowerText = text.toLowerCase();
+          const targetLower = username.toLowerCase();
+          const relatesToTarget = lowerText.includes(targetLower) || lowerText.includes('profilepage') || lowerText.includes('polarisprofile');
+          if (!relatesToTarget) continue;
+
+          const m = text.match(/"profile_id":"(\d+)"/) ||
+                    text.match(/"page_id":"profilePage_(\d+)"/) ||
+                    text.match(/"props":\{"id":"(\d+)"[^}]*"profilePage/) ||
+                    text.match(/"container_id":"(\d+)"/);
+          if (m && m[1] && m[1] !== '0' && m[1] !== session.userId) {
+            targetUserId = m[1];
+            console.log(`[SMD IG Injected] Target numeric user ID resolved from page script: ${targetUserId}`);
+            break;
+          }
+        }
+      } catch (e) {
+        console.warn('[SMD IG Injected] script user ID extraction error:', e);
+      }
+    }
+
     // web_profile_info can be rate-limited while the profile's GraphQL feed works.
     // A single existing feed page provides the target ID; never use the viewer ID.
     if (!targetUserId) {
-      const nodes = await fetchAllPosts(username, 1);
+      const nodes = await fetchAllPosts(username, 1, null, generation);
       const user = nodes.map(node => node.user).find(user =>
         user?.username?.toLowerCase() === username.toLowerCase() && (user.pk || user.id));
       if (user) {
@@ -255,7 +294,7 @@
 
     // Step 3: Check inline DOM scripts for 1080p avatar
     try {
-      const scripts = document.querySelectorAll('script:not([src])');
+      const scripts = typeof document !== 'undefined' ? document.querySelectorAll('script:not([src])') : [];
       for (const s of scripts) {
         const text = s.textContent || '';
         if (text.includes('hd_profile_pic_url_info') && text.includes('1080')) {
@@ -265,6 +304,8 @@
             console.log('[SMD IG Injected] 1080p avatar harvested from inline script:', rawHdUrl);
             return {
               ...(fallbackInfo || { username, id: targetUserId || 'profile' }),
+              id: targetUserId || fallbackInfo?.id || undefined,
+              pk: targetUserId || fallbackInfo?.pk || undefined,
               hdProfilePicUrl: rawHdUrl
             };
           }
@@ -272,22 +313,57 @@
       }
     } catch (e) {}
 
-    if (fallbackInfo) return fallbackInfo;
+    // Step 4: Extract avatar and metadata from DOM meta tags and header elements
+    let domAvatar = null;
+    let domFullName = null;
+    if (typeof document !== 'undefined') {
+      try {
+        const ogImg = document.querySelector('meta[property="og:image"]')?.getAttribute('content');
+        if (ogImg && !ogImg.includes('static.cdninstagram.com/rsrc.php')) {
+          domAvatar = ogImg;
+        }
+        if (!domAvatar) {
+          const headerImg = document.querySelector('header img, main header img, img[alt*="profile"], img[alt*="perfil"]');
+          if (headerImg?.src && !headerImg.src.startsWith('data:')) {
+            domAvatar = headerImg.src;
+          }
+        }
+        const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content');
+        if (ogTitle) {
+          const matchTitle = ogTitle.match(/^([^(]+)\s*\(@/);
+          if (matchTitle && matchTitle[1]) domFullName = matchTitle[1].trim();
+        }
+      } catch (e) {}
+    }
+
+    if (fallbackInfo || targetUserId || domAvatar) {
+      return {
+        ...(fallbackInfo || {}),
+        id: targetUserId || fallbackInfo?.id || undefined,
+        pk: targetUserId || fallbackInfo?.pk || undefined,
+        username: fallbackInfo?.username || username,
+        fullName: fallbackInfo?.fullName || domFullName || null,
+        hdProfilePicUrl: fallbackInfo?.hdProfilePicUrl || domAvatar || null,
+        profilePicUrl: fallbackInfo?.profilePicUrl || domAvatar || null
+      };
+    }
+
     return { username, hdProfilePicUrl: null };
   }
 
-  async function fetchAllPosts(username, maxCount = 5000, onBatch = null) {
-    isScanCancelled = false;
+  async function fetchAllPosts(username, maxCount = 5000, onBatch = null, generation = undefined) {
+    generation = generation ?? beginScan();
     const allRawNodes = [];
     let endCursor = null;
     let hasNextPage = true;
     let pageCount = 0;
+    let hadFailure = false;
     let pageSize = 33;
     const FALLBACK_PAGE_SIZE = 12;
 
     console.log(`[SMD IG Injected] Starting paginated post scan for @${username}...`);
 
-    while (hasNextPage && allRawNodes.length < maxCount && !isScanCancelled) {
+    while (hasNextPage && allRawNodes.length < maxCount && scanIsCurrent(generation)) {
       pageCount++;
       let queryRes = null;
 
@@ -309,6 +385,7 @@
           queryRes = await performGraphQLQuery(DOC_IDS.IG_ProfilePosts, 'PolarisProfilePostsQuery', variables);
         } catch (e) {
           console.warn(`[SMD IG Injected] Page 1 query error:`, e);
+          hadFailure = true;
           // Fallback to connection query if initial query fails
           try {
             const connVars = {
@@ -332,6 +409,7 @@
             queryRes = await performGraphQLQuery(DOC_IDS.IG_ProfilePostsTabContent_connection, 'PolarisProfilePostsTabContentQuery_connection', connVars);
           } catch (e2) {
             console.error('[SMD IG Injected] Page 1 connection fallback also failed:', e2);
+            hadFailure = true;
             break;
           }
         }
@@ -358,6 +436,7 @@
           queryRes = await performGraphQLQuery(DOC_IDS.IG_ProfilePostsTabContent_connection, 'PolarisProfilePostsTabContentQuery_connection', variables);
         } catch (e) {
           console.error(`[SMD IG Injected] Page ${pageCount} query error:`, e);
+          hadFailure = true;
           break;
         }
       }
@@ -367,8 +446,10 @@
 
       if (!timeline || !Array.isArray(timeline.edges)) {
         console.warn('[SMD IG Injected] No timeline edges found in response:', queryRes);
+        hadFailure = true;
         break;
       }
+      if (queryRes.errors?.length) hadFailure = true;
 
       const pageEdges = timeline.edges;
       const batchNodes = [];
@@ -380,6 +461,7 @@
 
       console.log(`[SMD IG Injected] Page ${pageCount} parsed ${batchNodes.length} nodes (Total so far: ${allRawNodes.length}).`);
 
+      if (!scanIsCurrent(generation)) break;
       if (typeof onBatch === 'function' && batchNodes.length > 0) {
         onBatch(batchNodes, allRawNodes.length);
       }
@@ -392,17 +474,24 @@
           pageSize = FALLBACK_PAGE_SIZE;
         }
         await new Promise(r => setTimeout(r, 450));
+        if (!scanIsCurrent(generation)) break;
       } else {
         console.info('[SMD IG Injected] Reached last page of timeline posts.');
         hasNextPage = false;
       }
     }
 
+    allRawNodes.scanStatus = !scanIsCurrent(generation)
+      ? 'cancelled'
+      : (hadFailure
+        ? (allRawNodes.length ? 'partial' : 'network_failure')
+        : (allRawNodes.length ? 'success' : 'empty'));
     return allRawNodes;
   }
 
-  async function fetchStories(userId) {
-    if (!userId) return [];
+  async function fetchStories(userId, generation = undefined) {
+    generation = generation ?? beginScan();
+    if (!userId) return { items: [], status: 'empty' };
     refreshSessionTokens();
 
     try {
@@ -415,27 +504,38 @@
       if (session.csrfToken) headers['X-CSRFToken'] = session.csrfToken;
 
       const res = await fetch(url, { headers, credentials: 'include' });
+      if (!scanIsCurrent(generation)) return { items: [], status: 'cancelled' };
       if (res.ok) {
         const json = await res.json();
+        if (!scanIsCurrent(generation)) return { items: [], status: 'cancelled' };
         const reels = json.reels || (json.data && json.data.reels);
         const userReel = reels && reels[userId];
         if (userReel && Array.isArray(userReel.items)) {
           console.info(`[SMD IG Injected] Found ${userReel.items.length} active stories.`);
-          return userReel.items;
+          return { items: userReel.items, status: 'success' };
         }
+      } else {
+        return { items: [], status: 'network_failure' };
       }
     } catch (e) {
+      if (!scanIsCurrent(generation)) return { items: [], status: 'cancelled' };
       console.warn('[SMD IG Injected] Error fetching stories:', e);
+      return { items: [], status: 'network_failure' };
     }
-    return [];
+    return { items: [], status: 'empty' };
   }
 
-  async function fetchHighlights(userId, onBatch = null) {
-    if (!userId) throw new Error('instagram_profile_unavailable');
-    isScanCancelled = false;
+  async function fetchHighlights(userId, onBatch = null, generation = undefined) {
+    generation = generation ?? beginScan();
+    if (!userId) {
+      const empty = [];
+      empty.scanStatus = 'empty';
+      return empty;
+    }
     refreshSessionTokens();
 
     const allHighlightItems = [];
+    let hadFailure = false;
     try {
       // 1. Fetch highlight tray container via GraphQL
       const variables = { user_id: userId };
@@ -444,6 +544,10 @@
         'PolarisProfileStoryHighlightsTrayContentQuery',
         variables
       );
+      if (!scanIsCurrent(generation)) {
+        allHighlightItems.scanStatus = 'cancelled';
+        return allHighlightItems;
+      }
 
       const highlightsData = trayRes.data?.highlights;
       const edges = highlightsData?.edges;
@@ -465,7 +569,7 @@
       // Match the three-reel window observed in PolarisStoriesV3HighlightsPageQuery.
       const BATCH_SIZE = 3;
       for (let i = 0; i < highlightIds.length; i += BATCH_SIZE) {
-        if (isScanCancelled) break;
+        if (!scanIsCurrent(generation)) break;
         const batchIds = highlightIds.slice(i, i + BATCH_SIZE);
 
         let reelsById = null;
@@ -480,9 +584,10 @@
             reelsById = Object.fromEntries(reelEdges.filter(edge => edge.node?.id).map(edge => [edge.node.id, edge.node]));
           }
         } catch (err) {
+          hadFailure = true;
           console.warn('[SMD IG Injected] Highlight GraphQL failed; trying reels_media.');
         }
-        if (isScanCancelled) break;
+        if (!scanIsCurrent(generation)) break;
         // Preserve compatibility with the older REST shape when GraphQL is unavailable.
         if (!reelsById || batchIds.some(id => !Array.isArray(reelsById[id]?.items))) {
           const url = `https://www.instagram.com/api/v1/feed/reels_media/?reel_ids=${encodeURIComponent(batchIds.join(','))}`;
@@ -497,20 +602,23 @@
           if (res.ok) {
             const json = await res.json();
             reelsById = json.reels || (json.data && json.data.reels) || null;
+          } else {
+            hadFailure = true;
           }
         }
-        if (isScanCancelled) break;
+        if (!scanIsCurrent(generation)) break;
         if (!reelsById || batchIds.some(id => !Array.isArray(reelsById[id]?.items))) {
           throw new Error('instagram_highlights_media_failed');
         }
 
-        if (reelsById && Object.keys(reelsById).length > 0) {
+        if (reelsById && Object.keys(reelsById).length > 0 && scanIsCurrent(generation)) {
           const batchItems = [];
           for (const hId of batchIds) {
             const reel = reelsById[hId];
             if (!reel || !Array.isArray(reel.items)) continue;
             const highlightTitle = reel.title || titleFor(hId);
             for (const it of reel.items) {
+              if (!scanIsCurrent(generation)) break;
               it._highlightTitle = highlightTitle;
               allHighlightItems.push(it);
               batchItems.push(it);
@@ -521,17 +629,22 @@
           }
         }
         await new Promise(r => setTimeout(r, 250));
+        if (!scanIsCurrent(generation)) break;
       }
     } catch (e) {
-      throw new Error('instagram_highlights_failed');
+      hadFailure = true;
     }
 
+    allHighlightItems.scanStatus = !scanIsCurrent(generation)
+      ? 'cancelled'
+      : (hadFailure ? (allHighlightItems.length ? 'partial' : 'network_failure')
+        : (allHighlightItems.length ? 'success' : 'empty'));
     return allHighlightItems;
   }
 
   // Communication listener with Content Script
   window.addEventListener('message', async (event) => {
-    if (event.source !== window || !event.data || event.data.source !== 'SMD_CONTENT') return;
+    if (event.isTrusted === false || event.source !== window || !event.data || event.data.source !== 'SMD_CONTENT') return;
     const { type, requestId, payload } = event.data;
     // Echo the session nonce back: the content script drops responses without it (F-14).
     const nonce = event.data.nonce;
@@ -546,7 +659,7 @@
     };
 
     const postBatch = (source, payloadData) => {
-      window.postMessage({ source, nonce, payload: payloadData }, '*');
+      window.postMessage({ source, nonce, payload: { ...payloadData, requestId, generation: payload?.generation } }, '*');
     };
 
     switch (type) {
@@ -555,36 +668,51 @@
         break;
       }
       case 'FETCH_IG_PROFILE': {
-        const profile = await fetchProfile(payload?.username);
+        const generation = beginScan(payload?.generation);
+        const profile = await fetchProfile(payload?.username, generation);
         reply({ success: true, payload: { profile } });
         break;
       }
       case 'FETCH_IG_POSTS': {
-        const nodes = await fetchAllPosts(payload?.username, payload?.maxCount || 5000, (batch) => {
-          postBatch('SMD_IG_BATCH_POSTS', { nodes: batch });
-        });
-        reply({ success: true, payload: { nodes } });
+        try {
+          const generation = beginScan(payload?.generation);
+          const nodes = await fetchAllPosts(payload?.username, payload?.maxCount || 5000, (batch) => {
+            postBatch('SMD_IG_BATCH_POSTS', { nodes: batch });
+          }, generation);
+          const status = nodes.scanStatus || (nodes.length ? 'success' : 'empty');
+          reply({ success: status === 'success', status, payload: { nodes } });
+        } catch (error) {
+          reply({ success: false, status: 'network_failure', error: error?.message || 'instagram_posts_failed' });
+        }
         break;
       }
       case 'FETCH_IG_STORIES': {
-        const items = await fetchStories(payload?.userId);
-        reply({ success: true, payload: { items } });
+        try {
+          const generation = beginScan(payload?.generation);
+          const result = await fetchStories(payload?.userId, generation);
+          reply({ success: result.status === 'success', status: result.status, payload: { items: result.items } });
+        } catch (error) {
+          reply({ success: false, status: 'network_failure', error: error?.message || 'instagram_stories_failed' });
+        }
         break;
       }
       case 'FETCH_IG_HIGHLIGHTS': {
         try {
+          const generation = beginScan(payload?.generation);
           const items = await fetchHighlights(payload?.userId, (batch) => {
             postBatch('SMD_IG_BATCH_HIGHLIGHTS', { items: batch });
-          });
-          reply({ success: true, payload: { items } });
+          }, generation);
+          const status = items.scanStatus || (items.length ? 'success' : 'empty');
+          reply({ success: status === 'success', status, payload: { items } });
         } catch (error) {
-          reply({ success: false, error: 'instagram_highlights_failed' });
+          reply({ success: false, status: 'network_failure', error: error?.message || 'instagram_highlights_failed' });
         }
         break;
       }
       case 'CANCEL_SCAN': {
         isScanCancelled = true;
-        reply({ success: true });
+        scanGeneration++;
+        reply({ success: true, status: 'cancelled' });
         break;
       }
       default:

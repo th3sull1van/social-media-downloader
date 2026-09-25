@@ -5,11 +5,11 @@
 import { RedditNormalizer } from './RedditNormalizer.js';
 
 export class RedditScanner {
-  /**
-   * Extracts media from a shreddit-post DOM element.
-   * @param {{ getAttribute: (name: string) => string | null, hasAttribute: (name: string) => boolean, querySelector: (sel: string) => any, querySelectorAll: (sel: string) => any[] }} postEl
-   * @returns {Object | null}
-   */
+  static inferExtension(url, fallback = 'jpg') {
+    const match = String(url || '').split(/[?#]/)[0].match(/\.([a-z0-9]{2,5})$/i);
+    return match ? match[1].toLowerCase() : fallback;
+  }
+
   /**
    * True when a URL is a subreddit/community/user icon or other style asset
    * (e.g. `styles.redditmedia.com/t5_xxx/styles/profileIcon_*` or
@@ -29,6 +29,11 @@ export class RedditScanner {
       /(?:profileIcon|communityIcon)/i.test(url);
   }
 
+  /**
+   * Extracts media from a shreddit-post DOM element.
+   * @param {{ getAttribute: (name: string) => string | null, hasAttribute: (name: string) => boolean, querySelector: (sel: string) => any, querySelectorAll: (sel: string) => any[] }} postEl
+   * @returns {Object | null}
+   */
   static extractFromShredditPost(postEl) {
     if (!postEl) return null;
 
@@ -111,7 +116,7 @@ export class RedditScanner {
           type: 'image',
           url: RedditNormalizer.cleanMediaUrl(src),
           previewUrl: src,
-          ext: 'jpg',
+          ext: RedditScanner.inferExtension(src),
           index: 1,
           total: 1
         }];
@@ -295,7 +300,7 @@ export class RedditScanner {
         type: 'image',
         url: cleanUrl,
         previewUrl: thumbUrl,
-        ext: 'jpg',
+        ext: RedditScanner.inferExtension(cleanUrl),
         index: 1,
         total: 1
       }, postInfo));
@@ -332,19 +337,21 @@ export class RedditScanner {
 
     while (totalPosts < limit) {
       const url = `https://www.reddit.com/user/${encodeURIComponent(username)}/submitted.json?limit=100&raw_json=1${after ? `&after=${encodeURIComponent(after)}` : ''}`;
-      const res = await fetch(url);
-      if (!res.ok) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          hadNetworkFailure = true;
+          break;
+        }
+        const json = await res.json();
+        const children = json.data?.children || [];
+        if (children.length === 0) break;
+        processChildren(children);
+        after = json.data?.after;
+      } catch {
         hadNetworkFailure = true;
         break;
       }
-
-      const json = await res.json();
-      const children = json.data?.children || [];
-      if (children.length === 0) break;
-
-      processChildren(children);
-
-      after = json.data?.after;
       if (!after) break;
       await new Promise(r => setTimeout(r, 400));
     }
@@ -356,16 +363,21 @@ export class RedditScanner {
     while (totalPosts < limit && searchPages < 3) {
       searchPages++;
       const searchUrl = `https://www.reddit.com/search.json?q=author%3A${encodeURIComponent(username)}&sort=new&limit=100&include_over_18=on&raw_json=1${searchAfter ? `&after=${encodeURIComponent(searchAfter)}` : ''}`;
-      const searchRes = await fetch(searchUrl);
-      if (!searchRes.ok) {
+      try {
+        const searchRes = await fetch(searchUrl);
+        if (!searchRes.ok) {
+          hadNetworkFailure = true;
+          break;
+        }
+        const searchJson = await searchRes.json();
+        const searchChildren = searchJson.data?.children || [];
+        if (searchChildren.length === 0) break;
+        processChildren(searchChildren);
+        searchAfter = searchJson.data?.after;
+      } catch {
         hadNetworkFailure = true;
         break;
       }
-      const searchJson = await searchRes.json();
-      const searchChildren = searchJson.data?.children || [];
-      if (searchChildren.length === 0) break;
-      processChildren(searchChildren);
-      searchAfter = searchJson.data?.after;
       if (!searchAfter) break;
       await new Promise(r => setTimeout(r, 400));
     }
@@ -400,14 +412,20 @@ export class RedditScanner {
 
     while (totalPosts < limit) {
       const url = `https://www.reddit.com/r/${encodeURIComponent(subreddit)}/${sort}.json?limit=100&raw_json=1${after ? `&after=${after}` : ''}`;
-      const res = await fetch(url);
-      if (!res.ok) {
+      let children;
+      let json;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          hadNetworkFailure = true;
+          break;
+        }
+        json = await res.json();
+        children = json.data?.children || [];
+      } catch {
         hadNetworkFailure = true;
         break;
       }
-
-      const json = await res.json();
-      const children = json.data?.children || [];
       if (children.length === 0) break;
 
       for (const child of children) {

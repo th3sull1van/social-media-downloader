@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const SENSITIVE_NAMES = /^(cookie|set-cookie|authorization|proxy-authorization|x-csrf-token|x-xsrf-token)$/i;
-const SENSITIVE_TEXT = /(?:bearer\s+[a-z0-9._-]{20,}|(?:sessionid|c_user|datr|csrftoken|access_token)\s*=\s*(?![`$<])[^;\s]{20,})/i
+const SENSITIVE_NAMES = /^(cookie|set-cookie|authorization|proxy-authorization|x-csrf-token|x-xsrf-token|access[-_]?token|csrf(?:[-_]?token)?|xsrf(?:[-_]?token)?|password|passwd|secret|session(?:[-_]?id)?|jwt)$/i;
+const SENSITIVE_TEXT = /(?:bearer\s+[a-z0-9._-]{20,}|(?:sessionid|c_user|datr|csrftoken|access_token)\s*=\s*(?![`$<])[^;\s]{20,})/i;
+const MAX_STRUCTURED_JSON_CHARS = 4_000_000;
+const MAX_STRUCTURED_DEPTH = 12;
 
 export function classifyHarPath(filePath) {
   const normalized = String(filePath).replace(/[\\/]+/g, '/').toLowerCase();
@@ -14,6 +16,67 @@ export function classifyHarPath(filePath) {
 
 function scanValue(value, location, findings) {
   if (typeof value === 'string' && SENSITIVE_TEXT.test(value)) findings.push(location);
+}
+
+function scanStructured(value, location, findings, depth = 0) {
+  if (!value || typeof value !== 'object' || depth > MAX_STRUCTURED_DEPTH) return;
+  if (Array.isArray(value)) {
+    value.forEach((entry, index) => scanStructured(entry, `${location}[${index}]`, findings, depth + 1));
+    return;
+  }
+  for (const [name, child] of Object.entries(value)) {
+    const childLocation = `${location}.${name}`;
+    if (SENSITIVE_NAMES.test(name) && !isSanitizedPlaceholder(child)) {
+      findings.push(childLocation);
+      scanValue(child, childLocation, findings);
+    }
+    scanStructured(child, childLocation, findings, depth + 1);
+  }
+}
+
+function scanJsonText(text, location, findings) {
+  if (typeof text !== 'string') return;
+  const trimmed = text.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return;
+  if (trimmed.length > MAX_STRUCTURED_JSON_CHARS) {
+    findings.push(location);
+    return;
+  }
+  try { scanStructured(JSON.parse(trimmed), `${location}.$json`, findings); } catch { /* plain body */ }
+}
+
+function scanNamedPairs(pairs, location, findings) {
+  if (!Array.isArray(pairs)) return;
+  for (const [index, pair] of pairs.entries()) {
+    const name = String(pair?.name || '');
+    const value = pair?.value;
+    if (SENSITIVE_NAMES.test(name) && !isSanitizedPlaceholder(value)) {
+      findings.push(`${location}[${index}].${name}`);
+      scanValue(value, `${location}[${index}].${name}`, findings);
+    }
+  }
+}
+
+function isSanitizedPlaceholder(value) {
+  return typeof value === 'string' && (
+    value === '' ||
+    /^<(?:redacted|synthetic|fixture)>$/i.test(value) ||
+    /^(?:synthetic|fixture|redacted)(?:[-_][a-z0-9]+)*$/i.test(value)
+  );
+}
+
+function scanCookies(cookies, location, findings) {
+  if (!Array.isArray(cookies)) return;
+  for (const [index, cookie] of cookies.entries()) {
+    const name = String(cookie?.name || '');
+    const cookieLocation = `${location}[${index}].${name || 'value'}`;
+    // HAR cookie values are credentials even when the cookie name is generic.
+    // Only explicit sanitizer placeholders may remain in a publishable HAR.
+    if (typeof cookie?.value === 'string' && !isSanitizedPlaceholder(cookie.value)) {
+      findings.push(cookieLocation);
+    }
+    scanValue(cookie?.value, cookieLocation, findings);
+  }
 }
 
 export function validateHarDocument(document) {
@@ -28,10 +91,19 @@ export function validateHarDocument(document) {
         scanValue(header?.value, `entry[${index}].headers.${headerName}`, findings);
       }
     }
+    const request = entry?.request || {};
+    const response = entry?.response || {};
     // URLs may contain opaque CDN signatures and are not scanned as secrets.
-    // Response bodies can contain source-code strings such as `SessionId`;
-    // credentials are checked in transport headers and request metadata instead.
-    scanValue(entry?.request?.postData?.text, `entry[${index}].request.postData`, findings);
+    // Only structured query/body fields are inspected; normal response text is
+    // intentionally left alone to avoid rejecting public API fixtures.
+    scanNamedPairs(request.queryString, `entry[${index}].request.queryString`, findings);
+    scanNamedPairs(request.postData?.params, `entry[${index}].request.postData.params`, findings);
+    scanJsonText(request.postData?.text, `entry[${index}].request.postData`, findings);
+    scanStructured(request.postData, `entry[${index}].request.postData`, findings);
+    scanCookies(request.cookies, `entry[${index}].request.cookies`, findings);
+    scanCookies(response.cookies, `entry[${index}].response.cookies`, findings);
+    scanJsonText(response.content?.text, `entry[${index}].response.content`, findings);
+    scanStructured(response.content, `entry[${index}].response.content`, findings);
   }
   if (findings.length) throw new Error(`sensitive HAR data found: ${findings.slice(0, 5).join(', ')}`);
   return findings;

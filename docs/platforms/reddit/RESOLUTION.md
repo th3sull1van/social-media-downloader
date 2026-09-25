@@ -24,3 +24,6 @@ fall back to collected chunks or trim the returned buffer to the actual bytes;
 headers must never introduce zero-filled padding or a null chunk accumulator.
 The muxer still holds whole tracks in memory; bounded Core transport removes the
 additional whole-file Base64 message, not the muxer's existing binary buffers.
+When a DASH audio URL is resolved, malformed or empty audio is a resolver failure;
+the pipeline does not silently downgrade that request to video-only. Video-only
+fallback remains available only when no audio URL was resolved.

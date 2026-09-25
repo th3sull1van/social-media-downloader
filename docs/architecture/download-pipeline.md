@@ -40,9 +40,13 @@ inspects `metadata.isRedGifs` / `sourceType` / `baseUrl` to decide behavior.
   bodies are transferred in bounded chunks; ZIP entry order is serialized by
   `ArchiveService` while the network fetch workers remain concurrent.
 - `processIndividualDownloads()`: concurrency limits (default 6), per-item
-  progress, cancellation-aware worker pool. A batch with no successful or
+  progress, cancellation-aware worker pool. Browser downloads are counted only
+  after a terminal `complete` state is observed. A batch with no successful or
   duplicate-skipped items and at least one failure ends as `FAILED`; mixed
   batches retain their completed/failed counters.
+- Active job IDs are persisted in `core.active_job` and reconciled after a
+  service-worker restart. In-progress ZIP sessions are failed rather than
+  resumed; OPFS cleanup then removes their unpublished resources.
 - Cancellation propagates from `CANCEL_DOWNLOAD` to the job status and is never
   reported as success (SPEC §40, AGENTS §96).
 - Progress is reported by stage and normalized (SPEC §41, AGENTS §97).

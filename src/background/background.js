@@ -25,6 +25,10 @@ defaultRegistry.register(RedditPlugin);
 
 // 2. Initialize Core Download Manager
 const downloadManager = new DownloadManager(defaultRegistry);
+const ensureDownloadState = () => typeof downloadManager.reconcileState === 'function'
+  ? downloadManager.reconcileState()
+  : (typeof downloadManager.restoreState === 'function' ? downloadManager.restoreState() : Promise.resolve());
+const downloadStateReady = ensureDownloadState();
 
 // 3. Ensure Offscreen Document for Packaging
 let offscreenCreating = null;
@@ -80,6 +84,10 @@ function recoverTemporaryResources() {
 let preparingResources = null;
 function prepareTemporaryResources() {
   if (!preparingResources) preparingResources = (async () => {
+    // Reconcile a restored job before deciding which OPFS resources are still
+    // owned by an active browser download. ZIP sessions cannot be resumed after
+    // a worker restart and must be failed before cleanup runs.
+    await downloadStateReady;
     if (!await hasOffscreenDocument()) resourceRecovery = null;
     await recoverTemporaryResources();
   })().finally(() => { preparingResources = null; });
@@ -156,7 +164,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case 'GET_DOWNLOAD_STATUS':
     case 'GET_DOWNLOAD_STATE': {
-      sendResponse({ activeJob: downloadManager.activeJob });
+      downloadStateReady.then(() => ensureDownloadState()).then(() => sendResponse({ activeJob: downloadManager.activeJob }));
       return true;
     }
 
@@ -181,7 +189,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     case 'CANCEL_DOWNLOAD': {
-      downloadManager.cancelDownload().then(() => {
+      downloadStateReady.then(() => ensureDownloadState()).then(() => downloadManager.cancelDownload()).then(() => {
         sendResponse({ success: true });
       });
       return true;

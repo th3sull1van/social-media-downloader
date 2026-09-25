@@ -24,6 +24,9 @@ export class DownloadManager {
     /** @type {Set<number>} */
     this.activeDownloadIds = new Set();
 
+    /** @type {Map<number, { state: string, accounted: boolean }>} */
+    this.downloadLedger = new Map();
+
     /** @type {Map<number, string>} Chrome download id -> Blob URL (blob URLs produced by the offscreen document) */
     this.downloadBlobUrls = new Map();
 
@@ -32,6 +35,136 @@ export class DownloadManager {
 
     /** @type {ReturnType<typeof setTimeout> | null} */
     this.badgeClearTimer = null;
+    this._restorePromise = null;
+    this._reconcilePromise = null;
+    this._stateWrites = Promise.resolve();
+    this.stateWasRestored = false;
+  }
+
+  async restoreState() {
+    if (!this._restorePromise) {
+      this._restorePromise = (async () => {
+        const saved = await StorageService.get('core.active_job', null);
+        if (!saved?.job || !DownloadJobModel.isActive(saved.job)) return;
+        this.stateWasRestored = true;
+        this.activeJob = saved.job;
+        this.activeDownloadIds = new Set(
+          Array.isArray(saved.downloadIds) ? saved.downloadIds.filter((id) => Number.isInteger(id)) : []
+        );
+        for (const entry of Array.isArray(saved.downloadLedger) ? saved.downloadLedger : []) {
+          if (Number.isInteger(entry?.id) && typeof entry.state === 'string') {
+            const accounted = entry.accounted === true;
+            this.downloadLedger.set(entry.id, { state: entry.state, accounted });
+            if (accounted) this.activeDownloadIds.delete(entry.id);
+            else if (entry.state === 'in_progress') this.activeDownloadIds.add(entry.id);
+          }
+        }
+      })().catch((error) => this.logger.warn('Download state recovery failed:', error));
+    }
+    return this._restorePromise;
+  }
+
+  persistState() {
+    const job = this.activeJob;
+    const snapshot = job && DownloadJobModel.isActive(job)
+      ? {
+          job: { ...job },
+          downloadIds: [...this.activeDownloadIds],
+          downloadLedger: [...this.downloadLedger].map(([id, entry]) => ({ id, ...entry }))
+        }
+      : null;
+    this._stateWrites = this._stateWrites.then(() => snapshot
+      ? StorageService.set('core.active_job', snapshot)
+      : StorageService.remove('core.active_job')
+    ).then((ok) => {
+      if (ok === false) throw new Error('storage_write_failed');
+    }).catch((error) => {
+      this.logger.warn('Download state persistence failed:', error);
+    });
+    return this._stateWrites;
+  }
+
+  accountDownload(downloadId, state) {
+    if (downloadId == null) return;
+    this.downloadLedger.set(downloadId, { state, accounted: true });
+    this.activeDownloadIds.delete(downloadId);
+  }
+
+  async reconcileState() {
+    if (this._reconcilePromise) return this._reconcilePromise;
+    this._reconcilePromise = this._reconcileState().finally(() => { this._reconcilePromise = null; });
+    return this._reconcilePromise;
+  }
+
+  async _reconcileState() {
+    await this.restoreState();
+    const job = this.activeJob;
+    // The normal worker has live completion listeners. Reconciliation is only
+    // for state loaded after a service-worker restart; otherwise a status poll
+    // must not turn a currently resolving ZIP/individual job into a failure.
+    if (!this.stateWasRestored || !job || !DownloadJobModel.isActive(job)) return job;
+    const ids = [...new Set([
+      ...this.activeDownloadIds,
+      ...[...this.downloadLedger].filter(([, entry]) => !entry.accounted).map(([id]) => id)
+    ])];
+    const states = new Map();
+    const searchFailures = new Set();
+    if (typeof chrome !== 'undefined' && chrome.downloads?.search) {
+      await Promise.all(ids.map(async (id) => {
+        try {
+          const items = await chrome.downloads.search({ id });
+          if (items?.[0]?.state) states.set(id, items[0].state);
+        } catch (error) {
+          searchFailures.add(id);
+          this.logger.warn(`Unable to reconcile download ${id}:`, error);
+        }
+      }));
+    }
+    if (this.activeJob !== job) return this.activeJob;
+
+    if (job.format === 'zip') {
+      job.status = 'FAILED';
+      job.error = 'restart_unrecoverable_zip';
+      for (const id of ids) {
+        if (!states.has(id) || states.get(id) === 'in_progress') {
+          try { chrome.downloads.cancel(id, () => {}); } catch (error) { this.logger.warn('Restart download cancellation failed:', error); }
+        }
+      }
+      this.activeDownloadIds.clear();
+      await this.persistState();
+      return job;
+    }
+
+    for (const id of ids) {
+      if (!states.has(id) && !searchFailures.has(id)) this.activeDownloadIds.delete(id);
+    }
+    let interrupted = false;
+    for (const id of ids) {
+      const state = states.get(id);
+      if (state !== 'complete' && state !== 'interrupted') continue;
+      const entry = this.downloadLedger.get(id);
+      if (entry?.accounted) continue;
+      this.downloadLedger.set(id, { state, accounted: true });
+      this.activeDownloadIds.delete(id);
+      if (state === 'complete') {
+        job.completed++;
+        job.receiptDownloadId = id;
+      } else {
+        job.failed++;
+        interrupted = true;
+      }
+    }
+    if (this.activeJob !== job) return this.activeJob;
+    const reconciledItems = job.completed + job.failed + (job.skippedDuplicates || 0);
+    if (this.activeDownloadIds.size === 0 && reconciledItems < job.total) {
+      job.status = 'FAILED';
+      job.error = 'restart_missing_downloads';
+    } else if (this.activeDownloadIds.size === 0 && reconciledItems >= job.total) {
+      job.status = interrupted || (job.completed === 0 && job.failed > 0) ? 'FAILED' : 'COMPLETED';
+      if (interrupted) job.error = 'download_interrupted';
+    }
+    await this.persistState();
+    return job;
   }
 
   /**
@@ -95,17 +228,52 @@ export class DownloadManager {
    * @param {any} delta
    */
   handleDownloadChanged(delta) {
-    if (delta && delta.state && (delta.state.current === 'complete' || delta.state.current === 'interrupted')) {
+    const state = delta?.state?.current;
+    if (!delta || !['complete', 'interrupted'].includes(state)) return;
+
+    const previous = this.downloadLedger.get(delta.id);
+    const wasTracked = this.activeDownloadIds.has(delta.id) || !!previous;
+    if (wasTracked) {
+      const wasAccounted = previous?.accounted === true;
+      this.downloadLedger.set(delta.id, { state, accounted: wasAccounted });
       this.activeDownloadIds.delete(delta.id);
-      const blobUrl = this.downloadBlobUrls.get(delta.id);
-      if (blobUrl) {
-        void ArchiveService.revokeBlobUrls([blobUrl]).then(() => {
-          this.downloadBlobUrls.delete(delta.id);
-          this.pendingBlobUrls.delete(blobUrl);
-        }).catch((err) => {
-          this.logger.warn('Failed to revoke completed download blob URL:', err);
-        });
+
+      // A restarted worker has no item promise left to account for a terminal
+      // browser event. Account that one pending ID here; the live worker keeps
+      // this false and its item loop performs the accounting after await.
+      if (this.stateWasRestored && !wasAccounted && this.activeJob && DownloadJobModel.isActive(this.activeJob)) {
+        this.downloadLedger.set(delta.id, { state, accounted: true });
+        if (this.activeJob.format === 'zip') {
+          this.activeJob.status = state === 'complete' ? 'COMPLETED' : 'FAILED';
+          if (state === 'interrupted') this.activeJob.error = 'download_interrupted';
+        } else if (state === 'complete') {
+          this.activeJob.completed++;
+          this.activeJob.receiptDownloadId = delta.id;
+        } else {
+          this.activeJob.failed++;
+          this.activeJob.error = 'download_interrupted';
+        }
+        const accountedItems = this.activeJob.completed + this.activeJob.failed + (this.activeJob.skippedDuplicates || 0);
+        if (this.activeJob.format === 'individual' && this.activeDownloadIds.size === 0) {
+          this.activeJob.status = accountedItems >= this.activeJob.total && this.activeJob.failed === 0
+            ? 'COMPLETED'
+            : 'FAILED';
+          if (this.activeJob.status === 'FAILED' && !this.activeJob.error) {
+            this.activeJob.error = 'restart_missing_downloads';
+          }
+        }
       }
+      this.persistState();
+    }
+
+    const blobUrl = this.downloadBlobUrls.get(delta.id);
+    if (blobUrl) {
+      void ArchiveService.revokeBlobUrls([blobUrl]).then(() => {
+        this.downloadBlobUrls.delete(delta.id);
+        this.pendingBlobUrls.delete(blobUrl);
+      }).catch((err) => {
+        this.logger.warn('Failed to revoke completed download blob URL:', err);
+      });
     }
   }
 
@@ -122,6 +290,7 @@ export class DownloadManager {
    * @returns {Promise<{ success: boolean, message?: string, error?: string }>}
    */
   async startDownload({ platform, targetName, items, format = 'individual', options }) {
+    await this.reconcileState();
     if (!items || !items.length) {
       return { success: false, error: 'No items provided' };
     }
@@ -304,6 +473,8 @@ export class DownloadManager {
           reject(new Error(chrome.runtime.lastError?.message || 'Download failed'));
         } else {
           this.activeDownloadIds.add(downloadId);
+          this.downloadLedger.set(downloadId, { state: 'in_progress', accounted: false });
+          this.persistState();
           if (signal?.aborted) {
             // The browser already owns the URL. Keep its backing resource until
             // cancellation is confirmed by a terminal event or reconciliation.
@@ -377,8 +548,14 @@ export class DownloadManager {
       const onAbort = () => finish(signal.reason || new Error('Download cancelled'));
       const onChanged = (delta) => {
         if (delta.id !== downloadId) return;
-        if (delta.state?.current === 'complete') finish();
-        if (delta.state?.current === 'interrupted') finish(new Error('Browser download interrupted'));
+        if (delta.state?.current === 'complete') {
+          this.handleDownloadChanged(delta);
+          finish();
+        }
+        if (delta.state?.current === 'interrupted') {
+          this.handleDownloadChanged(delta);
+          finish(new Error('Browser download interrupted'));
+        }
       };
       chrome.downloads.onChanged.addListener(onChanged);
       signal.addEventListener('abort', onAbort, { once: true });
@@ -406,6 +583,10 @@ export class DownloadManager {
     const total = items.length;
     const sessionSignatures = new Set();
     let skippedDuplicates = 0;
+    let interrupted = false;
+    this.stateWasRestored = false;
+    this.activeDownloadIds.clear();
+    this.downloadLedger.clear();
 
     this.activeJob = DownloadJobModel.create({
       platform,
@@ -420,6 +601,7 @@ export class DownloadManager {
     const history = historicalDedup ? await StorageService.getHistorySnapshot() : null;
     if (signal.aborted) return;
     job.status = 'DOWNLOADING';
+    this.persistState();
 
     this.updateBadge(`0/${total}`);
     this.broadcastProgress();
@@ -436,6 +618,7 @@ export class DownloadManager {
 
         let ok = false;
         let downloadId = null;
+        let itemInterrupted = false;
         try {
           const targetFilename = this.resolveFilename(plugin, item, targetName, currentIndex);
           if (deduplicate) {
@@ -474,14 +657,20 @@ export class DownloadManager {
               ok = true;
             } else {
               downloadId = await this.downloadItem(plugin, item, targetFilename, signal);
+              await this.waitForDownloadCompletion(downloadId, signal);
               ok = true;
             }
           } else {
             downloadId = await this.downloadItem(plugin, item, targetFilename, signal);
+            await this.waitForDownloadCompletion(downloadId, signal);
             ok = true;
           }
         } catch (err) {
           if (signal.aborted) return;
+          if (/interrupted/i.test(String(err?.message || err))) {
+            itemInterrupted = true;
+            interrupted = true;
+          }
           this.logger.warn(`Failed to download item ${item.id || currentIndex}:`, err);
         }
 
@@ -497,6 +686,8 @@ export class DownloadManager {
           job.updatedAt = Date.now();
           this.updateBadge(`${completed + skippedDuplicates}/${total}`);
           this.broadcastProgress();
+          if (downloadId != null && (ok || itemInterrupted)) this.accountDownload(downloadId, ok ? 'complete' : 'interrupted');
+          this.persistState();
         }
 
         await new Promise((r) => setTimeout(r, 40));
@@ -518,13 +709,16 @@ export class DownloadManager {
     }
 
     if (signal.aborted || this.activeJob !== job) return;
-    if (job.completed === 0 && skippedDuplicates === 0 && job.failed > 0) {
+    if (interrupted || (job.completed === 0 && skippedDuplicates === 0 && job.failed > 0)) {
       job.status = 'FAILED';
+      if (interrupted) job.error = 'download_interrupted';
+      await this.persistState();
       this.updateBadge('ERR', '#FF0000');
       this.broadcastProgress();
       return;
     }
     job.status = 'COMPLETED';
+    await this.persistState();
     this.updateBadge('✓', '#4BB543');
     this.scheduleBadgeClear(job);
     this.broadcastProgress();
@@ -550,6 +744,9 @@ export class DownloadManager {
     const sessionSignatures = new Set();
     const newHistoricalSignatures = [];
     let skippedDuplicates = 0;
+    this.stateWasRestored = false;
+    this.activeDownloadIds.clear();
+    this.downloadLedger.clear();
 
     this.activeJob = DownloadJobModel.create({
       platform,
@@ -565,6 +762,7 @@ export class DownloadManager {
     const history = historicalDedup ? await StorageService.getHistorySnapshot() : null;
     if (signal.aborted) return;
     job.status = 'DOWNLOADING_BLOBS';
+    this.persistState();
 
     this.updateBadge(`0/${items.length}`);
     this.broadcastProgress();
@@ -581,6 +779,7 @@ export class DownloadManager {
 
       sessionId = begin.sessionId;
       job.archiveSessionId = sessionId;
+      this.persistState();
       signal.throwIfAborted();
       // ponytail: one full payload at a time with dedup; incremental OPFS hashing if one file exceeds memory.
       const concurrency = deduplicate ? 1 : 6;
@@ -701,6 +900,7 @@ export class DownloadManager {
 
       if (!sizeLimitHit && job.completed === 0 && skippedDuplicates > 0 && job.failed === 0) {
         job.status = 'COMPLETED';
+        await this.persistState();
         this.updateBadge('✓', '#4BB543');
         this.scheduleBadgeClear(job);
         this.broadcastProgress();
@@ -717,6 +917,7 @@ export class DownloadManager {
 
       if (sizeLimitHit) {
         job.status = 'FAILED_SIZE';
+        await this.persistState();
         this.updateBadge('ERR', '#FF0000');
         this.broadcastProgress();
         return;
@@ -725,6 +926,7 @@ export class DownloadManager {
       if (finish?.reason === 'size_limit') {
         job.status = 'FAILED_SIZE';
         job.error = 'zip_size_limit';
+        await this.persistState();
         this.updateBadge('ERR', '#FF0000');
         this.broadcastProgress();
         return;
@@ -739,7 +941,7 @@ export class DownloadManager {
         job.receiptDownloadId = zipDownloadId;
       }
       handedOff = true;
-      if (deduplicate) await this.waitForDownloadCompletion(zipDownloadId, signal);
+      await this.waitForDownloadCompletion(zipDownloadId, signal);
 
       if (historicalDedup && newHistoricalSignatures.length > 0) {
         await StorageService.addHistoricalSignatures(newHistoricalSignatures, historyRevision);
@@ -764,6 +966,7 @@ export class DownloadManager {
 
       if (!signal.aborted && this.activeJob === job) {
         job.status = 'COMPLETED';
+        await this.persistState();
         this.updateBadge('✓', '#4BB543');
         this.scheduleBadgeClear(job);
         this.broadcastProgress();
@@ -775,6 +978,7 @@ export class DownloadManager {
       if (job && (status === 'DOWNLOADING_BLOBS' || status === 'PACKAGING_ZIP')) {
         job.status = 'FAILED';
         job.error = err?.code || 'zip_failed';
+        await this.persistState();
       }
       this.updateBadge('ERR', '#FF0000');
       this.broadcastProgress();
@@ -789,6 +993,7 @@ export class DownloadManager {
    * Cancels the active download job and in-flight downloads.
    */
   async cancelDownload() {
+    await this.reconcileState();
     const job = this.activeJob;
     if (!job) return;
     const wasProducing = DownloadJobModel.isActive(job);
@@ -807,6 +1012,7 @@ export class DownloadManager {
     if (wasProducing && job.archiveSessionId && !await ArchiveService.abort(job.archiveSessionId)) {
       this.logger.warn('Temporary ZIP cleanup failed');
     }
+    await this.persistState();
     if (this.activeJob === job) {
       this.updateBadge('');
       this.broadcastProgress();

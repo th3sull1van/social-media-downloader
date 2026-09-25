@@ -56,7 +56,10 @@
     isScanning: false,
     isDownloading: false,
     autoSelectAll: true,
-    pendingRequests: new Map()
+    pendingRequests: new Map(),
+    redditScanGeneration: 0,
+    instagramScanGeneration: 0,
+    instagramScanContext: null
   };
 
   // Lazy module import. Used to share the same Video/Reel/CollectionTile
@@ -124,9 +127,10 @@
   }
 
   // 2. Main-World Bridge (nonce-verified).
-  function sendToInjected(type, payload = {}) {
+  function sendToInjected(type, payload = {}, context = null) {
     return new Promise((resolve) => {
       const requestId = 'req_' + Math.random().toString(36).slice(2, 9);
+      if (context) context.requestIds.add(requestId);
       state.pendingRequests.set(requestId, resolve);
 
       window.postMessage({
@@ -134,7 +138,7 @@
         nonce: BRIDGE_NONCE,
         type,
         requestId,
-        payload
+        payload: context ? { ...payload, generation: context.generation } : payload
       }, '*');
 
       setTimeout(() => {
@@ -149,7 +153,7 @@
 
   window.addEventListener('message', (event) => {
     if (event.source !== window || !event.data) return;
-    const { source, nonce, requestId, success, payload, error } = event.data;
+    const { source, nonce, requestId, success, status, payload, error } = event.data;
 
     if (nonce !== BRIDGE_NONCE) return;
 
@@ -158,18 +162,20 @@
       if (state.pendingRequests.has(requestId)) {
         const resolve = state.pendingRequests.get(requestId);
         state.pendingRequests.delete(requestId);
-        resolve({ success, payload, error });
+        resolve({ success, status, payload, error, requestId });
       }
     }
 
     // Real-time batch streams during deep scans
-    if (source === 'SMD_IG_BATCH_POSTS' && payload?.nodes) {
-      processInstagramPostNodes(payload.nodes);
-    }
-
-    if (source === 'SMD_IG_BATCH_HIGHLIGHTS' && payload?.items) {
-      for (const it of payload.items) {
-        processInstagramStoryItem(it, 'highlights', it._highlightTitle);
+    const instagramBatchContext = state.instagramScanContext;
+    const trustedInstagramBatch = !payload?.requestId || (
+      instagramBatchContext?.generation === payload.generation &&
+      instagramBatchContext.requestIds.has(payload.requestId)
+    );
+    if ((source === 'SMD_IG_BATCH_POSTS' || source === 'SMD_IG_BATCH_HIGHLIGHTS') && trustedInstagramBatch) {
+      if (source === 'SMD_IG_BATCH_POSTS' && payload.nodes) processInstagramPostNodes(payload.nodes);
+      if (source === 'SMD_IG_BATCH_HIGHLIGHTS' && payload.items) {
+        for (const it of payload.items) processInstagramStoryItem(it, 'highlights', it._highlightTitle);
       }
     }
 
@@ -267,6 +273,16 @@
     if (key !== lastNavigationKey) {
       const previousFacebookTarget = lastFacebookTargetKey || facebookScanTargetKey || facebookTargetKey();
       lastNavigationKey = key;
+      if (isInstagram) {
+        state.instagramScanGeneration++;
+        if (state.instagramScanContext) state.instagramScanContext.cancelled = true;
+        state.isScanning = false;
+      }
+      if (isReddit) {
+        state.redditScanGeneration++;
+        state.isScanning = false;
+      }
+      if (isInstagram || isReddit) updateScanStatusUI(false);
       detectTarget();
       const nextFacebookTarget = facebookTargetKey();
       lastFacebookTargetKey = nextFacebookTarget || previousFacebookTarget;
@@ -1016,42 +1032,109 @@
   }
 
   // 5. Instagram Scanning Methods
-  async function scanProfileAvatar(isIndependent = true) {
+  async function scanProfileAvatar(isIndependent = true, context = null) {
+    context ||= isInstagram ? beginInstagramScan() : null;
     if (isIndependent) {
       state.isScanning = true;
       updateScanStatusUI(true, t('scanningProfile'));
     }
     try {
       if (!state.username) detectTarget();
-      if (!state.username) return;
-      const res = await sendToInjected('FETCH_IG_PROFILE', { username: state.username });
+      if (!state.username) return { success: false, status: 'empty' };
+      if (!isIndependent && state.profileInfo?.username?.toLowerCase() === state.username.toLowerCase() && (state.profileInfo.id || state.profileInfo.hdProfilePicUrl)) {
+        return { success: true, status: 'success' };
+      }
+      const res = await sendToInjected('FETCH_IG_PROFILE', { username: state.username }, context);
+      if (context && !isCurrentInstagramScan(context)) return { success: false, status: 'cancelled' };
       if (res.success && res.payload?.profile) {
         state.profileInfo = res.payload.profile;
         updateAvatarUI();
         if (state.profileInfo.hdProfilePicUrl) {
           const cleanPic = upgradeCdnUrl(state.profileInfo.hdProfilePicUrl);
-          addMediaItems([{
-            id: `profile_pic_${state.username}`,
-            platform: 'instagram',
-            type: 'image',
-            url: cleanPic,
-            downloadUrl: cleanPic,
-            thumbnailUrl: cleanPic,
-            width: 1080,
-            height: 1080,
-            category: 'profile_pic',
-            metadata: { category: 'profile_pic', username: state.username }
-          }]);
+          if (!context || isCurrentInstagramScan(context)) {
+            addMediaItems([{
+              id: `profile_pic_${state.username}`,
+              platform: 'instagram',
+              type: 'image',
+              url: cleanPic,
+              downloadUrl: cleanPic,
+              thumbnailUrl: cleanPic,
+              width: 1080,
+              height: 1080,
+              category: 'profile_pic',
+              metadata: { category: 'profile_pic', username: state.username }
+            }]);
+          }
         }
       }
+      // DOM fallback for profile picture if injected could not resolve HD URL
+      if (!state.profileInfo?.hdProfilePicUrl && typeof document !== 'undefined') {
+        const domPic = document.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
+                       document.querySelector('header img, main header img, img[alt*="profile"], img[alt*="perfil"]')?.src;
+        if (domPic && !domPic.startsWith('data:') && !domPic.includes('static.cdninstagram.com/rsrc.php')) {
+          const cleanPic = upgradeCdnUrl(domPic);
+          state.profileInfo = {
+            ...(state.profileInfo || {}),
+            username: state.username,
+            hdProfilePicUrl: cleanPic,
+            profilePicUrl: cleanPic
+          };
+          updateAvatarUI();
+          if (!context || isCurrentInstagramScan(context)) {
+            addMediaItems([{
+              id: `profile_pic_${state.username}`,
+              platform: 'instagram',
+              type: 'image',
+              url: cleanPic,
+              downloadUrl: cleanPic,
+              thumbnailUrl: cleanPic,
+              width: 1080,
+              height: 1080,
+              category: 'profile_pic',
+              metadata: { category: 'profile_pic', username: state.username }
+            }]);
+          }
+        }
+      }
+      // DOM scripts fallback for numeric user ID if injected did not resolve it
+      if (!state.profileInfo?.id && typeof document !== 'undefined') {
+        try {
+          const scripts = document.querySelectorAll('script:not([src])');
+          for (const s of scripts) {
+            const text = s.textContent || '';
+            if (!text) continue;
+            const lowerText = text.toLowerCase();
+            const targetLower = state.username.toLowerCase();
+            if (lowerText.includes(targetLower) || lowerText.includes('profilepage') || lowerText.includes('polarisprofile')) {
+              const m = text.match(/"profile_id":"(\d+)"/) ||
+                        text.match(/"page_id":"profilePage_(\d+)"/) ||
+                        text.match(/"props":\{"id":"(\d+)"[^}]*"profilePage/) ||
+                        text.match(/"container_id":"(\d+)"/);
+              if (m && m[1] && m[1] !== '0') {
+                state.profileInfo = {
+                  ...(state.profileInfo || {}),
+                  id: m[1],
+                  pk: m[1],
+                  username: state.username
+                };
+                break;
+              }
+            }
+          }
+        } catch (e) {}
+      }
     } catch (err) {
+      if (context && !isCurrentInstagramScan(context)) return { success: false, status: 'cancelled' };
       if (isIndependent) {
         console.warn('[SMD Content] Instagram profile avatar scan failed:', err);
         updateScanStatusUI(true, t('scanFailed'), true);
-        setTimeout(() => updateScanStatusUI(false), 6000);
+        setTimeout(() => {
+          if (!context || isCurrentInstagramScan(context)) updateScanStatusUI(false);
+        }, 6000);
       }
+      return { success: false, status: 'network_failure' };
     } finally {
-      if (isIndependent) {
+      if (isIndependent && (!context || isCurrentInstagramScan(context))) {
         state.isScanning = false;
         updateScanStatusUI(false);
       }
@@ -1117,7 +1200,26 @@
     }
   }
 
-  async function scanAllPosts(isIndependent = true) {
+  function beginInstagramScan() {
+    if (currentNavigationKey() !== lastNavigationKey) checkNavigationChanged();
+    const context = {
+      generation: ++state.instagramScanGeneration,
+      navigationKey: currentNavigationKey(),
+      requestIds: new Set(),
+      cancelled: false
+    };
+    state.instagramScanContext = context;
+    return context;
+  }
+
+  function isCurrentInstagramScan(context) {
+    return !!context && !context.cancelled && state.instagramScanContext === context
+      && context.generation === state.instagramScanGeneration
+      && context.navigationKey === currentNavigationKey();
+  }
+
+  async function scanAllPosts(isIndependent = true, context = null) {
+    context ||= beginInstagramScan();
     if (isIndependent) {
       state.isScanning = true;
       updateScanStatusUI(true, t('scanningPosts'));
@@ -1125,79 +1227,108 @@
     try {
       if (!state.username) detectTarget();
       if (!state.username) {
-        scanInstagramDom();
-        return;
+        if (!context || isCurrentInstagramScan(context)) scanInstagramDom();
+        return { success: false, status: 'empty' };
       }
 
-      const res = await sendToInjected('FETCH_IG_POSTS', { username: state.username, maxCount: 5000 });
-      if (res.success && res.payload?.nodes?.length > 0) {
-        processInstagramPostNodes(res.payload.nodes);
-      } else {
-        console.warn('[SMD Content] GraphQL returned 0 posts or failed, attempting DOM fallback...');
+      const res = await sendToInjected('FETCH_IG_POSTS', { username: state.username, maxCount: 5000 }, context);
+      if (!isCurrentInstagramScan(context)) return { success: false, status: 'cancelled' };
+      const nodes = Array.isArray(res.payload?.nodes) ? res.payload.nodes : [];
+      if (nodes.length > 0) processInstagramPostNodes(nodes);
+      if (!res.success && res.status !== 'partial' && res.status !== 'empty') {
+        console.warn('[SMD Content] GraphQL posts scan failed; attempting DOM fallback...');
+        if (isCurrentInstagramScan(context)) scanInstagramDom();
+      }
+      if (res.status === 'partial' || res.status === 'network_failure') {
+        updateScanStatusUI(true, t('scanFailed'), true);
+      } else if (!nodes.length && isCurrentInstagramScan(context) && res.status !== 'empty') {
         scanInstagramDom();
       }
+      return { success: res.success === true, status: res.status || (nodes.length ? 'success' : 'empty') };
     } catch (e) {
+      if (!isCurrentInstagramScan(context)) return { success: false, status: 'cancelled' };
       console.warn('[SMD Content] Posts scan error:', e);
       scanInstagramDom();
+      return { success: false, status: 'network_failure' };
     } finally {
-      if (isIndependent) {
+      if (isIndependent && isCurrentInstagramScan(context)) {
         state.isScanning = false;
         updateScanStatusUI(false);
       }
     }
   }
 
-  async function scanStories(isIndependent = true) {
+  async function scanStories(isIndependent = true, context = null) {
+    context ||= beginInstagramScan();
     if (isIndependent) {
       state.isScanning = true;
       updateScanStatusUI(true, t('scanningStories'));
     }
     try {
-      if (!state.profileInfo?.id) await scanProfileAvatar(false);
+      if (!state.profileInfo?.id) await scanProfileAvatar(false, context);
+      if (!isCurrentInstagramScan(context)) return { success: false, status: 'cancelled' };
       const userId = state.profileInfo?.id;
-      if (!userId) return;
+      if (!userId) return { success: false, status: 'empty' };
 
-      const res = await sendToInjected('FETCH_IG_STORIES', { userId });
-      if (res.success && res.payload?.items) {
-        for (const it of res.payload.items) {
-          processInstagramStoryItem(it, 'stories');
-        }
+      const res = await sendToInjected('FETCH_IG_STORIES', { userId }, context);
+      if (!isCurrentInstagramScan(context)) return { success: false, status: 'cancelled' };
+      const items = Array.isArray(res.payload?.items) ? res.payload.items : [];
+      for (const it of items) {
+        if (!isCurrentInstagramScan(context)) return { success: false, status: 'cancelled' };
+        processInstagramStoryItem(it, 'stories');
       }
+      if (res.status === 'network_failure' || res.status === 'partial') {
+        updateScanStatusUI(true, t('scanFailed'), true);
+      }
+      return { success: res.success === true, status: res.status || (items.length ? 'success' : 'empty') };
     } catch (e) {
+      if (!isCurrentInstagramScan(context)) return { success: false, status: 'cancelled' };
       console.warn('[SMD Content] Stories scan error:', e);
       updateScanStatusUI(true, t('scanFailed'), true);
+      return { success: false, status: 'network_failure' };
     } finally {
-      if (isIndependent) {
+      if (isIndependent && isCurrentInstagramScan(context)) {
         state.isScanning = false;
         updateScanStatusUI(false);
       }
     }
   }
 
-  async function scanHighlights(isIndependent = true) {
+  async function scanHighlights(isIndependent = true, context = null) {
+    context ||= beginInstagramScan();
     let failed = false;
     if (isIndependent) {
       state.isScanning = true;
       updateScanStatusUI(true, t('scanningHighlights'));
     }
     try {
-      if (!state.profileInfo?.id) await scanProfileAvatar(false);
+      if (!state.profileInfo?.id) await scanProfileAvatar(false, context);
+      if (!isCurrentInstagramScan(context)) return { success: false, status: 'cancelled' };
       const userId = state.profileInfo?.id;
-      if (!userId) throw new Error('instagram_profile_unavailable');
+      if (!userId) return { success: false, status: 'empty' };
 
-      const res = await sendToInjected('FETCH_IG_HIGHLIGHTS', { userId });
-      if (!res.success) throw new Error('instagram_highlights_failed');
-      if (res.success && res.payload?.items) {
+      const res = await sendToInjected('FETCH_IG_HIGHLIGHTS', { userId }, context);
+      if (!isCurrentInstagramScan(context)) return { success: false, status: 'cancelled' };
+      if (!res.success && res.status !== 'partial' && res.status !== 'empty') throw new Error('instagram_highlights_failed');
+      if (res.payload?.items) {
         for (const it of res.payload.items) {
+          if (!isCurrentInstagramScan(context)) return { success: false, status: 'cancelled' };
           processInstagramStoryItem(it, 'highlights', it._highlightTitle);
         }
       }
+      if (res.status === 'partial' || res.status === 'network_failure') {
+        failed = true;
+        updateScanStatusUI(true, t('scanFailed'), true);
+      }
+      return { success: res.success === true, status: res.status || (res.payload?.items?.length ? 'success' : 'empty') };
     } catch (e) {
+      if (!isCurrentInstagramScan(context)) return { success: false, status: 'cancelled' };
       failed = true;
       console.warn('[SMD Content] Highlights scan error:', e);
       updateScanStatusUI(true, t('scanFailed'), true);
+      return { success: false, status: 'network_failure' };
     } finally {
-      if (isIndependent) {
+      if (isIndependent && isCurrentInstagramScan(context)) {
         state.isScanning = false;
         if (!failed) updateScanStatusUI(false);
       }
@@ -1205,27 +1336,35 @@
   }
 
   async function scanAll() {
+    const instagramContext = isInstagram ? beginInstagramScan() : null;
     state.isScanning = true;
     updateScanStatusUI(true, t('scanningAllMedia'));
     try {
       if (isInstagram) {
+        const context = instagramContext;
         updateScanStatusUI(true, t('scanningProfile'));
-        await scanProfileAvatar(false);
+        await scanProfileAvatar(false, context);
+        if (!isCurrentInstagramScan(context)) return;
         updateScanStatusUI(true, t('scanningStoriesHighlights'));
-        await Promise.all([scanStories(false), scanHighlights(false)]);
+        await Promise.all([scanStories(false, context), scanHighlights(false, context)]);
+        if (!isCurrentInstagramScan(context)) return;
         updateScanStatusUI(true, t('scanningPosts'));
-        await scanAllPosts(false);
+        await scanAllPosts(false, context);
       } else if (isFacebook) {
         await scanFacebookAllTabs();
       } else if (isReddit) {
         await redditScanAll();
       }
     } catch (e) {
-      console.warn('[SMD Content] Scan all error:', e);
-      updateScanStatusUI(true, t('scanFailed'), true);
+      if (!instagramContext || isCurrentInstagramScan(instagramContext)) {
+        console.warn('[SMD Content] Scan all error:', e);
+        updateScanStatusUI(true, t('scanFailed'), true);
+      }
     } finally {
-      state.isScanning = false;
-      updateScanStatusUI(false);
+      if (!instagramContext || isCurrentInstagramScan(instagramContext)) {
+        state.isScanning = false;
+        updateScanStatusUI(false);
+      }
     }
   }
 
@@ -2123,6 +2262,10 @@
   }
 
   async function redditScanAll() {
+    checkNavigationChanged();
+    const generation = ++state.redditScanGeneration;
+    const targetKey = currentNavigationKey();
+    const isCurrent = () => generation === state.redditScanGeneration && targetKey === currentNavigationKey();
     state.isScanning = true;
     updateScanStatusUI(true, t('scanning'));
     try {
@@ -2140,23 +2283,32 @@
         });
       });
 
+      if (!isCurrent()) return;
       const responseAvatar = rememberTargetAvatar(res?.avatarUrl);
       if (responseAvatar) updateAvatarUI();
 
-      const items = res.success && Array.isArray(res.items) ? res.items : [];
+      const items = Array.isArray(res?.items) ? res.items : [];
 
       if (items.length > 0) {
         addMediaItems(items);
+        if (res.status === 'partial' || res.status === 'network_failure') {
+          updateScanStatusUI(true, t('scanFailed'), true);
+        }
         return;
+      }
+      if (res.status === 'partial' || res.status === 'network_failure') {
+        updateScanStatusUI(true, t('scanFailed'), true);
       }
 
       // If background fetch returned 0 items (often 403 network policy from SW),
       // try in-page fetch from the authenticated tab origin before DOM fallback.
       try {
         let pageItems = [];
+        if (!isCurrent()) return;
         const { RedditScanner: sc } = await import(chrome.runtime.getURL('src/plugins/reddit/RedditScanner.js'));
         if (!state.targetAvatarUrl && (target.kind === 'user' || target.kind === 'subreddit')) {
           const pageAvatar = await sc.fetchTargetAvatar(target.kind, target.id);
+          if (!isCurrent()) return;
           if (rememberTargetAvatar(pageAvatar)) updateAvatarUI();
         }
         if (target.kind === 'user') {
@@ -2184,6 +2336,7 @@
           pageItems = pResult.items || [];
         }
 
+        if (!isCurrent()) return;
         if (pageItems.length > 0) {
           addMediaItems(pageItems);
           return;
@@ -2193,17 +2346,22 @@
       }
 
       // Fallback: extract media from the server-rendered shreddit HTML.
-      const domCount = await redditDomFallback();
+      if (!isCurrent()) return;
+      const domCount = await redditDomFallback(isCurrent);
+      if (!isCurrent()) return;
       if (!state.targetAvatarUrl) updateAvatarUI();
       if (domCount === 0) {
         console.warn('[SMD Content] Reddit scan returned 0 items (empty, private, or quarantined target).');
       }
     } catch (e) {
+      if (!isCurrent()) return;
       console.warn('[SMD Content] Reddit scan failed:', e);
       updateScanStatusUI(true, t('scanFailed'), true);
     } finally {
-      state.isScanning = false;
-      updateScanStatusUI(false);
+      if (isCurrent()) {
+        state.isScanning = false;
+        updateScanStatusUI(false);
+      }
     }
   }
 
@@ -2212,7 +2370,7 @@
    * module (dynamic import keeps the plugin as the single source of truth).
    * @returns {Promise<number>} number of items added
    */
-  async function redditDomFallback() {
+  async function redditDomFallback(isCurrent = () => true) {
     let scanner;
     let normalizer;
     try {
@@ -2226,6 +2384,7 @@
     const postEls = Array.from(document.querySelectorAll('shreddit-post'));
     const collected = [];
     for (let i = 0; i < postEls.length; i++) {
+      if (!isCurrent()) return 0;
       const postEl = postEls[i];
       if (i > 0 && i % 15 === 0) {
         await new Promise(r => setTimeout(r, 0));
@@ -2248,6 +2407,7 @@
         isGallery: postData.isGallery
       };
       for (const mi of postData.mediaItems) {
+        if (!isCurrent()) return 0;
         try {
           const item = normalizer.normalizeItem(mi, postInfo);
           if (item) collected.push(item);
@@ -2257,11 +2417,11 @@
       }
     }
 
-    if (collected.length === 0) return 0;
+    if (!isCurrent() || collected.length === 0) return 0;
 
     // Cross-post/repost dedup with score ranking (Reddit platform invariant).
     const { uniqueItems } = normalizer.deduplicateMediaItems(collected);
-    if (uniqueItems.length > 0) {
+    if (isCurrent() && uniqueItems.length > 0) {
       addMediaItems(uniqueItems);
     }
     return uniqueItems.length;
@@ -2516,13 +2676,38 @@
       // Only Instagram's injected script implements cancellable scans; for other
       // platforms the local isScanning flag stops the loop on the next tick.
       if (isInstagram) {
+        state.instagramScanGeneration++;
+        if (state.instagramScanContext) state.instagramScanContext.cancelled = true;
         sendToInjected('CANCEL_SCAN');
       }
+      if (isReddit) state.redditScanGeneration++;
       state.isScanning = false;
       updateScanStatusUI(false);
     });
-    uiGetById('smd-btn-retry-download')?.addEventListener('click', () => {
-      uiGetById('smd-btn-start-download')?.click();
+    const startSelectedDownload = () => {
+      if (state.isDownloading) return;
+      const format = floatingModal.querySelector('input[name="smd-modal-format"]:checked')?.value || 'zip';
+      const deduplicate = uiGetById('smd-dedup-toggle')?.checked || false;
+      const historicalDedup = deduplicate && (uiGetById('smd-historical-dedup-toggle')?.checked || false);
+      const selected = Array.from(state.media.values()).filter((m) => state.selectedIds.has(m.id));
+      if (!selected.length) return;
+      state.isDownloading = true;
+      chrome.runtime.sendMessage({
+        type: 'START_DOWNLOAD', platform: state.platform,
+        targetName: state.username || state.targetName, items: selected, format,
+        options: { deduplicate, historicalDedup }
+      }, (res) => {
+        if (chrome.runtime.lastError || !res?.success) {
+          state.isDownloading = false;
+          updateDownloadProgressUI(null);
+          updateScanStatusUI(true, t('errorDownloading'));
+          setScanStatusError(true);
+        }
+      });
+    };
+    uiGetById('smd-btn-retry-download')?.addEventListener('click', (event) => {
+      if (event.isTrusted === false) return;
+      startSelectedDownload();
     });
 
     uiGetById('smd-btn-show-folder')?.addEventListener('click', () => {
@@ -2594,30 +2779,11 @@
       });
     });
 
-    uiGetById('smd-btn-start-download')?.addEventListener('click', () => {
-      if (state.isDownloading) return;
-      const format = floatingModal.querySelector('input[name="smd-modal-format"]:checked')?.value || 'zip';
-      const deduplicate = uiGetById('smd-dedup-toggle')?.checked || false;
-      const historicalDedup = deduplicate && (uiGetById('smd-historical-dedup-toggle')?.checked || false);
-      const selected = Array.from(state.media.values()).filter((m) => state.selectedIds.has(m.id));
-      if (!selected.length) return;
-
-      state.isDownloading = true;
-      chrome.runtime.sendMessage({
-        type: 'START_DOWNLOAD',
-        platform: state.platform,
-        targetName: state.username || state.targetName,
-        items: selected,
-        format,
-        options: { deduplicate, historicalDedup }
-      }, (res) => {
-        if (chrome.runtime.lastError || !res?.success) {
-          state.isDownloading = false;
-          updateDownloadProgressUI(null);
-          updateScanStatusUI(true, t('errorDownloading'));
-          setScanStatusError(true);
-        }
-      });
+    uiGetById('smd-btn-start-download')?.addEventListener('click', (event) => {
+      // Synthetic page events cannot invoke the privileged action; retry uses
+      // the closure above instead of dispatching an untrusted click.
+      if (event.isTrusted === false) return;
+      startSelectedDownload();
     });
   }
 
@@ -3005,22 +3171,22 @@
       }
 
       case 'TRIGGER_SCAN_POSTS': {
-        (isInstagram ? scanAllPosts() : Promise.resolve()).then(() => sendResponse({ success: true }));
+        (isInstagram ? scanAllPosts() : Promise.resolve({ success: false, status: 'unsupported' })).then(sendResponse);
         return true;
       }
 
       case 'TRIGGER_SCAN_STORIES': {
-        (isInstagram ? scanStories() : Promise.resolve()).then(() => sendResponse({ success: true }));
+        (isInstagram ? scanStories() : Promise.resolve({ success: false, status: 'unsupported' })).then(sendResponse);
         return true;
       }
 
       case 'TRIGGER_SCAN_HIGHLIGHTS': {
-        (isInstagram ? scanHighlights() : Promise.resolve()).then(() => sendResponse({ success: true }));
+        (isInstagram ? scanHighlights() : Promise.resolve({ success: false, status: 'unsupported' })).then(sendResponse);
         return true;
       }
 
       case 'TRIGGER_SCAN_AVATAR': {
-        (isInstagram ? scanProfileAvatar() : Promise.resolve()).then(() => sendResponse({ success: true }));
+        (isInstagram ? scanProfileAvatar() : Promise.resolve({ success: false, status: 'unsupported' })).then(sendResponse);
         return true;
       }
 

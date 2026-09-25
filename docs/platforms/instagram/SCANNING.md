@@ -21,4 +21,8 @@ When REST profile lookup fails (including HTTP 429), one existing GraphQL
 feed page can recover the target ID from an author with the exact requested
 username. The viewer ID is never substituted. Highlights report unavailable
 profile/tray/media responses as failures, while a valid empty tray remains
-an empty result. Starting an independent highlight scan clears prior cancellation.
+an empty result. Starting an independent highlight scan clears prior cancellation. Scan operations
+carry a generation token, so late replies and streamed batches from a cancelled
+scan or prior SPA target are ignored. Post and story scans preserve collected
+items while reporting partial/network failures instead of treating them as an
+empty successful result.

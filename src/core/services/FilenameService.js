@@ -56,10 +56,22 @@ export class FilenameService {
       base = filename.slice(0, lastDot);
       ext = filename.slice(lastDot + 1);
     }
-    const extLen = ext ? ext.length + 1 : 0;
-    const safeBase = FilenameService.sanitize(base, Math.max(10, maxLen - extLen), 'media');
-    const safeExt = ext ? FilenameService.sanitize(ext, 8, '').toLowerCase() : '';
-    return safeExt ? `${safeBase}.${safeExt}` : safeBase;
+    const limit = Math.max(1, Math.floor(Number(maxLen)) || 80);
+    let safeExt = ext ? FilenameService.sanitize(ext, 8, '').toLowerCase() : '';
+    if (safeExt && safeExt.length + 1 >= limit) {
+      // A tiny caller-supplied limit cannot preserve a dot plus the whole
+      // extension; keep the result bounded rather than exceeding maxLen.
+      return safeExt.slice(0, limit);
+    }
+    const baseLimit = safeExt ? limit - safeExt.length - 1 : limit;
+    let safeBase = FilenameService.sanitize(base, Math.max(1, baseLimit), 'media').slice(0, baseLimit);
+    // Windows reserves the name before the first dot, not only an exact
+    // filename (CON.photos and CON.backup.jpg are both invalid).
+    if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(safeBase.split('.')[0])) {
+      safeBase = `_${safeBase}`.slice(0, baseLimit);
+    }
+    if (!safeBase) safeBase = 'm'.slice(0, baseLimit);
+    return safeExt ? `${safeBase}.${safeExt}`.slice(0, limit) : safeBase.slice(0, limit);
   }
 
   /**
@@ -88,12 +100,13 @@ export class FilenameService {
         continue;
       }
       const isLast = i === segments.length - 1;
-      const safeSegment = isLast && segment.includes('.')
+      let safeSegment = isLast && segment.includes('.')
         ? FilenameService.sanitizeFilename(segment, 80, 'media')
         : FilenameService.sanitize(segment, 80, '');
-      if (safeSegment) {
-        safeSegments.push(safeSegment);
+      if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(safeSegment.split('.')[0])) {
+        safeSegment = `_${safeSegment}`;
       }
+      if (safeSegment) safeSegments.push(safeSegment);
     }
 
     return safeSegments.length > 0 ? safeSegments.join('/') : fallback;

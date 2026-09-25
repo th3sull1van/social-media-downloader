@@ -230,6 +230,7 @@ export async function runOffscreenZipTests() {
   const transport = makeContext();
   const messages = [];
   const downloads = new Map();
+  const changedListeners = new Set();
   let denied = false;
   const browser = {
     runtime: {
@@ -246,7 +247,8 @@ export async function runOffscreenZipTests() {
       download(options, callback) {
         if (denied) { callback(undefined); return; }
         const id = downloads.size + 1;
-        downloads.set(id, { ...options, id, state: 'in_progress' });
+        downloads.set(id, { ...options, id, state: 'complete' });
+        for (const listener of changedListeners) listener({ id, state: { current: 'complete' } });
         callback(id);
       },
       search(query, callback) {
@@ -254,7 +256,11 @@ export async function runOffscreenZipTests() {
         callback?.(result);
         return Promise.resolve(result);
       },
-      cancel(id, callback) { downloads.get(id).state = 'interrupted'; callback?.(); }
+      cancel(id, callback) { downloads.get(id).state = 'interrupted'; callback?.(); },
+      onChanged: {
+        addListener(listener) { changedListeners.add(listener); },
+        removeListener(listener) { changedListeners.delete(listener); }
+      }
     }
   };
   const runtime = /** @type {any} */ (globalThis);
@@ -285,7 +291,9 @@ export async function runOffscreenZipTests() {
     await manager.processZipDownload(plugin, 'test', 'test', items);
     assert.equal(manager.activeJob.status, 'COMPLETED');
     const zipId = manager.activeJob.receiptDownloadId;
-    assert.equal(transport.opfs.files.size, 2);
+    // The completion search in downloadBlobUrl observes the terminal state even
+    // when Chrome emitted onChanged before the listener was registered.
+    assert.equal(transport.opfs.files.size, 0);
     manager.handleDownloadChanged({ id: zipId, state: { current: 'interrupted' } });
     await flush();
     assert.equal(transport.opfs.files.size, 0);
@@ -348,7 +356,9 @@ export async function runOffscreenZipTests() {
     await old;
     assert.equal(manager.activeJob.targetName, 'new');
     assert.equal(manager.activeJob.status, 'COMPLETED');
-    assert.equal(transport.opfs.files.size, 2, 'old cleanup cannot delete the new ZIP');
+    // The new ZIP is already terminal in the browser stub, so its resource is
+    // reclaimed by the completion search; the cancelled old job cannot affect it.
+    assert.equal(transport.opfs.files.size, 0, 'old cleanup cannot delete the new ZIP');
     manager.handleDownloadChanged({ id: manager.activeJob.receiptDownloadId, state: { current: 'complete' } });
     await flush();
     assert.equal(transport.opfs.files.size, 0);
