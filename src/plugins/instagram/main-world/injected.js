@@ -10,16 +10,47 @@
   if (window.__SMD_IG_INJECTED__) return;
   window.__SMD_IG_INJECTED__ = true;
 
-  // Verified GraphQL Doc IDs from Instagram Web / Relay
+  // Verified GraphQL Doc IDs from Instagram Web / Relay (Updated with 2026-10 capture)
   const DOC_IDS = {
-    IG_ProfilePageContent: '28191674790485375',
-    IG_ProfilePosts: '26519258537772635',
-    IG_ProfilePostsTabContent_connection: '27672504985785333',
+    IG_ProfilePageContent: '28717443601247930',
+    IG_ProfilePosts: '29156678094015645',
+    IG_ProfilePostsTabContent_connection: '28544666141895803',
     IG_ProfileStoryHighlightsTray: '26970053832668570',
-    IG_StoriesHighlightsPage: '28730445686541844'
+    IG_StoriesHighlightsPage: '28325328583775973',
+    IG_StoriesHighlightsPagePagination: '28338439489156504',
+    IG_StoriesV3ReelPageStandalone: '28449850404637481'
   };
 
+  // Known fallback Doc IDs for backwards-compatibility with replay captures and rollout variants
+  const FALLBACK_DOC_IDS = {
+    PolarisProfilePageContentQuery: ['28717443601247930', '28036671149327607', '28191674790485375'],
+    PolarisProfilePostsQuery: ['29156678094015645', '28379418928391013', '26519258537772635'],
+    PolarisProfilePostsTabContentQuery_connection: ['28544666141895803', '28975909992013618', '27672504985785333'],
+    PolarisProfileStoryHighlightsTrayContentQuery: ['26970053832668570', '38168009559465141'],
+    PolarisStoriesV3HighlightsPageQuery: ['28325328583775973', '28730445686541844', '28449850404637481'],
+    PolarisStoriesV3HighlightsPagePaginationQuery: ['28338439489156504'],
+    PolarisStoriesV3ReelPageStandaloneQuery: ['28449850404637481']
+  };
+
+  function resolveDocId(friendlyName, defaultDocId) {
+    if (typeof window !== 'undefined') {
+      if (window.__SMD_DOC_IDS__ && window.__SMD_DOC_IDS__[friendlyName]) {
+        return window.__SMD_DOC_IDS__[friendlyName];
+      }
+      if (typeof window.require === 'function' && friendlyName) {
+        try {
+          const mod = window.require(`${friendlyName}_instagramRelayOperation`);
+          if (typeof mod === 'string' && /^\d+$/.test(mod)) {
+            return mod;
+          }
+        } catch (e) {}
+      }
+    }
+    return defaultDocId;
+  }
+
   const session = {
+    nonce: null,
     fb_dtsg: null,
     jazoest: null,
     userId: null,
@@ -124,59 +155,88 @@
 
   async function performGraphQLQuery(docId, friendlyName, variables, retries = 2) {
     refreshSessionTokens();
-    const params = new URLSearchParams();
-    params.append('doc_id', docId);
-    params.append('variables', typeof variables === 'string' ? variables : JSON.stringify(variables));
-    if (friendlyName) params.append('fb_api_req_friendly_name', friendlyName);
-    params.append('fb_api_caller_class', 'RelayModern');
-    params.append('server_timestamps', 'true');
-    params.append('__a', '1');
-    params.append('__d', 'www');
-    params.append('__comet_req', '7');
-    if (session.fb_dtsg) params.append('fb_dtsg', session.fb_dtsg);
-    if (session.jazoest) params.append('jazoest', session.jazoest);
-    if (session.lsd) params.append('lsd', session.lsd);
-    if (session.userId) params.append('av', session.userId);
+    const primaryDocId = resolveDocId(friendlyName, docId);
+    const candidateDocIds = [primaryDocId];
+    if (friendlyName && FALLBACK_DOC_IDS[friendlyName]) {
+      for (const fallback of FALLBACK_DOC_IDS[friendlyName]) {
+        if (!candidateDocIds.includes(fallback)) candidateDocIds.push(fallback);
+      }
+    }
 
-    const headers = {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-Requested-With': 'XMLHttpRequest',
-      'X-IG-App-ID': session.appId,
-      'X-ASBD-ID': session.asbdId
-    };
-    if (friendlyName) headers['X-FB-Friendly-Name'] = friendlyName;
-    if (session.csrfToken) headers['X-CSRFToken'] = session.csrfToken;
+    const endpoints = [
+      'https://www.instagram.com/graphql/query',
+      'https://www.instagram.com/api/graphql'
+    ];
 
-    for (let attempt = 0; attempt <= retries; attempt++) {
-      try {
-        const response = await fetch('https://www.instagram.com/graphql/query', {
-          method: 'POST',
-          headers,
-          body: params.toString(),
-          credentials: 'include'
-        });
+    let lastError = null;
 
-        if (response.ok) {
-          return await response.json();
-        }
+    for (let c = 0; c < candidateDocIds.length; c++) {
+      const activeDocId = candidateDocIds[c];
+      const params = new URLSearchParams();
+      params.append('doc_id', activeDocId);
+      params.append('variables', typeof variables === 'string' ? variables : JSON.stringify(variables));
+      if (friendlyName) params.append('fb_api_req_friendly_name', friendlyName);
+      params.append('fb_api_caller_class', 'RelayModern');
+      params.append('server_timestamps', 'true');
+      params.append('__a', '1');
+      params.append('__d', 'www');
+      params.append('__comet_req', '7');
+      if (session.fb_dtsg) params.append('fb_dtsg', session.fb_dtsg);
+      if (session.jazoest) params.append('jazoest', session.jazoest);
+      if (session.lsd) params.append('lsd', session.lsd);
+      if (session.userId) params.append('av', session.userId);
 
-        console.warn(`[SMD IG Injected] Query ${friendlyName} returned HTTP ${response.status} on attempt ${attempt + 1}.`);
-        if (attempt < retries) {
-          await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
-          refreshSessionTokens();
-        } else {
-          throw new Error(`GraphQL request failed: HTTP ${response.status}`);
-        }
-      } catch (e) {
-        console.warn(`[SMD IG Injected] Query ${friendlyName} exception on attempt ${attempt + 1}:`, e);
-        if (attempt < retries) {
-          await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
-          refreshSessionTokens();
-        } else {
-          throw e;
+      const headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-IG-App-ID': session.appId,
+        'X-ASBD-ID': session.asbdId
+      };
+      if (friendlyName) headers['X-FB-Friendly-Name'] = friendlyName;
+      if (session.csrfToken) headers['X-CSRFToken'] = session.csrfToken;
+
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        const endpoint = endpoints[attempt % endpoints.length];
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers,
+            body: params.toString(),
+            credentials: 'include'
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data?.errors?.length && (!data.data || Object.keys(data.data).length === 0)) {
+              throw new Error(`GraphQL query error: ${data.errors[0]?.message || 'Unknown error'}`);
+            }
+            return data;
+          }
+
+          console.warn(`[SMD IG Injected] Query ${friendlyName} (${activeDocId}) returned HTTP ${response.status} on attempt ${attempt + 1}.`);
+          if (attempt < retries) {
+            await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+            refreshSessionTokens();
+          } else {
+            lastError = new Error(`GraphQL request failed: HTTP ${response.status}`);
+          }
+        } catch (e) {
+          lastError = e;
+          if (e.message && (e.message.includes('Request differs') || e.message.includes('query error') || e.message.includes('400') || e.message.includes('404'))) {
+            break;
+          }
+          console.warn(`[SMD IG Injected] Query ${friendlyName} (${activeDocId}) exception on attempt ${attempt + 1}:`, e);
+          if (attempt < retries) {
+            await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+            refreshSessionTokens();
+          } else {
+            break;
+          }
         }
       }
     }
+
+    throw lastError || new Error(`GraphQL query ${friendlyName} failed`);
   }
 
   async function fetchProfile(username, generation = undefined) {
@@ -235,7 +295,8 @@
           const m = text.match(/"profile_id":"(\d+)"/) ||
                     text.match(/"page_id":"profilePage_(\d+)"/) ||
                     text.match(/"props":\{"id":"(\d+)"[^}]*"profilePage/) ||
-                    text.match(/"container_id":"(\d+)"/);
+                    text.match(/"container_id":"(\d+)"/) ||
+                    text.match(/"target_id":"(\d+)"/);
           if (m && m[1] && m[1] !== '0' && m[1] !== session.userId) {
             targetUserId = m[1];
             console.log(`[SMD IG Injected] Target numeric user ID resolved from page script: ${targetUserId}`);
@@ -269,9 +330,11 @@
           id: targetUserId,
           __relay_internal__pv__PolarisCannesGuardianExperienceEnabledrelayprovider: true,
           __relay_internal__pv__PolarisCASB976ProfileEnabledrelayprovider: false,
+          __relay_internal__pv__PolarisProfileInformTreatmentBannerEnabledrelayprovider: false,
           __relay_internal__pv__PolarisWebSchoolsEnabledrelayprovider: false,
+          __relay_internal__pv__PolarisProfileRingsGradientEnabledrelayprovider: true,
           __relay_internal__pv__PolarisRepostsConsumptionEnabledrelayprovider: true,
-          __relay_internal__pv__PolarisShortDramaEnabledrelayprovider: false
+          __relay_internal__pv__PolarisShortDramaEnabledrelayprovider: true
         };
         const json = await performGraphQLQuery(DOC_IDS.IG_ProfilePageContent, 'PolarisProfilePageContentQuery', variables);
         const user = json.data?.user;
@@ -379,6 +442,8 @@
           username,
           __relay_internal__pv__PolarisMultiCaptionCarouselEnabledrelayprovider: true,
           __relay_internal__pv__PolarisShortDramaEnabledrelayprovider: false,
+          __relay_internal__pv__PolarisSEOIsCrawlerrelayprovider: false,
+          __relay_internal__pv__PolarisThreadsStyleCommentsEnabledrelayprovider: false,
           __relay_internal__pv__PolarisReelsRecoDebugOverlayEnabledrelayprovider: false
         };
         try {
@@ -430,6 +495,8 @@
           username,
           __relay_internal__pv__PolarisMultiCaptionCarouselEnabledrelayprovider: true,
           __relay_internal__pv__PolarisShortDramaEnabledrelayprovider: false,
+          __relay_internal__pv__PolarisSEOIsCrawlerrelayprovider: false,
+          __relay_internal__pv__PolarisThreadsStyleCommentsEnabledrelayprovider: false,
           __relay_internal__pv__PolarisReelsRecoDebugOverlayEnabledrelayprovider: false
         };
         try {
@@ -494,8 +561,38 @@
     if (!userId) return { items: [], status: 'empty' };
     refreshSessionTokens();
 
+    // 1. Primary: GraphQL PolarisStoriesV3ReelPageStandaloneQuery
     try {
-      const url = `https://www.instagram.com/api/v1/feed/reels_media/?reel_ids=${encodeURIComponent(userId)}`;
+      const variables = {
+        is_highlight: false,
+        media_id: null,
+        reel_ids_arr: [String(userId)],
+        __relay_internal__pv__PolarisCommunityNoteStoriesLabelEnabledrelayprovider: true
+      };
+      const json = await performGraphQLQuery(
+        DOC_IDS.IG_StoriesV3ReelPageStandalone,
+        'PolarisStoriesV3ReelPageStandaloneQuery',
+        variables
+      );
+      if (!scanIsCurrent(generation)) return { items: [], status: 'cancelled' };
+      const reelsMedia = json.data?.xdt_api__v1__feed__reels_media?.reels_media;
+      if (Array.isArray(reelsMedia)) {
+        const userReel = reelsMedia.find(r => String(r.id) === String(userId)) || reelsMedia[0];
+        const items = Array.isArray(userReel?.items) ? userReel.items : [];
+        console.info(`[SMD IG Injected] Found ${items.length} active stories via GraphQL.`);
+        return { items, status: items.length > 0 ? 'success' : 'empty' };
+      }
+      if (json.data && !json.errors?.length) {
+        return { items: [], status: 'empty' };
+      }
+    } catch (e) {
+      console.warn('[SMD IG Injected] Stories GraphQL query failed, attempting REST fallback:', e);
+    }
+
+    if (!scanIsCurrent(generation)) return { items: [], status: 'cancelled' };
+
+    // 2. Fallback: REST reels_media (POST when session is available, then GET)
+    try {
       const headers = {
         'X-IG-App-ID': session.appId,
         'X-ASBD-ID': session.asbdId,
@@ -503,26 +600,45 @@
       };
       if (session.csrfToken) headers['X-CSRFToken'] = session.csrfToken;
 
-      const res = await fetch(url, { headers, credentials: 'include' });
+      let res = null;
+      if (session.userId) {
+        try {
+          const postHeaders = { ...headers, 'Content-Type': 'application/x-www-form-urlencoded' };
+          const body = new URLSearchParams();
+          body.append('reel_ids', JSON.stringify([String(userId)]));
+          res = await fetch('https://www.instagram.com/api/v1/feed/reels_media/', {
+            method: 'POST',
+            headers: postHeaders,
+            body: body.toString(),
+            credentials: 'include'
+          });
+        } catch (postErr) {}
+      }
+
+      if (!res || !res.ok) {
+        const url = `https://www.instagram.com/api/v1/feed/reels_media/?reel_ids=${encodeURIComponent(userId)}`;
+        res = await fetch(url, { headers, credentials: 'include' });
+      }
+
       if (!scanIsCurrent(generation)) return { items: [], status: 'cancelled' };
-      if (res.ok) {
+      if (res && res.ok) {
         const json = await res.json();
         if (!scanIsCurrent(generation)) return { items: [], status: 'cancelled' };
         const reels = json.reels || (json.data && json.data.reels);
-        const userReel = reels && reels[userId];
+        const userReel = reels && (reels[userId] || reels[String(userId)]);
         if (userReel && Array.isArray(userReel.items)) {
-          console.info(`[SMD IG Injected] Found ${userReel.items.length} active stories.`);
+          console.info(`[SMD IG Injected] Found ${userReel.items.length} active stories via REST.`);
           return { items: userReel.items, status: 'success' };
         }
+        return { items: [], status: 'empty' };
       } else {
         return { items: [], status: 'network_failure' };
       }
     } catch (e) {
       if (!scanIsCurrent(generation)) return { items: [], status: 'cancelled' };
-      console.warn('[SMD IG Injected] Error fetching stories:', e);
+      console.warn('[SMD IG Injected] Error fetching stories via REST:', e);
       return { items: [], status: 'network_failure' };
     }
-    return { items: [], status: 'empty' };
   }
 
   async function fetchHighlights(userId, onBatch = null, generation = undefined) {
@@ -590,7 +706,6 @@
         if (!scanIsCurrent(generation)) break;
         // Preserve compatibility with the older REST shape when GraphQL is unavailable.
         if (!reelsById || batchIds.some(id => !Array.isArray(reelsById[id]?.items))) {
-          const url = `https://www.instagram.com/api/v1/feed/reels_media/?reel_ids=${encodeURIComponent(batchIds.join(','))}`;
           const headers = {
             'X-IG-App-ID': session.appId,
             'X-ASBD-ID': session.asbdId,
@@ -598,8 +713,27 @@
           };
           if (session.csrfToken) headers['X-CSRFToken'] = session.csrfToken;
 
-          const res = await fetch(url, { headers, credentials: 'include' });
-          if (res.ok) {
+          let res = null;
+          if (session.userId) {
+            try {
+              const postHeaders = { ...headers, 'Content-Type': 'application/x-www-form-urlencoded' };
+              const body = new URLSearchParams();
+              body.append('reel_ids', JSON.stringify(batchIds));
+              res = await fetch('https://www.instagram.com/api/v1/feed/reels_media/', {
+                method: 'POST',
+                headers: postHeaders,
+                body: body.toString(),
+                credentials: 'include'
+              });
+            } catch (err) {}
+          }
+
+          if (!res || !res.ok) {
+            const url = `https://www.instagram.com/api/v1/feed/reels_media/?reel_ids=${encodeURIComponent(batchIds.join(','))}`;
+            res = await fetch(url, { headers, credentials: 'include' });
+          }
+
+          if (res && res.ok) {
             const json = await res.json();
             reelsById = json.reels || (json.data && json.data.reels) || null;
           } else {
@@ -648,6 +782,7 @@
     const { type, requestId, payload } = event.data;
     // Echo the session nonce back: the content script drops responses without it (F-14).
     const nonce = event.data.nonce;
+    if (nonce) session.nonce = nonce;
 
     const reply = (res) => {
       window.postMessage({
@@ -719,4 +854,29 @@
         break;
     }
   });
+
+  // Intercept SPA navigation in Main World to abort active scans and notify Content Script
+  try {
+    const origPush = history.pushState.bind(history);
+    const origReplace = history.replaceState.bind(history);
+    history.pushState = function (...args) {
+      const r = origPush.apply(this, args);
+      try {
+        isScanCancelled = true;
+        scanGeneration++;
+        window.postMessage({ source: 'SMD_IG_NAVIGATION_CHANGED', nonce: session.nonce, url: window.location.href }, '*');
+      } catch (e) {}
+      return r;
+    };
+    history.replaceState = function (...args) {
+      const r = origReplace.apply(this, args);
+      try {
+        isScanCancelled = true;
+        scanGeneration++;
+        window.postMessage({ source: 'SMD_IG_NAVIGATION_CHANGED', nonce: session.nonce, url: window.location.href }, '*');
+      } catch (e) {}
+      return r;
+    };
+  } catch (e) {}
 })();
+

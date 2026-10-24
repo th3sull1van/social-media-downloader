@@ -9,7 +9,7 @@ import { CapabilitiesModel } from '../../core/domain/Capabilities.js';
 
 export class FacebookPlugin {
   static id = 'facebook';
-  static version = '1.2.1';
+  static version = '1.2.2';
 
   static matches(context) {
     return FacebookDetector.matches(context);

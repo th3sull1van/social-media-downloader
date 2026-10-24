@@ -11,14 +11,26 @@ export function readHighlightCapture(harPath) {
   for (const entry of entries) {
     const params = new URLSearchParams(entry.request.postData?.text || '');
     const name = params.get('fb_api_req_friendly_name');
-    if (name === 'PolarisProfilePostsQuery' && params.get('doc_id') === '26519258537772635' && entry.response.status === 200) {
-      profileFeed = { name, docId: params.get('doc_id'), variables: JSON.parse(params.get('variables')),
-        body: JSON.parse(decodeEntryBody(entry)) };
+    if ((name === 'PolarisProfilePostsQuery' || name === 'PolarisProfilePostsTabContentQuery_connection') && entry.response.status === 200) {
+      const bodyText = decodeEntryBody(entry);
+      if (bodyText) {
+        try {
+          const parsed = JSON.parse(bodyText);
+          if (parsed?.data?.xdt_api__v1__feed__user_timeline_graphql_connection?.edges?.length) {
+            profileFeed = profileFeed || { name, docId: params.get('doc_id'), variables: JSON.parse(params.get('variables')),
+              body: parsed };
+          }
+        } catch (e) {}
+      }
     }
     if (!['PolarisProfileStoryHighlightsTrayContentQuery', 'PolarisStoriesV3HighlightsPageQuery'].includes(name)) continue;
     if (entry.response.status !== 200) continue;
-    queries.push({ name, docId: params.get('doc_id'), variables: JSON.parse(params.get('variables')),
-      body: JSON.parse(decodeEntryBody(entry)) });
+    const bodyText = decodeEntryBody(entry);
+    if (!bodyText) continue;
+    try {
+      queries.push({ name, docId: params.get('doc_id'), variables: JSON.parse(params.get('variables')),
+        body: JSON.parse(bodyText) });
+    } catch (e) {}
   }
   if (queries.length < 2) throw new Error('Highlight tray and media responses are required');
   return { queries, profileFeed };
@@ -38,6 +50,10 @@ export function createHighlightReplay(capture, respond = null,
     setTimeout: (fn) => { queueMicrotask(fn); return 0; },
     addEventListener: (type, fn) => { if (type === 'message') listener = fn; },
     postMessage: message => messages.push(message),
+    require: (mod) => {
+      const query = [...capture.queries, capture.profileFeed].find(q => q && mod.startsWith(q.name));
+      return query ? query.docId : undefined;
+    },
     fetch: async (url, options) => {
       const params = new URLSearchParams(options?.body || '');
       const request = { url, name: params.get('fb_api_req_friendly_name'), docId: params.get('doc_id'),

@@ -14,7 +14,7 @@ import { DownloadArtifactModel } from '../../core/domain/DownloadArtifact.js';
 
 export class RedditPlugin {
   static id = 'reddit';
-  static version = '1.2.1';
+  static version = '1.2.2';
 
   static matches(context) {
     return RedditDetector.matches(context);

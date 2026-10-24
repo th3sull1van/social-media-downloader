@@ -22,9 +22,9 @@
 
   const hostname = window.location.hostname.toLowerCase().replace(/\.+$/, '');
   const isHostOnDomain = (host, domain) => host === domain || host.endsWith('.' + domain);
-  const isInstagram = isHostOnDomain(hostname, 'instagram.com');
-  const isFacebook = isHostOnDomain(hostname, 'facebook.com');
-  const isReddit = isHostOnDomain(hostname, 'reddit.com') || isHostOnDomain(hostname, 'redd.it');
+  const isInstagram = isHostOnDomain(hostname, 'instagram.com') || isHostOnDomain(hostname, 'instagram.example');
+  const isFacebook = isHostOnDomain(hostname, 'facebook.com') || isHostOnDomain(hostname, 'facebook.example');
+  const isReddit = isHostOnDomain(hostname, 'reddit.com') || isHostOnDomain(hostname, 'redd.it') || isHostOnDomain(hostname, 'reddit.example');
   const platform = isInstagram ? 'instagram' : (isFacebook ? 'facebook' : (isReddit ? 'reddit' : 'unknown'));
 
   // Host allowlist for any URL that ends up in chrome.downloads or <img src>.
@@ -48,6 +48,8 @@
     platform,
     targetName: 'Media_Collection',
     username: '',
+    targetType: 'profile',
+    shortcode: '',
     profileInfo: null,
     targetAvatarUrl: '',
     media: new Map(),
@@ -153,6 +155,12 @@
 
   window.addEventListener('message', (event) => {
     if (event.source !== window || !event.data) return;
+
+    if (event.data.source === 'SMD_IG_NAVIGATION_CHANGED') {
+      setTimeout(checkNavigationChanged, 10);
+      return;
+    }
+
     const { source, nonce, requestId, success, status, payload, error } = event.data;
 
     if (nonce !== BRIDGE_NONCE) return;
@@ -169,6 +177,7 @@
     // Real-time batch streams during deep scans
     const instagramBatchContext = state.instagramScanContext;
     const trustedInstagramBatch = !payload?.requestId || (
+      !instagramBatchContext?.cancelled &&
       instagramBatchContext?.generation === payload.generation &&
       instagramBatchContext.requestIds.has(payload.requestId)
     );
@@ -200,7 +209,7 @@
 
   // 3. Target Detection + SPA navigation tracking.
   function currentNavigationKey() {
-    return platform + '::' + window.location.pathname + '::' + window.location.search;
+    return platform + '::' + window.location.pathname + '::' + window.location.search + '::' + window.location.hash;
   }
 
   function resetMediaState(reason) {
@@ -222,7 +231,32 @@
     console.log(`[SMD Content] Media state reset (${reason || 'navigation'}).`);
   }
 
+  function instagramTargetKey(url = window.location.href) {
+    if (!isInstagram) return '';
+    let parsed;
+    try { parsed = new URL(url, window.location.origin); } catch { return ''; }
+    const pathname = parsed.pathname || '';
+    const parts = pathname.split('/').filter(Boolean);
+    if (!parts.length) return 'feed';
+    const first = parts[0].toLowerCase();
+    const IG_NON_ROUTES = new Set([
+      'p', 'reel', 'reels', 'stories', 'explore', 'direct', 'accounts',
+      'emails', 'your_activity', 'settings', 'live', 'tv', 'share', 'api', 'about', 'legal'
+    ]);
+    if (!IG_NON_ROUTES.has(first)) {
+      return `profile:${first}`;
+    }
+    if (first === 'stories' && parts[1]) {
+      return `stories:${parts[1].toLowerCase()}`;
+    }
+    if ((first === 'p' || first === 'reel') && parts[1]) {
+      return `post:${parts[1]}`;
+    }
+    return `route:${first}`;
+  }
+
   let lastNavigationKey = currentNavigationKey();
+  let lastInstagramTargetKey = instagramTargetKey();
   let lastFacebookTargetKey = null;
   let facebookScanTargetKey = '';
   // photoId -> full-resolution URL learned from embedded Comet payloads (Photo.viewer_image).
@@ -272,11 +306,18 @@
     const key = currentNavigationKey();
     if (key !== lastNavigationKey) {
       const previousFacebookTarget = lastFacebookTargetKey || facebookScanTargetKey || facebookTargetKey();
+      const previousInstagramTarget = lastInstagramTargetKey;
       lastNavigationKey = key;
-      if (isInstagram) {
+
+      const nextInstagramTarget = instagramTargetKey();
+      lastInstagramTargetKey = nextInstagramTarget;
+      const changedInstagramTarget = isInstagram && previousInstagramTarget !== nextInstagramTarget;
+
+      if (isInstagram && changedInstagramTarget) {
         state.instagramScanGeneration++;
         if (state.instagramScanContext) state.instagramScanContext.cancelled = true;
         state.isScanning = false;
+        sendToInjected('CANCEL_SCAN').catch(() => {});
       }
       if (isReddit) {
         state.redditScanGeneration++;
@@ -288,12 +329,13 @@
       lastFacebookTargetKey = nextFacebookTarget || previousFacebookTarget;
       // Facebook changes the pathname for every photo tab. Those routes still
       // belong to the same profile, so route changes must not erase collected
-      // media. Reset only when both route identities are known and differ.
-      const changedFacebookProfile = isFacebook && previousFacebookTarget && nextFacebookTarget
-        && previousFacebookTarget !== nextFacebookTarget;
-      const shouldReset = !isFacebook
-        ? true
-        : changedFacebookProfile && !state.isScanning;
+      // media. Reset when route identities differ or when leaving a profile.
+      const changedFacebookProfile = isFacebook && previousFacebookTarget !== nextFacebookTarget;
+      const shouldReset = isInstagram
+        ? changedInstagramTarget
+        : (!isFacebook
+          ? true
+          : changedFacebookProfile && !state.isScanning);
       if (shouldReset) resetMediaState('target changed');
       scheduleTargetAvatarRefresh();
     }
@@ -417,27 +459,36 @@
       if (parts.length > 0 && !IG_NON_ROUTES.includes(parts[0].toLowerCase())) {
         state.username = parts[0];
         state.targetName = parts[0];
-      } else if (parts.length >= 2 && parts[0] === 'stories' && parts[1]) {
+        state.targetType = 'profile';
+        state.shortcode = '';
+      } else if (parts.length >= 2 && parts[0].toLowerCase() === 'stories' && parts[1]) {
         state.username = parts[1];
         state.targetName = parts[1];
-      } else {
-        // Fallback: extract author from page elements (post view / dialog)
+        state.targetType = 'stories';
+        state.shortcode = '';
+      } else if (parts.length >= 2 && (parts[0].toLowerCase() === 'p' || parts[0].toLowerCase() === 'reel')) {
+        state.targetType = 'post';
+        state.shortcode = parts[1];
+        let author = '';
         const authorEl = document.querySelector('header a[role="link"], article header a, div[role="dialog"] header a');
         if (authorEl) {
           const href = authorEl.getAttribute('href') || '';
           const u = href.replace(/\//g, '').trim();
           if (u && !IG_NON_ROUTES.includes(u.toLowerCase())) {
-            state.username = u;
-            state.targetName = u;
+            author = u;
           }
         }
-        if (!state.username && document.title) {
+        if (!author && document.title) {
           const m = document.title.match(/\(@([A-Za-z0-9_.]+)\)/);
-          if (m && m[1]) {
-            state.username = m[1];
-            state.targetName = m[1];
-          }
+          if (m && m[1]) author = m[1];
         }
+        state.username = author || '';
+        state.targetName = author ? `${author}_${parts[1]}` : `post_${parts[1]}`;
+      } else {
+        state.targetType = parts[0]?.toLowerCase() || 'feed';
+        state.username = '';
+        state.shortcode = '';
+        state.targetName = 'Instagram_Media';
       }
     } else if (isFacebook) {
       let name = fbCleanTitle(document.title);
@@ -1109,7 +1160,8 @@
               const m = text.match(/"profile_id":"(\d+)"/) ||
                         text.match(/"page_id":"profilePage_(\d+)"/) ||
                         text.match(/"props":\{"id":"(\d+)"[^}]*"profilePage/) ||
-                        text.match(/"container_id":"(\d+)"/);
+                        text.match(/"container_id":"(\d+)"/) ||
+                        text.match(/"target_id":"(\d+)"/);
               if (m && m[1] && m[1] !== '0') {
                 state.profileInfo = {
                   ...(state.profileInfo || {}),
@@ -1143,56 +1195,170 @@
 
   function scanInstagramDom() {
     const items = [];
+    const isPostTarget = state.targetType === 'post' || Boolean(state.shortcode);
+    const dialogPost = document.querySelector('div[role="dialog"] article, div[role="dialog"]');
 
-    const imgElements = document.querySelectorAll('article img, div[role="dialog"] img, main img');
-    imgElements.forEach((img, idx) => {
-      const src = img.getAttribute('src') || img.src;
-      if (!src || src.startsWith('data:') || src.includes('s150x150')) return;
-      const cleanUrl = upgradeCdnUrl(src);
-      const isAvatar = src.includes('profile_pic') || (img.alt && img.alt.includes('profile'));
-      const cat = isAvatar ? 'profile_pic' : 'posts';
-      const id = `dom_ig_img_${idx}_${cleanUrl.slice(-20)}`;
-      items.push({
-        id,
-        platform: 'instagram',
-        type: 'image',
-        url: cleanUrl,
-        downloadUrl: cleanUrl,
-        thumbnailUrl: cleanUrl,
-        width: img.naturalWidth || 1080,
-        height: img.naturalHeight || 1080,
-        category: cat,
-        metadata: {
-          category: cat,
-          username: state.username,
-          isVideo: false
+    if (isPostTarget || dialogPost) {
+      const container = dialogPost || document.querySelector('article') || document.body;
+      const shortcode = state.shortcode || (window.location.pathname.match(/\/(?:p|reel)\/([^/?#]+)/)?.[1]) || 'post';
+
+      const imgs = container.querySelectorAll('img');
+      let slideIdx = 0;
+      imgs.forEach((img) => {
+        if (img.closest('header, ul, [data-testid*="comment"], nav, aside')) return;
+        if (img.closest('[aria-label*="More posts" i], [aria-label*="Mais publicações" i]')) return;
+        const w = img.naturalWidth || img.clientWidth || 0;
+        const h = img.naturalHeight || img.clientHeight || 0;
+        if ((w > 0 && w < 120) || (h > 0 && h < 120)) return;
+
+        const src = img.currentSrc || img.src;
+        if (!src || src.startsWith('data:') || src.includes('profile_pic') || src.includes('/rsrc.php/')) return;
+        if (!isAllowedMediaUrl(src)) return;
+
+        let bestSrc = src;
+        const srcset = img.getAttribute('srcset');
+        if (srcset) {
+          const candidates = srcset.split(',').map((entry) => {
+            const parts = entry.trim().split(/\s+/);
+            const url = parts[0];
+            const width = parseInt(parts[1], 10) || 0;
+            return { url, width };
+          }).sort((a, b) => b.width - a.width);
+          if (candidates[0]?.url) bestSrc = candidates[0].url;
         }
-      });
-    });
 
-    const videoElements = document.querySelectorAll('article video, div[role="dialog"] video, main video');
-    videoElements.forEach((vid, idx) => {
-      const src = vid.getAttribute('src') || vid.src || vid.querySelector('source')?.src;
-      if (!src || src.startsWith('blob:')) return;
-      const cleanUrl = upgradeCdnUrl(src);
-      const thumb = vid.getAttribute('poster') ? upgradeCdnUrl(vid.getAttribute('poster')) : cleanUrl;
-      const id = `dom_ig_vid_${idx}_${cleanUrl.slice(-20)}`;
-      items.push({
-        id,
-        platform: 'instagram',
-        type: 'video',
-        url: cleanUrl,
-        downloadUrl: cleanUrl,
-        thumbnailUrl: thumb,
-        width: vid.videoWidth || 1080,
-        height: vid.videoHeight || 1920,
-        category: 'posts',
-        metadata: {
+        const cleanUrl = upgradeCdnUrl(bestSrc);
+        slideIdx++;
+        const itemId = `${shortcode}_slide${slideIdx}`;
+        items.push({
+          id: itemId,
+          platform: 'instagram',
+          type: 'image',
+          url: cleanUrl,
+          downloadUrl: cleanUrl,
+          thumbnailUrl: cleanUrl,
+          width: img.naturalWidth || 1080,
+          height: img.naturalHeight || 1080,
           category: 'posts',
-          username: state.username,
-          isVideo: true
-        }
+          metadata: {
+            category: 'posts',
+            shortcode,
+            username: state.username,
+            isVideo: false
+          }
+        });
       });
+
+      const vids = container.querySelectorAll('video');
+      vids.forEach((vid, vIdx) => {
+        if (vid.closest('header, ul, nav, aside')) return;
+        if (vid.closest('[aria-label*="More posts" i], [aria-label*="Mais publicações" i]')) return;
+        const src = vid.getAttribute('src') || vid.src || vid.querySelector('source')?.src;
+        if (!src || src.startsWith('blob:')) return;
+        if (!isAllowedMediaUrl(src)) return;
+        const cleanUrl = upgradeCdnUrl(src);
+        const thumb = vid.getAttribute('poster') ? upgradeCdnUrl(vid.getAttribute('poster')) : cleanUrl;
+        const itemId = `${shortcode}_vid_${vIdx + 1}`;
+        items.push({
+          id: itemId,
+          platform: 'instagram',
+          type: 'video',
+          url: cleanUrl,
+          downloadUrl: cleanUrl,
+          thumbnailUrl: thumb,
+          width: vid.videoWidth || 1080,
+          height: vid.videoHeight || 1920,
+          category: 'posts',
+          metadata: {
+            category: 'posts',
+            shortcode,
+            username: state.username,
+            isVideo: true
+          }
+        });
+      });
+
+      if (items.length > 0) {
+        addMediaItems(items);
+      }
+      return;
+    }
+
+    // 2. Profile grid scan:
+    // Only harvest genuine post links inside the profile grid, never suggestions, stories, or sidebars
+    const postLinks = document.querySelectorAll('main a[href*="/p/"], main a[href*="/reel/"]');
+    postLinks.forEach((link) => {
+      if (link.closest('[aria-label*="Suggested" i], [aria-label*="Sugestões" i], nav, aside')) return;
+      const href = link.getAttribute('href') || '';
+      const m = href.match(/\/(?:p|reel)\/([^/?#]+)/);
+      if (!m || !m[1]) return;
+      const shortcode = m[1];
+
+      const img = link.querySelector('img');
+      const vid = link.querySelector('video');
+
+      if (vid) {
+        const src = vid.getAttribute('src') || vid.src || vid.querySelector('source')?.src;
+        if (src && !src.startsWith('blob:') && isAllowedMediaUrl(src)) {
+          const cleanUrl = upgradeCdnUrl(src);
+          const thumb = vid.getAttribute('poster') ? upgradeCdnUrl(vid.getAttribute('poster')) : cleanUrl;
+          items.push({
+            id: `ig_post_${shortcode}`,
+            platform: 'instagram',
+            type: 'video',
+            url: cleanUrl,
+            downloadUrl: cleanUrl,
+            thumbnailUrl: thumb,
+            width: vid.videoWidth || 1080,
+            height: vid.videoHeight || 1920,
+            category: 'posts',
+            metadata: {
+              category: 'posts',
+              shortcode,
+              username: state.username,
+              isVideo: true
+            }
+          });
+          return;
+        }
+      }
+
+      if (img) {
+        const src = img.currentSrc || img.src;
+        if (!src || src.startsWith('data:') || src.includes('profile_pic') || src.includes('/rsrc.php/')) return;
+        if (!isAllowedMediaUrl(src)) return;
+
+        let bestSrc = src;
+        const srcset = img.getAttribute('srcset');
+        if (srcset) {
+          const candidates = srcset.split(',').map((entry) => {
+            const parts = entry.trim().split(/\s+/);
+            const url = parts[0];
+            const width = parseInt(parts[1], 10) || 0;
+            return { url, width };
+          }).sort((a, b) => b.width - a.width);
+          if (candidates[0]?.url) bestSrc = candidates[0].url;
+        }
+
+        const cleanUrl = upgradeCdnUrl(bestSrc);
+        items.push({
+          id: `ig_post_${shortcode}`,
+          platform: 'instagram',
+          type: 'image',
+          url: cleanUrl,
+          downloadUrl: cleanUrl,
+          thumbnailUrl: cleanUrl,
+          width: img.naturalWidth || 1080,
+          height: img.naturalHeight || 1080,
+          category: 'posts',
+          metadata: {
+            category: 'posts',
+            shortcode,
+            username: state.username,
+            isVideo: false
+          }
+        });
+      }
     });
 
     if (items.length > 0) {
@@ -1225,6 +1391,10 @@
       updateScanStatusUI(true, t('scanningPosts'));
     }
     try {
+      if (state.targetType === 'post') {
+        scanInstagramDom();
+        return { success: true, status: 'success' };
+      }
       if (!state.username) detectTarget();
       if (!state.username) {
         if (!context || isCurrentInstagramScan(context)) scanInstagramDom();
@@ -1342,6 +1512,11 @@
     try {
       if (isInstagram) {
         const context = instagramContext;
+        if (state.targetType === 'post') {
+          updateScanStatusUI(true, t('scanningPosts'));
+          scanInstagramDom();
+          return;
+        }
         updateScanStatusUI(true, t('scanningProfile'));
         await scanProfileAvatar(false, context);
         if (!isCurrentInstagramScan(context)) return;
@@ -1854,6 +2029,7 @@
 
   function fbProcessGraphQLText(text) {
     if (!text || typeof text !== 'string') return;
+    if (!facebookTargetKey() && !isFacebookCollectionRoute()) return;
     const clean = text.replace(/^for\s*\(;;\);/, '');
     const lines = clean.split('\n').filter(Boolean);
     const collectedItems = [];
@@ -3122,7 +3298,8 @@
         harvestFacebookDomPhotos();
       }
       scheduleTargetAvatarRefresh();
-      if (isInstagram && state.username) scanProfileAvatar();
+      if (isInstagram && state.username && state.targetType === 'profile') scanProfileAvatar();
+      else if (isInstagram && state.targetType === 'post') scanInstagramDom();
     });
   } else {
     createFloatingUI();
@@ -3134,7 +3311,8 @@
       harvestFacebookDomPhotos();
     }
     scheduleTargetAvatarRefresh();
-    if (isInstagram && state.username) scanProfileAvatar();
+    if (isInstagram && state.username && state.targetType === 'profile') scanProfileAvatar();
+    else if (isInstagram && state.targetType === 'post') scanInstagramDom();
   }
 
   // 10. Message Listeners (popup + background)
