@@ -12,7 +12,7 @@
     "message": "Halaman tidak dikenali"
   },
   "noticeUnrecognizedDesc": {
-    "message": "Buka Reddit (feed, subreddit, atau profil) untuk mendeteksi media."
+    "message": "Buka Instagram, Facebook, atau Reddit untuk mendeteksi media."
   },
   "detectedProfile": {
     "message": "Profil Terdeteksi"
@@ -22,9 +22,6 @@
   },
   "mediaCountLabel": {
     "message": "media"
-  },
-  "photosLabel": {
-    "message": "photos"
   },
   "scanAll": {
     "message": "Pindai Semua"
@@ -61,9 +58,6 @@
   },
   "downloadComplete": {
     "message": "Pengunduhan berhasil!"
-  },
-  "collectedMedia": {
-    "message": "Collected Media"
   },
   "selectedSummary": {
     "message": "$1 dari $2 dipilih"
@@ -104,35 +98,14 @@
   "tabHighlights": {
     "message": "Highlights"
   },
-  "tabAvatar": {
-    "message": "Profile"
-  },
   "downloadFloating": {
     "message": "Download Media"
-  },
-  "scanFloatingBadge": {
-    "message": "Scan"
-  },
-  "previewTitle": {
-    "message": "Media preview:"
-  },
-  "highResGuaranteed": {
-    "message": "Original high resolution guaranteed"
   },
   "packagingZip": {
     "message": "Mengemas file ZIP..."
   },
   "errorDownloading": {
     "message": "Terjadi kesalahan saat mengunduh."
-  },
-  "noMediaFound": {
-    "message": "No media found to download."
-  },
-  "authError": {
-    "message": "Session token not found. Make sure you are logged in."
-  },
-  "resolvingHighRes": {
-    "message": "Resolving high resolution..."
   },
   "zipTooLarge": {
     "message": "Pilihan terlalu besar untuk ZIP. Gunakan mode Folder atau pilih lebih sedikit item."
@@ -142,9 +115,6 @@
   },
   "downloadCancelled": {
     "message": "Pengunduhan dibatalkan."
-  },
-  "downloadingProgress": {
-    "message": "Mengunduh media..."
   },
   "tabPhotosOf": {
     "message": "Foto tentang Anda"
@@ -178,39 +148,6 @@
   },
   "tabRedgifs": {
     "message": "RedGifs"
-  },
-  "downloadPostMedia": {
-    "message": "Media Postingan"
-  },
-  "downloadProfileMedia": {
-    "message": "Unduh Profil: u/$1"
-  },
-  "scanProfileApi": {
-    "message": "Mulai Pemindaian Profil"
-  },
-  "minScoreLabel": {
-    "message": "Skor Minimum"
-  },
-  "postLimitLabel": {
-    "message": "Batas Postingan"
-  },
-  "limitAll": {
-    "message": "Semua (Tanpa batas)"
-  },
-  "unmarkAll": {
-    "message": "Batal Pilih Semua"
-  },
-  "downloadInFolder": {
-    "message": "Unduh ke Folder"
-  },
-  "downloadAsZip": {
-    "message": "Unduh sebagai ZIP"
-  },
-  "downloadStartedToast": {
-    "message": "Pengunduhan dimulai: $1"
-  },
-  "downloadSuccessToast": {
-    "message": "$1 media berhasil diunduh!"
   },
   "filterSubredditAll": {
     "message": "Semua Subreddit"
@@ -270,7 +207,7 @@
     "message": "Deduplicate identical media"
   },
   "dedupExactTooltip": {
-    "message": "Skip duplicate photos and videos using real-time CRC-32 hash"
+    "message": "Skip duplicate photos and videos using real-time SHA-256 hash"
   },
   "dedupHistoricalLabel": {
     "message": "Historical deduplication"
@@ -283,5 +220,23 @@
   },
   "zipStorageUnavailable": {
     "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
+  },
+  "filenameOverriddenWarning": {
+    "message": "Unduhan selesai, tetapi pengelola unduhan lain (mis. IDM) mengganti nama file. Nonaktifkan penangkapannya untuk menjaga nama asli."
+  },
+  "deduplicateBtn": {
+    "message": "Hapus Duplikat"
+  },
+  "subredditLabel": {
+    "message": "Subreddit:"
+  },
+  "clearHistoryBtn": {
+    "message": "Hapus riwayat"
+  },
+  "badgeVideo": {
+    "message": "VIDEO"
+  },
+  "loadingLabel": {
+    "message": "Memuat..."
   }
 }

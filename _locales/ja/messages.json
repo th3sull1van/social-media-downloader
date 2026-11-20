@@ -12,7 +12,7 @@
     "message": "ページが認識されません"
   },
   "noticeUnrecognizedDesc": {
-    "message": "Reddit（フィード、サブレディット、またはプロファイル）に移動してください。"
+    "message": "Instagram、Facebook、またはRedditに移動してメディアを検出してください。"
   },
   "detectedProfile": {
     "message": "検出されたプロファイル"
@@ -22,9 +22,6 @@
   },
   "mediaCountLabel": {
     "message": "件のメディア"
-  },
-  "photosLabel": {
-    "message": "photos"
   },
   "scanAll": {
     "message": "すべてスキャン"
@@ -61,9 +58,6 @@
   },
   "downloadComplete": {
     "message": "ダウンロードが完了しました！"
-  },
-  "collectedMedia": {
-    "message": "Collected Media"
   },
   "selectedSummary": {
     "message": "$1 / $2 件選択中"
@@ -104,35 +98,14 @@
   "tabHighlights": {
     "message": "Highlights"
   },
-  "tabAvatar": {
-    "message": "Profile"
-  },
   "downloadFloating": {
     "message": "Download Media"
-  },
-  "scanFloatingBadge": {
-    "message": "Scan"
-  },
-  "previewTitle": {
-    "message": "Media preview:"
-  },
-  "highResGuaranteed": {
-    "message": "Original high resolution guaranteed"
   },
   "packagingZip": {
     "message": "ZIPファイルを圧縮中..."
   },
   "errorDownloading": {
     "message": "ダウンロード中にエラーが発生しました。"
-  },
-  "noMediaFound": {
-    "message": "No media found to download."
-  },
-  "authError": {
-    "message": "Session token not found. Make sure you are logged in."
-  },
-  "resolvingHighRes": {
-    "message": "Resolving high resolution..."
   },
   "zipTooLarge": {
     "message": "ZIPにするには選択が大きすぎます。フォルダーモードを使用するか、選択項目を減らしてください。"
@@ -142,9 +115,6 @@
   },
   "downloadCancelled": {
     "message": "ダウンロードをキャンセルしました。"
-  },
-  "downloadingProgress": {
-    "message": "メディアをダウンロード中..."
   },
   "tabPhotosOf": {
     "message": "あなたが写っている写真"
@@ -178,39 +148,6 @@
   },
   "tabRedgifs": {
     "message": "RedGifs"
-  },
-  "downloadPostMedia": {
-    "message": "投稿のメディア"
-  },
-  "downloadProfileMedia": {
-    "message": "プロファイルをダウンロード: u/$1"
-  },
-  "scanProfileApi": {
-    "message": "プロファイルのスキャンを開始"
-  },
-  "minScoreLabel": {
-    "message": "最小スコア"
-  },
-  "postLimitLabel": {
-    "message": "投稿制限数"
-  },
-  "limitAll": {
-    "message": "すべて（無制限）"
-  },
-  "unmarkAll": {
-    "message": "すべて選択解除"
-  },
-  "downloadInFolder": {
-    "message": "フォルダに保存"
-  },
-  "downloadAsZip": {
-    "message": "ZIPでダウンロード"
-  },
-  "downloadStartedToast": {
-    "message": "ダウンロード開始: $1"
-  },
-  "downloadSuccessToast": {
-    "message": "$1 件のメディアをダウンロードしました！"
   },
   "filterSubredditAll": {
     "message": "すべてのサブレディット"
@@ -270,7 +207,7 @@
     "message": "同一メディアの重複排除"
   },
   "dedupExactTooltip": {
-    "message": "リアルタイムCRC-32計算により重複した写真や動画をスキップ"
+    "message": "リアルタイムSHA-256計算により重複した写真や動画をスキップ"
   },
   "dedupHistoricalLabel": {
     "message": "履歴重複排除"
@@ -283,5 +220,23 @@
   },
   "zipStorageUnavailable": {
     "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
+  },
+  "filenameOverriddenWarning": {
+    "message": "ダウンロードは完了しましたが、別のダウンローダー（IDM等）によってファイル名が変更されました。名前を維持するにはキャプチャを無効にしてください。"
+  },
+  "deduplicateBtn": {
+    "message": "重複除外"
+  },
+  "subredditLabel": {
+    "message": "サブレディット:"
+  },
+  "clearHistoryBtn": {
+    "message": "履歴を消去"
+  },
+  "badgeVideo": {
+    "message": "動画"
+  },
+  "loadingLabel": {
+    "message": "読み込み中..."
   }
 }

@@ -12,7 +12,7 @@
     "message": "Страница не распознана"
   },
   "noticeUnrecognizedDesc": {
-    "message": "Перейдите на Reddit (ленту, сабреддит или профиль) для скачивания."
+    "message": "Перейдите на Instagram, Facebook или Reddit, чтобы обнаружить медиа."
   },
   "detectedProfile": {
     "message": "Обнаружен профиль"
@@ -22,9 +22,6 @@
   },
   "mediaCountLabel": {
     "message": "медиа"
-  },
-  "photosLabel": {
-    "message": "photos"
   },
   "scanAll": {
     "message": "Сканировать все"
@@ -61,9 +58,6 @@
   },
   "downloadComplete": {
     "message": "Загрузка успешно завершена!"
-  },
-  "collectedMedia": {
-    "message": "Collected Media"
   },
   "selectedSummary": {
     "message": "Выбрано $1 из $2"
@@ -104,35 +98,14 @@
   "tabHighlights": {
     "message": "Highlights"
   },
-  "tabAvatar": {
-    "message": "Profile"
-  },
   "downloadFloating": {
     "message": "Download Media"
-  },
-  "scanFloatingBadge": {
-    "message": "Scan"
-  },
-  "previewTitle": {
-    "message": "Media preview:"
-  },
-  "highResGuaranteed": {
-    "message": "Original high resolution guaranteed"
   },
   "packagingZip": {
     "message": "Упаковка в ZIP..."
   },
   "errorDownloading": {
     "message": "Ошибка при загрузке."
-  },
-  "noMediaFound": {
-    "message": "No media found to download."
-  },
-  "authError": {
-    "message": "Session token not found. Make sure you are logged in."
-  },
-  "resolvingHighRes": {
-    "message": "Resolving high resolution..."
   },
   "zipTooLarge": {
     "message": "Выбор слишком велик для ZIP. Используйте режим папок или выберите меньше элементов."
@@ -142,9 +115,6 @@
   },
   "downloadCancelled": {
     "message": "Загрузка отменена."
-  },
-  "downloadingProgress": {
-    "message": "Загрузка медиафайлов..."
   },
   "tabPhotosOf": {
     "message": "Фото с вами"
@@ -178,39 +148,6 @@
   },
   "tabRedgifs": {
     "message": "RedGifs"
-  },
-  "downloadPostMedia": {
-    "message": "Медиа поста"
-  },
-  "downloadProfileMedia": {
-    "message": "Скачать профиль: u/$1"
-  },
-  "scanProfileApi": {
-    "message": "Начать сканирование профиля"
-  },
-  "minScoreLabel": {
-    "message": "Мин. рейтинг"
-  },
-  "postLimitLabel": {
-    "message": "Лимит постов"
-  },
-  "limitAll": {
-    "message": "Все (Без лимита)"
-  },
-  "unmarkAll": {
-    "message": "Снять выбор"
-  },
-  "downloadInFolder": {
-    "message": "Скачать в папку"
-  },
-  "downloadAsZip": {
-    "message": "Скачать в ZIP"
-  },
-  "downloadStartedToast": {
-    "message": "Загрузка начата: $1"
-  },
-  "downloadSuccessToast": {
-    "message": "Успешно скачано $1 файлов!"
   },
   "filterSubredditAll": {
     "message": "Все сабреддиты"
@@ -270,7 +207,7 @@
     "message": "Дедупликация одинаковых медиа"
   },
   "dedupExactTooltip": {
-    "message": "Пропускает дубликаты фото и видео с помощью расчета CRC-32 в реальном времени"
+    "message": "Пропускает дубликаты фото и видео с помощью расчета SHA-256 в реальном времени"
   },
   "dedupHistoricalLabel": {
     "message": "История дедупликации"
@@ -283,5 +220,23 @@
   },
   "zipStorageUnavailable": {
     "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
+  },
+  "filenameOverriddenWarning": {
+    "message": "Загрузка завершена, но другой менеджер загрузок (напр., IDM) переименовал файл. Отключите перехват, чтобы сохранить исходные имена."
+  },
+  "deduplicateBtn": {
+    "message": "Убрать дубликаты"
+  },
+  "subredditLabel": {
+    "message": "Сабреддит:"
+  },
+  "clearHistoryBtn": {
+    "message": "Очистить историю"
+  },
+  "badgeVideo": {
+    "message": "ВИДЕО"
+  },
+  "loadingLabel": {
+    "message": "Загрузка..."
   }
 }

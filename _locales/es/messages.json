@@ -12,7 +12,7 @@
     "message": "Página no reconocida"
   },
   "noticeUnrecognizedDesc": {
-    "message": "Navega a Reddit (feed, subreddit o perfil) para detectar medios."
+    "message": "Navega a Instagram, Facebook o Reddit para detectar medios."
   },
   "detectedProfile": {
     "message": "Perfil Detectado"
@@ -22,9 +22,6 @@
   },
   "mediaCountLabel": {
     "message": "archivos"
-  },
-  "photosLabel": {
-    "message": "fotos"
   },
   "scanAll": {
     "message": "Escanear Todo"
@@ -61,9 +58,6 @@
   },
   "downloadComplete": {
     "message": "¡Descarga completada con éxito!"
-  },
-  "collectedMedia": {
-    "message": "Archivos Recolectados"
   },
   "selectedSummary": {
     "message": "$1 de $2 seleccionados"
@@ -104,35 +98,14 @@
   "tabHighlights": {
     "message": "Destacados"
   },
-  "tabAvatar": {
-    "message": "Perfil"
-  },
   "downloadFloating": {
     "message": "Descargar Archivos"
-  },
-  "scanFloatingBadge": {
-    "message": "Escanear"
-  },
-  "previewTitle": {
-    "message": "Vista previa de archivos:"
-  },
-  "highResGuaranteed": {
-    "message": "Alta resolución original garantizada"
   },
   "packagingZip": {
     "message": "Empaquetando archivo ZIP..."
   },
   "errorDownloading": {
     "message": "Error al descargar medios."
-  },
-  "noMediaFound": {
-    "message": "No se encontraron archivos para descargar."
-  },
-  "authError": {
-    "message": "Sesión no encontrada. Asegúrate de haber iniciado sesión."
-  },
-  "resolvingHighRes": {
-    "message": "Resolviendo alta resolución..."
   },
   "zipTooLarge": {
     "message": "Selección demasiado grande para ZIP. Usa el modo Carpetas o selecciona menos elementos."
@@ -142,9 +115,6 @@
   },
   "downloadCancelled": {
     "message": "Descarga cancelada."
-  },
-  "downloadingProgress": {
-    "message": "Descargando contenido..."
   },
   "tabPhotosOf": {
     "message": "Fotos en las que apareces"
@@ -178,39 +148,6 @@
   },
   "tabRedgifs": {
     "message": "RedGifs"
-  },
-  "downloadPostMedia": {
-    "message": "Medios de la Publicación"
-  },
-  "downloadProfileMedia": {
-    "message": "Descargar Perfil: u/$1"
-  },
-  "scanProfileApi": {
-    "message": "Iniciar Escaneo del Perfil"
-  },
-  "minScoreLabel": {
-    "message": "Puntuación Mínima"
-  },
-  "postLimitLabel": {
-    "message": "Límite de Publicaciones"
-  },
-  "limitAll": {
-    "message": "Todos (Sin límite)"
-  },
-  "unmarkAll": {
-    "message": "Deseleccionar Todo"
-  },
-  "downloadInFolder": {
-    "message": "Descargar en Carpeta"
-  },
-  "downloadAsZip": {
-    "message": "Descargar como ZIP"
-  },
-  "downloadStartedToast": {
-    "message": "Descarga iniciada: $1"
-  },
-  "downloadSuccessToast": {
-    "message": "¡$1 medios descargados con éxito!"
   },
   "filterSubredditAll": {
     "message": "Todos los Subreddits"
@@ -270,7 +207,7 @@
     "message": "Deduplicar medios idénticos"
   },
   "dedupExactTooltip": {
-    "message": "Omite fotos y vídeos duplicados mediante cálculo CRC-32 en tiempo real"
+    "message": "Omite fotos y vídeos duplicados mediante cálculo SHA-256 en tiempo real"
   },
   "dedupHistoricalLabel": {
     "message": "Deduplicación Histórica"
@@ -283,5 +220,23 @@
   },
   "zipStorageUnavailable": {
     "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
+  },
+  "filenameOverriddenWarning": {
+    "message": "Descarga completada, pero otro gestor de descargas (p. ej., IDM) renombró el archivo. Desactiva su captura para conservar los nombres."
+  },
+  "deduplicateBtn": {
+    "message": "Deduplicar"
+  },
+  "subredditLabel": {
+    "message": "Subreddit:"
+  },
+  "clearHistoryBtn": {
+    "message": "Borrar historial"
+  },
+  "badgeVideo": {
+    "message": "VIDEO"
+  },
+  "loadingLabel": {
+    "message": "Cargando..."
   }
 }

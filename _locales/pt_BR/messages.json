@@ -23,9 +23,6 @@
   "mediaCountLabel": {
     "message": "mídias"
   },
-  "photosLabel": {
-    "message": "fotos"
-  },
   "scanAll": {
     "message": "Escanear Tudo"
   },
@@ -61,9 +58,6 @@
   },
   "downloadComplete": {
     "message": "Download concluído com sucesso!"
-  },
-  "collectedMedia": {
-    "message": "Mídias Coletadas"
   },
   "selectedSummary": {
     "message": "$1 de $2 selecionadas"
@@ -104,20 +98,8 @@
   "tabHighlights": {
     "message": "Destaques"
   },
-  "tabAvatar": {
-    "message": "Perfil"
-  },
   "downloadFloating": {
     "message": "Baixar Mídias"
-  },
-  "scanFloatingBadge": {
-    "message": "Escanear"
-  },
-  "previewTitle": {
-    "message": "Pré-visualização das mídias:"
-  },
-  "highResGuaranteed": {
-    "message": "Alta resolução original garantida"
   },
   "packagingZip": {
     "message": "Compactando arquivo ZIP..."
@@ -127,15 +109,6 @@
   },
   "filenameOverriddenWarning": {
     "message": "Download concluído, mas outro gerenciador de downloads (ex.: IDM) renomeou o arquivo. Desative a captura dele para manter os nomes."
-  },
-  "noMediaFound": {
-    "message": "Nenhuma mídia encontrada para baixar."
-  },
-  "authError": {
-    "message": "Sessão não encontrada. Certifique-se de estar conectado à sua conta."
-  },
-  "resolvingHighRes": {
-    "message": "Resolvendo alta resolução..."
   },
   "zipTooLarge": {
     "message": "Seleção grande demais para ZIP. Use o modo Pastas ou selecione menos itens."
@@ -148,9 +121,6 @@
   },
   "downloadCancelled": {
     "message": "Download cancelado."
-  },
-  "downloadingProgress": {
-    "message": "Baixando mídias..."
   },
   "tabPhotosOf": {
     "message": "Fotos com você"
@@ -184,39 +154,6 @@
   },
   "tabRedgifs": {
     "message": "RedGifs"
-  },
-  "downloadPostMedia": {
-    "message": "Mídias do Post"
-  },
-  "downloadProfileMedia": {
-    "message": "Baixar Perfil: u/$1"
-  },
-  "scanProfileApi": {
-    "message": "Iniciar Varredura do Perfil"
-  },
-  "minScoreLabel": {
-    "message": "Score Mínimo"
-  },
-  "postLimitLabel": {
-    "message": "Limite de Posts"
-  },
-  "limitAll": {
-    "message": "Todos (Sem limite)"
-  },
-  "unmarkAll": {
-    "message": "Desmarcar Tudo"
-  },
-  "downloadInFolder": {
-    "message": "Baixar em Pasta"
-  },
-  "downloadAsZip": {
-    "message": "Baixar como ZIP"
-  },
-  "downloadStartedToast": {
-    "message": "Download iniciado: $1"
-  },
-  "downloadSuccessToast": {
-    "message": "$1 mídias baixadas com sucesso!"
   },
   "filterSubredditAll": {
     "message": "Todos os Subreddits"
@@ -276,7 +213,7 @@
     "message": "Deduplicar mídias idênticas"
   },
   "dedupExactTooltip": {
-    "message": "Ignora fotos e vídeos duplicados usando cálculo CRC-32 em tempo real"
+    "message": "Ignora fotos e vídeos duplicados usando cálculo SHA-256 em tempo real"
   },
   "dedupHistoricalLabel": {
     "message": "Deduplicação Histórica"
@@ -286,5 +223,20 @@
   },
   "duplicatesSkipped": {
     "message": "$1 duplicadas ignoradas"
+  },
+  "deduplicateBtn": {
+    "message": "Deduplicar"
+  },
+  "subredditLabel": {
+    "message": "Subreddit:"
+  },
+  "clearHistoryBtn": {
+    "message": "Limpar histórico"
+  },
+  "badgeVideo": {
+    "message": "VÍDEO"
+  },
+  "loadingLabel": {
+    "message": "Carregando..."
   }
 }

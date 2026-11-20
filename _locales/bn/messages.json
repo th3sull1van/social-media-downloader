@@ -12,7 +12,7 @@
     "message": "অচেনা পৃষ্ঠা"
   },
   "noticeUnrecognizedDesc": {
-    "message": "মিডিয়া শনাক্ত করতে Reddit-এ নেভিগেট করুন।"
+    "message": "মিডিয়া শনাক্ত করতে Instagram, Facebook বা Reddit-এ নেভিগেট করুন।"
   },
   "detectedProfile": {
     "message": "শনাক্তকৃত প্রোফাইল"
@@ -22,9 +22,6 @@
   },
   "mediaCountLabel": {
     "message": "টি মিডিয়া"
-  },
-  "photosLabel": {
-    "message": "photos"
   },
   "scanAll": {
     "message": "সব স্ক্যান করুন"
@@ -61,9 +58,6 @@
   },
   "downloadComplete": {
     "message": "ডাউনলোড সফলভাবে সম্পন্ন হয়েছে!"
-  },
-  "collectedMedia": {
-    "message": "Collected Media"
   },
   "selectedSummary": {
     "message": "$1 / $2 টি নির্বাচিত"
@@ -104,35 +98,14 @@
   "tabHighlights": {
     "message": "Highlights"
   },
-  "tabAvatar": {
-    "message": "Profile"
-  },
   "downloadFloating": {
     "message": "Download Media"
-  },
-  "scanFloatingBadge": {
-    "message": "Scan"
-  },
-  "previewTitle": {
-    "message": "Media preview:"
-  },
-  "highResGuaranteed": {
-    "message": "Original high resolution guaranteed"
   },
   "packagingZip": {
     "message": "ZIP ফাইল প্যাক করা হচ্ছে..."
   },
   "errorDownloading": {
     "message": "ডাউনলোড করার সময় ত্রুটি হয়েছে।"
-  },
-  "noMediaFound": {
-    "message": "No media found to download."
-  },
-  "authError": {
-    "message": "Session token not found. Make sure you are logged in."
-  },
-  "resolvingHighRes": {
-    "message": "Resolving high resolution..."
   },
   "zipTooLarge": {
     "message": "ZIP এর জন্য নির্বাচনটি খুব বড়। ফোল্ডার মোড ব্যবহার করুন বা কম আইটেম নির্বাচন করুন।"
@@ -142,9 +115,6 @@
   },
   "downloadCancelled": {
     "message": "ডাউনলোড বাতিল করা হয়েছে।"
-  },
-  "downloadingProgress": {
-    "message": "Downloading media..."
   },
   "tabPhotosOf": {
     "message": "Photos of you"
@@ -178,39 +148,6 @@
   },
   "tabRedgifs": {
     "message": "RedGifs"
-  },
-  "downloadPostMedia": {
-    "message": "পোস্টের মিডিয়া"
-  },
-  "downloadProfileMedia": {
-    "message": "প্রোফাইল ডাউনলোড: u/$1"
-  },
-  "scanProfileApi": {
-    "message": "প্রোফাইল স্ক্যান শুরু করুন"
-  },
-  "minScoreLabel": {
-    "message": "সর্বনিম্ন স্কোর"
-  },
-  "postLimitLabel": {
-    "message": "পোস্টের সীমা"
-  },
-  "limitAll": {
-    "message": "সব (সীমাহীন)"
-  },
-  "unmarkAll": {
-    "message": "সব নির্বাচন বাতিল"
-  },
-  "downloadInFolder": {
-    "message": "ফোল্ডারে ডাউনলোড করুন"
-  },
-  "downloadAsZip": {
-    "message": "ZIP হিসেবে ডাউনলোড করুন"
-  },
-  "downloadStartedToast": {
-    "message": "ডাউনলোড শুরু হয়েছে: $1"
-  },
-  "downloadSuccessToast": {
-    "message": "$1 টি মিডিয়া সফলভাবে ডাউনলোড হয়েছে!"
   },
   "filterSubredditAll": {
     "message": "সমস্ত সাবরেডিট"
@@ -270,7 +207,7 @@
     "message": "Deduplicate identical media"
   },
   "dedupExactTooltip": {
-    "message": "Skip duplicate photos and videos using real-time CRC-32 hash"
+    "message": "Skip duplicate photos and videos using real-time SHA-256 hash"
   },
   "dedupHistoricalLabel": {
     "message": "Historical deduplication"
@@ -283,5 +220,23 @@
   },
   "zipStorageUnavailable": {
     "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
+  },
+  "filenameOverriddenWarning": {
+    "message": "ডাউনলোড সম্পন্ন হয়েছে, তবে অন্য একটি ডাউনলোড ম্যানেজার (যেমন IDM) ফাইলটির নাম পরিবর্তন করেছে। মূল নাম রাখতে সেটির ক্যাপচার বন্ধ করুন।"
+  },
+  "deduplicateBtn": {
+    "message": "ডুপ্লিকেট সরান"
+  },
+  "subredditLabel": {
+    "message": "সাবরেডিট:"
+  },
+  "clearHistoryBtn": {
+    "message": "ইতিহাস মুছুন"
+  },
+  "badgeVideo": {
+    "message": "ভিডিও"
+  },
+  "loadingLabel": {
+    "message": "লোড হচ্ছে..."
   }
 }

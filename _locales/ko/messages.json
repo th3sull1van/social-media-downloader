@@ -12,7 +12,7 @@
     "message": "인식할 수 없는 페이지"
   },
   "noticeUnrecognizedDesc": {
-    "message": "미디어를 감지하려면 Reddit(피드, 서브레딧 또는 프로필)으로 이동하세요."
+    "message": "미디어를 감지하려면 Instagram, Facebook 또는 Reddit으로 이동하세요."
   },
   "detectedProfile": {
     "message": "감지된 프로필"
@@ -22,9 +22,6 @@
   },
   "mediaCountLabel": {
     "message": "개 미디어"
-  },
-  "photosLabel": {
-    "message": "photos"
   },
   "scanAll": {
     "message": "전체 스캔"
@@ -61,9 +58,6 @@
   },
   "downloadComplete": {
     "message": "다운로드가 완료되었습니다!"
-  },
-  "collectedMedia": {
-    "message": "Collected Media"
   },
   "selectedSummary": {
     "message": "$1 / $2개 선택됨"
@@ -104,35 +98,14 @@
   "tabHighlights": {
     "message": "Highlights"
   },
-  "tabAvatar": {
-    "message": "Profile"
-  },
   "downloadFloating": {
     "message": "Download Media"
-  },
-  "scanFloatingBadge": {
-    "message": "Scan"
-  },
-  "previewTitle": {
-    "message": "Media preview:"
-  },
-  "highResGuaranteed": {
-    "message": "Original high resolution guaranteed"
   },
   "packagingZip": {
     "message": "ZIP 파일 압축 중..."
   },
   "errorDownloading": {
     "message": "다운로드 중 오류가 발생했습니다."
-  },
-  "noMediaFound": {
-    "message": "No media found to download."
-  },
-  "authError": {
-    "message": "Session token not found. Make sure you are logged in."
-  },
-  "resolvingHighRes": {
-    "message": "Resolving high resolution..."
   },
   "zipTooLarge": {
     "message": "ZIP으로 압축하기에 선택 항목이 너무 큽니다. 폴더 모드를 사용하거나 더 적은 항목을 선택하세요."
@@ -142,9 +115,6 @@
   },
   "downloadCancelled": {
     "message": "다운로드가 취소되었습니다."
-  },
-  "downloadingProgress": {
-    "message": "미디어 다운로드 중..."
   },
   "tabPhotosOf": {
     "message": "내가 나온 사진"
@@ -178,39 +148,6 @@
   },
   "tabRedgifs": {
     "message": "RedGifs"
-  },
-  "downloadPostMedia": {
-    "message": "게시물 미디어"
-  },
-  "downloadProfileMedia": {
-    "message": "프로필 다운로드: u/$1"
-  },
-  "scanProfileApi": {
-    "message": "프로필 스캔 시작"
-  },
-  "minScoreLabel": {
-    "message": "최소 점수"
-  },
-  "postLimitLabel": {
-    "message": "게시물 제한"
-  },
-  "limitAll": {
-    "message": "전체 (무제한)"
-  },
-  "unmarkAll": {
-    "message": "전체 선택 해제"
-  },
-  "downloadInFolder": {
-    "message": "폴더로 다운로드"
-  },
-  "downloadAsZip": {
-    "message": "ZIP으로 다운로드"
-  },
-  "downloadStartedToast": {
-    "message": "다운로드 시작: $1"
-  },
-  "downloadSuccessToast": {
-    "message": "$1개 미디어가 다운로드되었습니다!"
   },
   "filterSubredditAll": {
     "message": "모든 서브레딧"
@@ -270,7 +207,7 @@
     "message": "동일 미디어 중복 제거"
   },
   "dedupExactTooltip": {
-    "message": "실시간 CRC-32 계산으로 중복된 사진 및 비디오 건너뛰기"
+    "message": "실시간 SHA-256 계산으로 중복된 사진 및 비디오 건너뛰기"
   },
   "dedupHistoricalLabel": {
     "message": "기록 기반 중복 제거"
@@ -283,5 +220,23 @@
   },
   "zipStorageUnavailable": {
     "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
+  },
+  "filenameOverriddenWarning": {
+    "message": "다운로드가 완료되었지만 다른 다운로드 관리자(예: IDM)가 파일 이름을 변경했습니다. 원래 이름을 유지하려면 가로채기를 비활성화하세요."
+  },
+  "deduplicateBtn": {
+    "message": "중복 제거"
+  },
+  "subredditLabel": {
+    "message": "서브레딧:"
+  },
+  "clearHistoryBtn": {
+    "message": "기록 지우기"
+  },
+  "badgeVideo": {
+    "message": "동영상"
+  },
+  "loadingLabel": {
+    "message": "로딩 중..."
   }
 }

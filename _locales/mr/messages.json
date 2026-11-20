@@ -12,7 +12,7 @@
     "message": "अनोळखी पृष्ठ"
   },
   "noticeUnrecognizedDesc": {
-    "message": "मीडिया शोधण्यासाठी Reddit वर जा."
+    "message": "मीडिया शोधण्यासाठी Instagram, Facebook किंवा Reddit वर जा."
   },
   "detectedProfile": {
     "message": "शोधलेले प्रोफाइल"
@@ -22,9 +22,6 @@
   },
   "mediaCountLabel": {
     "message": "मीडिया"
-  },
-  "photosLabel": {
-    "message": "photos"
   },
   "scanAll": {
     "message": "सर्व स्कॅन करा"
@@ -61,9 +58,6 @@
   },
   "downloadComplete": {
     "message": "डाउनलोड यशस्वीरित्या पूर्ण झाले!"
-  },
-  "collectedMedia": {
-    "message": "Collected Media"
   },
   "selectedSummary": {
     "message": "$1 / $2 निवडले"
@@ -104,35 +98,14 @@
   "tabHighlights": {
     "message": "Highlights"
   },
-  "tabAvatar": {
-    "message": "Profile"
-  },
   "downloadFloating": {
     "message": "Download Media"
-  },
-  "scanFloatingBadge": {
-    "message": "Scan"
-  },
-  "previewTitle": {
-    "message": "Media preview:"
-  },
-  "highResGuaranteed": {
-    "message": "Original high resolution guaranteed"
   },
   "packagingZip": {
     "message": "ZIP फाइल तयार होत आहे..."
   },
   "errorDownloading": {
     "message": "डाउनलोड करताना त्रुटी आली."
-  },
-  "noMediaFound": {
-    "message": "No media found to download."
-  },
-  "authError": {
-    "message": "Session token not found. Make sure you are logged in."
-  },
-  "resolvingHighRes": {
-    "message": "Resolving high resolution..."
   },
   "zipTooLarge": {
     "message": "ZIP साठी निवड खूप मोठी आहे. फोल्डर्स मोड वापरा किंवा कमी आयटम निवडा."
@@ -142,9 +115,6 @@
   },
   "downloadCancelled": {
     "message": "डाउनलोड रद्द केले."
-  },
-  "downloadingProgress": {
-    "message": "Downloading media..."
   },
   "tabPhotosOf": {
     "message": "Photos of you"
@@ -178,39 +148,6 @@
   },
   "tabRedgifs": {
     "message": "RedGifs"
-  },
-  "downloadPostMedia": {
-    "message": "पोस्ट मीडिया"
-  },
-  "downloadProfileMedia": {
-    "message": "प्रोफाइल डाउनलोड करा: u/$1"
-  },
-  "scanProfileApi": {
-    "message": "प्रोफाइल स्कॅन सुरू करा"
-  },
-  "minScoreLabel": {
-    "message": "किमान गुण"
-  },
-  "postLimitLabel": {
-    "message": "पोस्ट मर्यादा"
-  },
-  "limitAll": {
-    "message": "सर्व (अमर्यादित)"
-  },
-  "unmarkAll": {
-    "message": "सर्व निवड रद्द करा"
-  },
-  "downloadInFolder": {
-    "message": "फोल्डरमध्ये डाउनलोड करा"
-  },
-  "downloadAsZip": {
-    "message": "ZIP म्हणून डाउनलोड करा"
-  },
-  "downloadStartedToast": {
-    "message": "डाउनलोड सुरू झाले: $1"
-  },
-  "downloadSuccessToast": {
-    "message": "$1 मीडिया यशस्वीरित्या डाउनलोड झाला!"
   },
   "filterSubredditAll": {
     "message": "सर्व सबरेडिट्स"
@@ -270,7 +207,7 @@
     "message": "Deduplicate identical media"
   },
   "dedupExactTooltip": {
-    "message": "Skip duplicate photos and videos using real-time CRC-32 hash"
+    "message": "Skip duplicate photos and videos using real-time SHA-256 hash"
   },
   "dedupHistoricalLabel": {
     "message": "Historical deduplication"
@@ -283,5 +220,23 @@
   },
   "zipStorageUnavailable": {
     "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
+  },
+  "filenameOverriddenWarning": {
+    "message": "डाउनलोड पूर्ण झाले, परंतु दुसऱ्या डाउनलोड व्यवस्थापकाने (उदा. IDM) फाइलचे नाव बदलले. मूळ नावे ठेवण्यासाठी त्याची इंटरसेप्शन बंद करा."
+  },
+  "deduplicateBtn": {
+    "message": "डुप्लिकेट काढा"
+  },
+  "subredditLabel": {
+    "message": "सबरिडिट:"
+  },
+  "clearHistoryBtn": {
+    "message": "इतिहास साफ करा"
+  },
+  "badgeVideo": {
+    "message": "व्हिडिओ"
+  },
+  "loadingLabel": {
+    "message": "लोड होत आहे..."
   }
 }

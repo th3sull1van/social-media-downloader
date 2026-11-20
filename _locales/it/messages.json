@@ -12,7 +12,7 @@
     "message": "Pagina non riconosciuta"
   },
   "noticeUnrecognizedDesc": {
-    "message": "Naviga su Reddit (feed, subreddit o profilo) per rilevare file multimediali."
+    "message": "Naviga su Instagram, Facebook o Reddit per rilevare file multimediali."
   },
   "detectedProfile": {
     "message": "Profilo Rilevato"
@@ -22,9 +22,6 @@
   },
   "mediaCountLabel": {
     "message": "file multimediali"
-  },
-  "photosLabel": {
-    "message": "photos"
   },
   "scanAll": {
     "message": "Scansiona Tutto"
@@ -61,9 +58,6 @@
   },
   "downloadComplete": {
     "message": "Download completato con successo!"
-  },
-  "collectedMedia": {
-    "message": "Collected Media"
   },
   "selectedSummary": {
     "message": "$1 di $2 selezionati"
@@ -104,35 +98,14 @@
   "tabHighlights": {
     "message": "Highlights"
   },
-  "tabAvatar": {
-    "message": "Profile"
-  },
   "downloadFloating": {
     "message": "Download Media"
-  },
-  "scanFloatingBadge": {
-    "message": "Scan"
-  },
-  "previewTitle": {
-    "message": "Media preview:"
-  },
-  "highResGuaranteed": {
-    "message": "Original high resolution guaranteed"
   },
   "packagingZip": {
     "message": "Creazione archivio ZIP..."
   },
   "errorDownloading": {
     "message": "Errore durante il download."
-  },
-  "noMediaFound": {
-    "message": "No media found to download."
-  },
-  "authError": {
-    "message": "Session token not found. Make sure you are logged in."
-  },
-  "resolvingHighRes": {
-    "message": "Resolving high resolution..."
   },
   "zipTooLarge": {
     "message": "Selezione troppo grande per il file ZIP. Usa la modalità Cartelle o seleziona meno elementi."
@@ -142,9 +115,6 @@
   },
   "downloadCancelled": {
     "message": "Download annullato."
-  },
-  "downloadingProgress": {
-    "message": "Download dei contenuti in corso..."
   },
   "tabPhotosOf": {
     "message": "Foto in cui ci sei tu"
@@ -178,39 +148,6 @@
   },
   "tabRedgifs": {
     "message": "RedGifs"
-  },
-  "downloadPostMedia": {
-    "message": "Contenuti del Post"
-  },
-  "downloadProfileMedia": {
-    "message": "Scarica Profilo: u/$1"
-  },
-  "scanProfileApi": {
-    "message": "Avvia Scansione Profilo"
-  },
-  "minScoreLabel": {
-    "message": "Punteggio Minimo"
-  },
-  "postLimitLabel": {
-    "message": "Limite di Post"
-  },
-  "limitAll": {
-    "message": "Tutti (Senza limite)"
-  },
-  "unmarkAll": {
-    "message": "Deseleziona Tutto"
-  },
-  "downloadInFolder": {
-    "message": "Scarica in Cartella"
-  },
-  "downloadAsZip": {
-    "message": "Scarica come ZIP"
-  },
-  "downloadStartedToast": {
-    "message": "Download avviato: $1"
-  },
-  "downloadSuccessToast": {
-    "message": "$1 file scaricati con successo!"
   },
   "filterSubredditAll": {
     "message": "Tutti i Subreddit"
@@ -270,7 +207,7 @@
     "message": "Deduplica file multimediali identici"
   },
   "dedupExactTooltip": {
-    "message": "Salta foto e video duplicati tramite il calcolo CRC-32 in tempo reale"
+    "message": "Salta foto e video duplicati tramite il calcolo SHA-256 in tempo reale"
   },
   "dedupHistoricalLabel": {
     "message": "Deduplica Storica"
@@ -283,5 +220,23 @@
   },
   "zipStorageUnavailable": {
     "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
+  },
+  "filenameOverriddenWarning": {
+    "message": "Download completato, ma un altro gestore di download (es. IDM) ha rinominato il file. Disattiva la sua intercettazione per mantenere i nomi."
+  },
+  "deduplicateBtn": {
+    "message": "Deduplica"
+  },
+  "subredditLabel": {
+    "message": "Subreddit:"
+  },
+  "clearHistoryBtn": {
+    "message": "Cancella cronologia"
+  },
+  "badgeVideo": {
+    "message": "VIDEO"
+  },
+  "loadingLabel": {
+    "message": "Caricamento..."
   }
 }

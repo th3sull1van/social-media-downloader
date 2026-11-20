@@ -12,7 +12,7 @@
     "message": "未识别的页面"
   },
   "noticeUnrecognizedDesc": {
-    "message": "请导航至Reddit（信息流、板块或个人主页）以开始检测媒体。"
+    "message": "请前往 Instagram、Facebook 或 Reddit 以开始检测媒体。"
   },
   "detectedProfile": {
     "message": "检测到个人主页"
@@ -22,9 +22,6 @@
   },
   "mediaCountLabel": {
     "message": "个媒体"
-  },
-  "photosLabel": {
-    "message": "photos"
   },
   "scanAll": {
     "message": "扫描全部"
@@ -61,9 +58,6 @@
   },
   "downloadComplete": {
     "message": "下载成功完成！"
-  },
-  "collectedMedia": {
-    "message": "Collected Media"
   },
   "selectedSummary": {
     "message": "已选择 $1 / $2"
@@ -104,35 +98,14 @@
   "tabHighlights": {
     "message": "Highlights"
   },
-  "tabAvatar": {
-    "message": "Profile"
-  },
   "downloadFloating": {
     "message": "Download Media"
-  },
-  "scanFloatingBadge": {
-    "message": "Scan"
-  },
-  "previewTitle": {
-    "message": "Media preview:"
-  },
-  "highResGuaranteed": {
-    "message": "Original high resolution guaranteed"
   },
   "packagingZip": {
     "message": "正在打包ZIP文件..."
   },
   "errorDownloading": {
     "message": "下载时出错。"
-  },
-  "noMediaFound": {
-    "message": "No media found to download."
-  },
-  "authError": {
-    "message": "Session token not found. Make sure you are logged in."
-  },
-  "resolvingHighRes": {
-    "message": "Resolving high resolution..."
   },
   "zipTooLarge": {
     "message": "选择的内容过大，无法创建 ZIP。请使用文件夹模式或减少选择的项目。"
@@ -142,9 +115,6 @@
   },
   "downloadCancelled": {
     "message": "下载已取消。"
-  },
-  "downloadingProgress": {
-    "message": "正在下载媒体..."
   },
   "tabPhotosOf": {
     "message": "你的照片"
@@ -178,39 +148,6 @@
   },
   "tabRedgifs": {
     "message": "RedGifs"
-  },
-  "downloadPostMedia": {
-    "message": "帖子媒体"
-  },
-  "downloadProfileMedia": {
-    "message": "下载主页媒体: u/$1"
-  },
-  "scanProfileApi": {
-    "message": "开始扫描个人主页"
-  },
-  "minScoreLabel": {
-    "message": "最低分数"
-  },
-  "postLimitLabel": {
-    "message": "帖子数量上限"
-  },
-  "limitAll": {
-    "message": "全部（无限制）"
-  },
-  "unmarkAll": {
-    "message": "取消全选"
-  },
-  "downloadInFolder": {
-    "message": "下载至文件夹"
-  },
-  "downloadAsZip": {
-    "message": "打包下载为ZIP"
-  },
-  "downloadStartedToast": {
-    "message": "开始下载: $1"
-  },
-  "downloadSuccessToast": {
-    "message": "已成功下载 $1 个媒体文件！"
   },
   "filterSubredditAll": {
     "message": "所有子版块"
@@ -270,7 +207,7 @@
     "message": "去重相同媒体"
   },
   "dedupExactTooltip": {
-    "message": "使用实时 CRC-32 计算跳过重复的照片和视频"
+    "message": "使用实时 SHA-256 计算跳过重复的照片和视频"
   },
   "dedupHistoricalLabel": {
     "message": "历史去重"
@@ -283,5 +220,23 @@
   },
   "zipStorageUnavailable": {
     "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
+  },
+  "filenameOverriddenWarning": {
+    "message": "下载已完成，但其他下载管理器（如 IDM）重命名了文件。请禁用其接管以保留原文件名。"
+  },
+  "deduplicateBtn": {
+    "message": "去重"
+  },
+  "subredditLabel": {
+    "message": "板块："
+  },
+  "clearHistoryBtn": {
+    "message": "清除历史"
+  },
+  "badgeVideo": {
+    "message": "视频"
+  },
+  "loadingLabel": {
+    "message": "加载中..."
   }
 }

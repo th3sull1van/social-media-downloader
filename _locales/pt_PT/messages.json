@@ -23,9 +23,6 @@
   "mediaCountLabel": {
     "message": "multimédia"
   },
-  "photosLabel": {
-    "message": "fotografias"
-  },
   "scanAll": {
     "message": "Analisar Tudo"
   },
@@ -61,9 +58,6 @@
   },
   "downloadComplete": {
     "message": "Descarga concluída com sucesso!"
-  },
-  "collectedMedia": {
-    "message": "Multimédia Recolhida"
   },
   "selectedSummary": {
     "message": "$1 de $2 selecionadas"
@@ -104,35 +98,14 @@
   "tabHighlights": {
     "message": "Destaques"
   },
-  "tabAvatar": {
-    "message": "Perfil"
-  },
   "downloadFloating": {
     "message": "Descarregar Multimédia"
-  },
-  "scanFloatingBadge": {
-    "message": "Analisar"
-  },
-  "previewTitle": {
-    "message": "Pré-visualização da multimédia:"
-  },
-  "highResGuaranteed": {
-    "message": "Alta resolução original garantida"
   },
   "packagingZip": {
     "message": "A compactar ficheiro ZIP..."
   },
   "errorDownloading": {
     "message": "Erro ao descarregar multimédia."
-  },
-  "noMediaFound": {
-    "message": "Não foi encontrada multimédia para descarregar."
-  },
-  "authError": {
-    "message": "Sessão não encontrada. Certifique-se de que iniciou sessão na sua conta."
-  },
-  "resolvingHighRes": {
-    "message": "A obter alta resolução..."
   },
   "zipTooLarge": {
     "message": "Seleção demasiado grande para ZIP. Use o modo Pastas ou selecione menos itens."
@@ -142,9 +115,6 @@
   },
   "downloadCancelled": {
     "message": "Descarga cancelada."
-  },
-  "downloadingProgress": {
-    "message": "A descarregar multimédia..."
   },
   "tabPhotosOf": {
     "message": "Fotografias consigo"
@@ -178,39 +148,6 @@
   },
   "tabRedgifs": {
     "message": "RedGifs"
-  },
-  "downloadPostMedia": {
-    "message": "Multimédia da Publicação"
-  },
-  "downloadProfileMedia": {
-    "message": "Descarregar Perfil: u/$1"
-  },
-  "scanProfileApi": {
-    "message": "Iniciar Análise do Perfil"
-  },
-  "minScoreLabel": {
-    "message": "Pontuação Mínima"
-  },
-  "postLimitLabel": {
-    "message": "Limite de Publicações"
-  },
-  "limitAll": {
-    "message": "Todas (Sem limite)"
-  },
-  "unmarkAll": {
-    "message": "Desmarcar Tudo"
-  },
-  "downloadInFolder": {
-    "message": "Transferir em Pasta"
-  },
-  "downloadAsZip": {
-    "message": "Transferir como ZIP"
-  },
-  "downloadStartedToast": {
-    "message": "Transferência iniciada: $1"
-  },
-  "downloadSuccessToast": {
-    "message": "$1 ficheiros transferidos com sucesso!"
   },
   "filterSubredditAll": {
     "message": "Todos os Subreddits"
@@ -270,7 +207,7 @@
     "message": "Deduplicar multimédia idêntica"
   },
   "dedupExactTooltip": {
-    "message": "Ignora fotos e vídeos duplicados usando cálculo CRC-32 em tempo real"
+    "message": "Ignora fotos e vídeos duplicados usando cálculo SHA-256 em tempo real"
   },
   "dedupHistoricalLabel": {
     "message": "Deduplicação Histórica"
@@ -283,5 +220,23 @@
   },
   "zipStorageUnavailable": {
     "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
+  },
+  "filenameOverriddenWarning": {
+    "message": "Transferência concluída, mas outro gestor de transferências (ex.: IDM) renomeou o ficheiro. Desative a captura para manter os nomes."
+  },
+  "deduplicateBtn": {
+    "message": "Deduplicar"
+  },
+  "subredditLabel": {
+    "message": "Subreddit:"
+  },
+  "clearHistoryBtn": {
+    "message": "Limpar histórico"
+  },
+  "badgeVideo": {
+    "message": "VÍDEO"
+  },
+  "loadingLabel": {
+    "message": "A carregar..."
   }
 }

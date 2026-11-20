@@ -12,7 +12,7 @@
     "message": "Trang không được nhận dạng"
   },
   "noticeUnrecognizedDesc": {
-    "message": "Điều hướng đến Reddit để bắt đầu phát hiện phương tiện."
+    "message": "Điều hướng đến Instagram, Facebook hoặc Reddit để bắt đầu phát hiện phương tiện."
   },
   "detectedProfile": {
     "message": "Hồ sơ đã phát hiện"
@@ -22,9 +22,6 @@
   },
   "mediaCountLabel": {
     "message": "tệp"
-  },
-  "photosLabel": {
-    "message": "photos"
   },
   "scanAll": {
     "message": "Quét tất cả"
@@ -61,9 +58,6 @@
   },
   "downloadComplete": {
     "message": "Tải xuống hoàn tất thành công!"
-  },
-  "collectedMedia": {
-    "message": "Collected Media"
   },
   "selectedSummary": {
     "message": "Đã chọn $1 / $2"
@@ -104,35 +98,14 @@
   "tabHighlights": {
     "message": "Highlights"
   },
-  "tabAvatar": {
-    "message": "Profile"
-  },
   "downloadFloating": {
     "message": "Download Media"
-  },
-  "scanFloatingBadge": {
-    "message": "Scan"
-  },
-  "previewTitle": {
-    "message": "Media preview:"
-  },
-  "highResGuaranteed": {
-    "message": "Original high resolution guaranteed"
   },
   "packagingZip": {
     "message": "Đang nén tệp ZIP..."
   },
   "errorDownloading": {
     "message": "Lỗi khi tải xuống phương tiện."
-  },
-  "noMediaFound": {
-    "message": "No media found to download."
-  },
-  "authError": {
-    "message": "Session token not found. Make sure you are logged in."
-  },
-  "resolvingHighRes": {
-    "message": "Resolving high resolution..."
   },
   "zipTooLarge": {
     "message": "Lựa chọn quá lớn cho tệp ZIP. Hãy sử dụng chế độ Thư mục hoặc chọn ít mục hơn."
@@ -142,9 +115,6 @@
   },
   "downloadCancelled": {
     "message": "Đã hủy tải xuống."
-  },
-  "downloadingProgress": {
-    "message": "Đang tải xuống tệp phương tiện..."
   },
   "tabPhotosOf": {
     "message": "Ảnh có mặt bạn"
@@ -178,39 +148,6 @@
   },
   "tabRedgifs": {
     "message": "RedGifs"
-  },
-  "downloadPostMedia": {
-    "message": "Phương tiện bài viết"
-  },
-  "downloadProfileMedia": {
-    "message": "Tải hồ sơ: u/$1"
-  },
-  "scanProfileApi": {
-    "message": "Bắt đầu quét hồ sơ"
-  },
-  "minScoreLabel": {
-    "message": "Điểm tối thiểu"
-  },
-  "postLimitLabel": {
-    "message": "Giới hạn bài viết"
-  },
-  "limitAll": {
-    "message": "Tất cả (Không giới hạn)"
-  },
-  "unmarkAll": {
-    "message": "Bỏ chọn tất cả"
-  },
-  "downloadInFolder": {
-    "message": "Tải vào thư mục"
-  },
-  "downloadAsZip": {
-    "message": "Tải dưới dạng ZIP"
-  },
-  "downloadStartedToast": {
-    "message": "Bắt đầu tải: $1"
-  },
-  "downloadSuccessToast": {
-    "message": "Đã tải thành công $1 tệp phương tiện!"
   },
   "filterSubredditAll": {
     "message": "Tất cả Subreddit"
@@ -270,7 +207,7 @@
     "message": "Deduplicate identical media"
   },
   "dedupExactTooltip": {
-    "message": "Skip duplicate photos and videos using real-time CRC-32 hash"
+    "message": "Skip duplicate photos and videos using real-time SHA-256 hash"
   },
   "dedupHistoricalLabel": {
     "message": "Historical deduplication"
@@ -283,5 +220,23 @@
   },
   "zipStorageUnavailable": {
     "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
+  },
+  "filenameOverriddenWarning": {
+    "message": "Tải xuống hoàn tất, nhưng trình quản lý tải xuống khác (vd: IDM) đã đổi tên tệp. Hãy tắt chế độ bắt liên kết để giữ nguyên tên tệp."
+  },
+  "deduplicateBtn": {
+    "message": "Loại bỏ trùng lặp"
+  },
+  "subredditLabel": {
+    "message": "Subreddit:"
+  },
+  "clearHistoryBtn": {
+    "message": "Xóa lịch sử"
+  },
+  "badgeVideo": {
+    "message": "VIDEO"
+  },
+  "loadingLabel": {
+    "message": "Đang tải..."
   }
 }

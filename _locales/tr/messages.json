@@ -12,7 +12,7 @@
     "message": "Sayfa tanınmadı"
   },
   "noticeUnrecognizedDesc": {
-    "message": "Medyayı algılamak için Reddit'e (akış, subreddit veya profil) gidin."
+    "message": "Medyayı algılamak için Instagram, Facebook veya Reddit'e gidin."
   },
   "detectedProfile": {
     "message": "Algılanan Profil"
@@ -22,9 +22,6 @@
   },
   "mediaCountLabel": {
     "message": "medya"
-  },
-  "photosLabel": {
-    "message": "photos"
   },
   "scanAll": {
     "message": "Tümünü Tara"
@@ -61,9 +58,6 @@
   },
   "downloadComplete": {
     "message": "İndirme başarıyla tamamlandı!"
-  },
-  "collectedMedia": {
-    "message": "Collected Media"
   },
   "selectedSummary": {
     "message": "$1 / $2 seçildi"
@@ -104,35 +98,14 @@
   "tabHighlights": {
     "message": "Highlights"
   },
-  "tabAvatar": {
-    "message": "Profile"
-  },
   "downloadFloating": {
     "message": "Download Media"
-  },
-  "scanFloatingBadge": {
-    "message": "Scan"
-  },
-  "previewTitle": {
-    "message": "Media preview:"
-  },
-  "highResGuaranteed": {
-    "message": "Original high resolution guaranteed"
   },
   "packagingZip": {
     "message": "ZIP arşivi paketleniyor..."
   },
   "errorDownloading": {
     "message": "İndirme hatası."
-  },
-  "noMediaFound": {
-    "message": "No media found to download."
-  },
-  "authError": {
-    "message": "Session token not found. Make sure you are logged in."
-  },
-  "resolvingHighRes": {
-    "message": "Resolving high resolution..."
   },
   "zipTooLarge": {
     "message": "ZIP için seçim çok büyük. Klasörler modunu kullanın veya daha az öğe seçin."
@@ -142,9 +115,6 @@
   },
   "downloadCancelled": {
     "message": "İndirme iptal edildi."
-  },
-  "downloadingProgress": {
-    "message": "Medyalar indiriliyor..."
   },
   "tabPhotosOf": {
     "message": "Olduğun fotoğraflar"
@@ -178,39 +148,6 @@
   },
   "tabRedgifs": {
     "message": "RedGifs"
-  },
-  "downloadPostMedia": {
-    "message": "Gönderi Medyası"
-  },
-  "downloadProfileMedia": {
-    "message": "Profili İndir: u/$1"
-  },
-  "scanProfileApi": {
-    "message": "Profil Taramasını Başlat"
-  },
-  "minScoreLabel": {
-    "message": "Minimum Puan"
-  },
-  "postLimitLabel": {
-    "message": "Gönderi Sınırı"
-  },
-  "limitAll": {
-    "message": "Tümü (Sınırsız)"
-  },
-  "unmarkAll": {
-    "message": "Seçimi Kaldır"
-  },
-  "downloadInFolder": {
-    "message": "Klasöre İndir"
-  },
-  "downloadAsZip": {
-    "message": "ZIP Olarak İndir"
-  },
-  "downloadStartedToast": {
-    "message": "İndirme başladı: $1"
-  },
-  "downloadSuccessToast": {
-    "message": "$1 medya başarıyla indirildi!"
   },
   "filterSubredditAll": {
     "message": "Tüm Subredditler"
@@ -270,7 +207,7 @@
     "message": "Deduplicate identical media"
   },
   "dedupExactTooltip": {
-    "message": "Skip duplicate photos and videos using real-time CRC-32 hash"
+    "message": "Skip duplicate photos and videos using real-time SHA-256 hash"
   },
   "dedupHistoricalLabel": {
     "message": "Historical deduplication"
@@ -283,5 +220,23 @@
   },
   "zipStorageUnavailable": {
     "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
+  },
+  "filenameOverriddenWarning": {
+    "message": "İndirme tamamlandı ancak başka bir indirme yöneticisi (ör. IDM) dosyayı yeniden adlandırdı. Dosya adlarını korumak için yakalamayı devre dışı bırakın."
+  },
+  "deduplicateBtn": {
+    "message": "Yinelenenleri Kaldır"
+  },
+  "subredditLabel": {
+    "message": "Subreddit:"
+  },
+  "clearHistoryBtn": {
+    "message": "Geçmişi temizle"
+  },
+  "badgeVideo": {
+    "message": "VİDEO"
+  },
+  "loadingLabel": {
+    "message": "Yükleniyor..."
   }
 }

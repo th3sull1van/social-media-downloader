@@ -12,7 +12,7 @@
     "message": "الصفحة غير معروفة"
   },
   "noticeUnrecognizedDesc": {
-    "message": "انتقل إلى Reddit لاكتشاف الوسائط."
+    "message": "انتقل إلى Instagram أو Facebook أو Reddit لاكتشاف الوسائط."
   },
   "detectedProfile": {
     "message": "الملف الشخصي المكتشف"
@@ -22,9 +22,6 @@
   },
   "mediaCountLabel": {
     "message": "وسائط"
-  },
-  "photosLabel": {
-    "message": "photos"
   },
   "scanAll": {
     "message": "مسح الكل"
@@ -61,9 +58,6 @@
   },
   "downloadComplete": {
     "message": "اكتمل التنزيل بنجاح!"
-  },
-  "collectedMedia": {
-    "message": "Collected Media"
   },
   "selectedSummary": {
     "message": "تم تحديد $1 من $2"
@@ -104,35 +98,14 @@
   "tabHighlights": {
     "message": "Highlights"
   },
-  "tabAvatar": {
-    "message": "Profile"
-  },
   "downloadFloating": {
     "message": "Download Media"
-  },
-  "scanFloatingBadge": {
-    "message": "Scan"
-  },
-  "previewTitle": {
-    "message": "Media preview:"
-  },
-  "highResGuaranteed": {
-    "message": "Original high resolution guaranteed"
   },
   "packagingZip": {
     "message": "جارٍ ضغط ملف ZIP..."
   },
   "errorDownloading": {
     "message": "خطأ أثناء التنزيل."
-  },
-  "noMediaFound": {
-    "message": "No media found to download."
-  },
-  "authError": {
-    "message": "Session token not found. Make sure you are logged in."
-  },
-  "resolvingHighRes": {
-    "message": "Resolving high resolution..."
   },
   "zipTooLarge": {
     "message": "التحديد كبير جداً بالنسبة لملف ZIP. استخدم وضع المجلدات أو حدد عناصر أقل."
@@ -142,9 +115,6 @@
   },
   "downloadCancelled": {
     "message": "تم إلغاء التنزيل."
-  },
-  "downloadingProgress": {
-    "message": "جارٍ تنزيل الوسائط..."
   },
   "tabPhotosOf": {
     "message": "صور لك"
@@ -178,39 +148,6 @@
   },
   "tabRedgifs": {
     "message": "RedGifs"
-  },
-  "downloadPostMedia": {
-    "message": "وسائط المنشور"
-  },
-  "downloadProfileMedia": {
-    "message": "تنزيل الملف الشخصي: u/$1"
-  },
-  "scanProfileApi": {
-    "message": "بدء مسح الملف الشخصي"
-  },
-  "minScoreLabel": {
-    "message": "الحد الأدنى للنقاط"
-  },
-  "postLimitLabel": {
-    "message": "حد المنشورات"
-  },
-  "limitAll": {
-    "message": "الكل (بلا حد)"
-  },
-  "unmarkAll": {
-    "message": "إلغاء تحديد الكل"
-  },
-  "downloadInFolder": {
-    "message": "تنزيل إلى مجلد"
-  },
-  "downloadAsZip": {
-    "message": "تنزيل كملف ZIP"
-  },
-  "downloadStartedToast": {
-    "message": "بدأ التنزيل: $1"
-  },
-  "downloadSuccessToast": {
-    "message": "تم تنزيل $1 وسائط بنجاح!"
   },
   "filterSubredditAll": {
     "message": "جميع مجتمعات ريديت"
@@ -270,7 +207,7 @@
     "message": "Deduplicate identical media"
   },
   "dedupExactTooltip": {
-    "message": "Skip duplicate photos and videos using real-time CRC-32 hash"
+    "message": "Skip duplicate photos and videos using real-time SHA-256 hash"
   },
   "dedupHistoricalLabel": {
     "message": "Historical deduplication"
@@ -283,5 +220,23 @@
   },
   "zipStorageUnavailable": {
     "message": "ZIP packaging is unavailable because local disk caching is not supported or the storage quota was exceeded."
+  },
+  "filenameOverriddenWarning": {
+    "message": "اكتمل التنزيل، لكن مدير تنزيلات آخر (مثل IDM) أعاد تسمية الملف. عطّل الالتقاط للحفاظ على أسماء الملفات."
+  },
+  "deduplicateBtn": {
+    "message": "إزالة التكرار"
+  },
+  "subredditLabel": {
+    "message": "المنتدى الفرعي (Subreddit):"
+  },
+  "clearHistoryBtn": {
+    "message": "مسح السجل"
+  },
+  "badgeVideo": {
+    "message": "فيديو"
+  },
+  "loadingLabel": {
+    "message": "جارٍ التحميل..."
   }
 }
