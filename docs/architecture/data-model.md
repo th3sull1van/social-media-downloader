@@ -89,17 +89,27 @@ type DownloadArtifact =
 ```ts
 interface DownloadJob {
   id: string;
-  traceId?: string;
   platform: string;
   targetName: string;
+  targetFilename?: string;
   format: "individual" | "zip";
-  item?: MediaItem;
-  artifact?: DownloadArtifact;
-  state: "queued" | "resolving" | "downloading" | "processing" | "completed" | "failed" | "cancelled";
-  progress?: ProgressInfo;
+  total: number;
+  completed: number;
+  failed: number;
+  skippedDuplicates?: number;
+  status: "IDLE" | "QUEUED" | "DOWNLOADING" | "DOWNLOADING_BLOBS" | "PACKAGING_ZIP" | "COMPLETED" | "FAILED" | "FAILED_SIZE" | "CANCELLED";
+  archiveSessionId?: string;
+  zipPercent?: number;
+  error?: string;
+  tabId?: number;
+  receiptDownloadId?: number;
+  filenameOverridden?: boolean;
   createdAt: number;
+  updatedAt: number;
 }
 ```
+
+Factory: `DownloadJobModel.create()` in `src/core/domain/DownloadJob.js`.
 
 ## Capabilities
 

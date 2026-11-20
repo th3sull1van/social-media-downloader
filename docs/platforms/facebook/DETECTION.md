@@ -10,6 +10,6 @@ Owned by `src/plugins/facebook/FacebookDetector.js`.
   `src/plugins/facebook/main-world/injected.js` to reach the page-context Comet
   runtime.
 
-Markers used: hostname, URL path segments (`/photos/`, `/albums/`), and Comet
-GraphQL payloads. Unstable site internals are isolated inside the plugin
-(AGENTS §30, §146).
+Markers used: hostname, URL path segments (`/photos/`, `/albums/`, `/people/`,
+`/pages/`, `/media/set/`), and Comet GraphQL payloads. Unstable site internals
+are isolated inside the plugin (AGENTS §30, §146).

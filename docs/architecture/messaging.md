@@ -12,10 +12,10 @@ Platform-specific message types are **owned by the plugin** that uses them.
 
 ## Generic message types (Core-owned)
 
-- Scan triggers: `TRIGGER_SCAN_ALL/POSTS/STORIES/HIGHLIGHTS/AVATAR/GALLERIES/VIDEOS`.
+- Scan triggers: `TRIGGER_SCAN_PAGE/ALL/POSTS/STORIES/HIGHLIGHTS/AVATAR/GALLERIES/VIDEOS`.
 - Page state: `GET_PAGE_STATE`, `GET_PAGE_CONTEXT`.
 - Download: `START_DOWNLOAD`, `DOWNLOAD_PROGRESS_UPDATE`, `GET_DOWNLOAD_STATUS`,
-  `GET_DOWNLOAD_STATE`, `CANCEL_DOWNLOAD`.
+  `GET_DOWNLOAD_STATE`, `CANCEL_DOWNLOAD`, `SHOW_DOWNLOAD_IN_FOLDER`.
 - Offscreen ZIP: `OFFSCREEN_BEGIN_ZIP`, `OFFSCREEN_BEGIN_ENTRY`,
   `OFFSCREEN_WRITE_CHUNK`, `OFFSCREEN_END_ENTRY`, `OFFSCREEN_ABORT_ENTRY`,
   `OFFSCREEN_FINISH_ZIP`, `OFFSCREEN_ABORT_ZIP`, `ZIP_OFFSCREEN_PROGRESS`.
@@ -27,7 +27,7 @@ Platform-specific message types are **owned by the plugin** that uses them.
 ## Platform message types (plugin-owned)
 
 Reddit-specific types live in `src/plugins/reddit/RedditMessages.js`
-(`REDDIT_SCAN`, `RESOLVE_REDGIFS`, `TRIGGER_SCAN_REDGIFS`) so that the service
+(`REDDIT_SCAN`, `REDDIT_FETCH_AVATAR`, `RESOLVE_REDGIFS`, `TRIGGER_SCAN_REDGIFS`) so that the service
 worker does not need to know Reddit internals (SPEC §54, AGENTS §27).
 
 ## Service worker routing
@@ -57,4 +57,4 @@ The background leaves `OFFSCREEN_*` messages to the offscreen receiver rather
 than answering them via the plugin dispatcher. Finalization returns `objectUrl`
 and `resourceId`; resource lifetime is described in [storage.md](storage.md).
 Recovery accepts only the background's successful snapshot of active extension
-Blob URLs, before new downloads may create resources.
+Blob URLs (`activeJob.objectUrls` plus `pendingBlobUrls`), before new downloads may create resources.

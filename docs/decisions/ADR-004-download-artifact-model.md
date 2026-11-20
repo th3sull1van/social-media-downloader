@@ -14,5 +14,9 @@ Introduce the `DownloadArtifact` model supporting two kinds:
 A `pipeline` kind may be added when a real multi-step resolution flow needs
 more than fetch-and-execute; none exists today.
 
+## Alternatives Considered
+- Teach `DownloadManager` directly about DASH MP4 muxing and RedGifs tokens: leaks Reddit-specific internals into Core.
+- Force plugins to call `chrome.downloads` themselves: bypasses unified queueing, deduplication, ZIP packaging, and download ledger reconciliation.
+
 ## Consequences
 - Core DownloadManager handles both direct URLs and generated Blobs cleanly without knowing anything about DASH or video codecs.

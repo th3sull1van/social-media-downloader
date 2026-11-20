@@ -13,6 +13,10 @@ Employ the plugin-based modular pattern:
 3. Structure Reddit DOM parsing, DASH muxing, RedGifs resolution, and deduplication into the Reddit plugin.
 4. Unify localization across 22 languages and validate contract parity with automated test suites.
 
+## Alternatives Considered
+- Rewrite all three extractors to fit a single unified DOM/GraphQL scraper API: risks losing platform-specific edge behavior (`instagram` highlights/stories, `facebook` Comet render selection, `reddit` DASH muxing + RedGifs).
+- Maintain separate legacy scripts inside `src/content/content.js` without plugin contracts: prevents testing normalizers, detectors, and naming independently in Node/Bun.
+
 ## Consequences
 - 100% preservation of site-specific capabilities.
 - Unified codebase with zero duplicated download or packaging infrastructure.

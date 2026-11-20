@@ -23,7 +23,7 @@ How each platform was wired:
 - **Instagram**: unchanged (already functional). Security hardening only (bridge nonce,
   safe rendering, URL allowlist).
 - **Reddit**: content script requests a scan from the service worker (`REDDIT_SCAN`);
-  the SW calls `RedditScanner.fetchSubredditPosts/fetchUserSubmissions/fetchPostById`
+  the SW calls `RedditScanner.fetchSubredditPosts/fetchUserPosts/fetchPostById`
   (public JSON API, privileged fetch). Items with `metadata.baseUrl` (DASH) or RedGifs
   items are resolved through `RedditPlugin.resolveMedia` in the DownloadManager:
   muxed MP4 blobs are materialized as offscreen blob URLs and downloaded.
@@ -43,8 +43,4 @@ How each platform was wired:
 - Facebook/Reddit flows require manual browser verification per AGENTS §76 (not possible
   from the audit environment); the audit's *connection* is verified by tests, the
   *behavior against live sites* is not.
-- The Reddit muxer is now reachable in production; its known limitations (64-bit MP4
-  boxes, stco not rewritten) moved from "dead code" to "documented limitation" — see
-  `docs/platforms/reddit/KNOWN_LIMITATIONS.md`.
-- The typecheck excludes browser-context classic scripts (content/popup/offscreen/
-  main-world); see `tsconfig.json` comments.
+- The Reddit muxer is now reachable in production; its historical limitations are tracked in `docs/platforms/reddit/KNOWN_LIMITATIONS.md` (updated in v1.2.2: `stco` offsets and track IDs are relocated, and `tsc --noEmit` via `tsconfig.json` now typechecks all browser scripts).

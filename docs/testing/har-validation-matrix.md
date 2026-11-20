@@ -27,6 +27,8 @@ identifier, or secret hash.
 | Instagram | `instagram/example-profile.json` | Public profile timeline and signed CDN URLs |
 | Instagram | `instagram/instagram-profile.json` | Profile pagination, posts, carousels, stories, full-resolution upgrade |
 | Instagram | `instagram/instagram-profile-v2.json` | Alternate profile payload and story/highlight extraction |
+| Instagram | `instagram/instagram-profile-v5.json` | 42-post timeline pagination (`PolarisProfilePostsQuery` + `_connection`), carousel and benign GraphQL `field_exception` |
+| Instagram | `instagram/instagram-highlights-v3.json` | Highlight tray (`PolarisProfileStoryHighlightsTrayContentQuery`), 3-reel highlight batches (`PolarisStoriesV3HighlightsPageQuery`), and rate-limited profile lookup |
 | Facebook | `facebook/facebook-profile.json` | GraphQL photos, profile/cover candidates, JSON scripts, DOM anchors, signed URLs |
 | Facebook | `facebook/facebook-reels.json` | Reel payloads and photo exclusion |
 | Facebook | `facebook/facebook-206x206.json` | Downscaled CDN request regression |
@@ -53,6 +55,7 @@ Counts below were produced by scanning `log.entries` and classifying response bo
 | Facebook | `fixtures-private/facebook-profile.har` | 1,340 | 106 Facebook GraphQL POST responses | `har-replay-platforms.test.js` |
 | Instagram | `fixtures-private/instagram-profile-v2.har` | 726 | 14 timeline, 2 highlights, 2 reels | `har-replay.test.js` |
 | Instagram | `fixtures-private/instagram-profile.har` | 2,048 | 44 timeline | `har-replay.test.js` |
+| Instagram | `fixtures-private/instagram-profile-v5.har` | 164 | 4 timeline, 42 unique posts, 1 `field_exception` warning | `har-replay.test.js` |
 | Reddit | `fixtures-private/reddit-feed.har` | 299 | 2 server-rendered `shreddit-post` responses | `har-replay-platforms.test.js` |
 | Reddit | `fixtures-private/reddit-empty-profile.har` | 83 | 1 server-rendered response, empty-profile guard | `har-replay-platforms.test.js` |
 | Reddit | `fixtures-private/reddit-post.har` | 115 | 1 server-rendered `shreddit-post` response | `har-replay-platforms.test.js` |

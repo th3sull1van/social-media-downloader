@@ -5,7 +5,8 @@ Owned by `src/plugins/instagram/InstagramDetector.js`.
 - **Host matching:** `matches(context)` is true for `instagram.com` (and its
   CDN/asset hosts used in-target) — consumed by the plugin registry.
 - **Target detection:** `detectTarget(context)` classifies the current page:
-  profile, post (permalink), carousel, stories, highlights, or a generic page.
+  `profile`, `post` (permalink `/p/` or `/reel/`), `stories` (`/stories/`), or
+  `generic` (discovery routes such as `/explore/`, `/reels/`, `/direct/`).
 - **Runtime:** the plugin declares `runtime.mainWorld`; the content script
   injects `src/plugins/instagram/main-world/injected.js` to bridge to the
   page-context Polaris (Instagram web) runtime.

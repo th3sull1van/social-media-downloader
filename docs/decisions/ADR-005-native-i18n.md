@@ -9,6 +9,10 @@ Chrome extensions provide a built-in localization mechanism (`_locales/`) that i
 ## Decision
 Use Chrome's native i18n system with unified keys across 22 supported locales. Provide automated validation (`bun run check:i18n`) to enforce key parity and placeholder integrity.
 
+## Alternatives Considered
+- Bundle a runtime JS i18n library (`i18next`, custom JSON loader): adds bundle weight and async startup delay before popup and shadow DOM labels render.
+- Maintain only English strings: excludes non-English users and loses store localization parity.
+
 ## Consequences
 - Zero third-party runtime dependencies for localization.
 - UI elements declare `data-i18n` attributes for instant client-side translation.

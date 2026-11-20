@@ -1,8 +1,10 @@
 # Facebook — Network
 
-- **GraphQL transport & session tokens:** performed where the requests are
-  actually issued — content/main-world contexts harvest `fb_dtsg`, `jazoest`,
-  `csrftoken`, `appId` from the page. Sensitive — never logged.
+- **GraphQL interception & navigation bridge:** `src/plugins/facebook/main-world/injected.js`
+  intercepts `fetch` (`string`/`URL`/`Request`) and text `XMLHttpRequest`
+  GraphQL responses (`SMD_FB_BATCH_PHOTOS`) and drives in-page `CometRouter`
+  navigation (`NAVIGATE_FB_TAB`), rather than issuing standalone signed GraphQL
+  queries with harvested tokens.
 - **CDN helpers:** `src/plugins/meta-shared/MetaCdn.js` handles `fbcdn.net`
   upscaling to full resolution.
 - **Host permissions:** `*://*.facebook.com/*`, `*://*.fbcdn.net/*`.

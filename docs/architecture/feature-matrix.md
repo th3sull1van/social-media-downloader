@@ -14,6 +14,7 @@ This matrix describes *capabilities*, not implementation.
 | HD profile picture (avatar) | ✓ | — | — |
 | Albums / collections | — | ✓ | — |
 | Subreddit / feed scan | — | — | ✓ |
+| Video media | ✓ | — | ✓ |
 | Audio media | — | — | ✓ |
 | DASH video | — | — | ✓ |
 | RedGifs | — | — | ✓ |
