@@ -45,4 +45,22 @@ export async function runFilenameTests() {
   // 6. Timestamp format
   const ts = FilenameService.getTimestamp();
   assert.match(ts, /^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$/);
+
+  // 7. AUDIT-16: replacement-pattern injection ($& / $$) in render() and post-truncation DOS reserved names
+  assert.strictEqual(
+    FilenameService.render('{author}_{id}.jpg', { author: 'user$&test$$1', id: '42' }),
+    'user$&test$$1_42.jpg'
+  );
+  const dosTruncated = FilenameService.sanitize('CON_something', 3);
+  assert.ok(!/^con$/i.test(dosTruncated), `truncated DOS reserved name must be neutralized, got ${dosTruncated}`);
+
+  // 8. AUDIT-02: UTF-8 byte cap preserves extension and never splits surrogate pairs
+  const longCjk = '日本語テスト画像'.repeat(15) + '.jpg';
+  const safeCjk = FilenameService.sanitizeFilename(longCjk, 80);
+  assert.ok(safeCjk.endsWith('.jpg'), 'CJK filename must retain extension');
+  assert.ok(FilenameService.utf8ByteLength(safeCjk) <= 180, 'CJK filename must fit UTF-8 budget');
+  const longEmoji = '📷🔥✨🎉'.repeat(30) + '.mp4';
+  const safeEmoji = FilenameService.sanitizeFilename(longEmoji, 80);
+  assert.ok(safeEmoji.endsWith('.mp4'), 'emoji filename must retain extension');
+  assert.ok(!/[\uD800-\uDFFF]/.test(safeEmoji.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '')), 'must not leave lone UTF-16 surrogates');
 }

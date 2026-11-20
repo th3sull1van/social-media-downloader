@@ -337,6 +337,90 @@ export async function runRedditScannerTests() {
       const unknown = await RedditPlugin.handleMessage('SOME_GENERIC_TYPE', {});
       assert.strictEqual(unknown, undefined, 'generic message types must not be claimed by RedditPlugin');
     }
+
+    // 15. [P1-04] Crosspost unwrapping, [P1-08] direct image candidate filtering & v.redd.it without is_video
+    {
+      assert.strictEqual(RedditScanner.isDirectImageCandidate('https://i.redd.it/abc.jpg'), true);
+      assert.strictEqual(RedditScanner.isDirectImageCandidate('https://i.imgur.com/abc.png'), true);
+      assert.strictEqual(RedditScanner.isDirectImageCandidate('https://v.redd.it/vid123'), false);
+      assert.strictEqual(RedditScanner.isDirectImageCandidate('https://imgur.com/a/album123'), false);
+      assert.strictEqual(RedditScanner.isDirectImageCandidate('https://imgur.com/gallery/gal123'), false);
+      assert.strictEqual(RedditScanner.isDirectImageCandidate('https://instagram.com/p/abc?img=foo.jpg'), false);
+
+      const crosspost = {
+        id: 'outer1',
+        title: 'Outer Crosspost',
+        author: 'alice',
+        subreddit: 'pics',
+        crosspost_parent_list: [
+          {
+            id: 'inner1',
+            url: 'https://i.redd.it/crossposted.jpg',
+            preview: { images: [{ source: { width: 1200, height: 900 } }] }
+          }
+        ]
+      };
+      const cpItems = RedditScanner.parseApiPostObject(crosspost);
+      assert.strictEqual(cpItems.length, 1);
+      assert.strictEqual(cpItems[0].url, 'https://i.redd.it/crossposted.jpg');
+
+      const vredditOmittedFlag = {
+        id: 'vid_implicit',
+        title: 'Implicit Video',
+        author: 'bob',
+        subreddit: 'videos',
+        url: 'https://v.redd.it/implicit123',
+        media: {
+          reddit_video: {
+            fallback_url: 'https://v.redd.it/implicit123/DASH_480.mp4',
+            dash_url: 'https://v.redd.it/implicit123/DASHPlaylist.mpd'
+          }
+        }
+      };
+      const vidItems = RedditScanner.parseApiPostObject(vredditOmittedFlag);
+      assert.strictEqual(vidItems.length, 1);
+      assert.strictEqual(vidItems[0].type, 'video');
+      assert.strictEqual(vidItems[0].metadata.baseUrl, 'https://v.redd.it/implicit123');
+    }
+
+    // 16. [P1-06] Cursor loop protection in fetchSubredditPosts when API repeats `after`.
+    {
+      let calls = 0;
+      anyFetch.fetch = async () => {
+        calls++;
+        return {
+          ok: true,
+          json: async () => ({
+            data: {
+              after: 'stuck_cursor_token',
+              children: [
+                { data: { id: `loop_${calls}`, title: 'Loop', subreddit: 'pics', url: `https://i.redd.it/loop_${calls}.jpg` } }
+              ]
+            }
+          })
+        };
+      };
+      const res = await RedditScanner.fetchSubredditPosts('pics', { limit: 500 });
+      assert.strictEqual(calls, 2, 'must terminate immediately once an after cursor repeats');
+      assert.strictEqual(res.items.length, 2);
+    }
+
+    // 17. AUDIT-10 & AUDIT-17: external-preview HMAC preserved, arbitrary hosts rejected, RedGifs hostname validated, feed targetType preserved.
+    {
+      const { RedditNormalizer } = await import('../../src/plugins/reddit/RedditNormalizer.js');
+      const { RedditDetector } = await import('../../src/plugins/reddit/RedditDetector.js');
+      assert.strictEqual(
+        RedditNormalizer.cleanMediaUrl('https://external-preview.redd.it/abc.jpg?auto=webp&s=deadbeef'),
+        'https://external-preview.redd.it/abc.jpg?auto=webp&s=deadbeef',
+        'external-preview.redd.it must keep signed ?s= query string'
+      );
+      assert.strictEqual(RedditScanner.isDirectImageCandidate('https://attacker.example/track.jpg'), false,
+        'arbitrary third-party .jpg domains must be rejected');
+      assert.strictEqual(RedditNormalizer.isRedGifsHost('https://evil.example/?q=redgifs.com/watch/foo'), false,
+        'RedGifs detection must check URL hostname, not substring');
+      assert.strictEqual(RedditDetector.detectTarget({ url: 'https://www.reddit.com/' }).type, 'feed',
+        'Reddit root feed must preserve target type feed instead of degrading to unknown');
+    }
   } finally {
     anyFetch.fetch = originalFetch;
   }

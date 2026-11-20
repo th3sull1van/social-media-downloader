@@ -1,20 +1,27 @@
 #!/usr/bin/env bun
 /**
- * Social Media Downloader — Build Distributable Chrome Extension ZIP
+ * Social Media Downloader — Build Distributable Chrome Extension ZIP & Unpacked Dir
  * Packages the extension ready to be loaded via chrome://extensions ("Load unpacked")
  * or installed into Chromium-based browsers.
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import zlib from 'node:zlib';
 
 const rootDir = path.resolve(import.meta.dirname, '..');
 const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
+const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, 'manifest.json'), 'utf8'));
 const version = pkg.version;
 if (typeof version !== 'string' || version.length === 0) {
   throw new Error('package.json must define a non-empty product version before building a release');
 }
+if (manifest.version !== version) {
+  throw new Error(`Version mismatch: manifest.json (${manifest.version}) != package.json (${version})`);
+}
+
 const distDir = path.join(rootDir, 'dist');
+const unpackedDir = path.join(distDir, 'chrome');
 const zipFileName = `social-media-downloader-v${version}-chrome.zip`;
 const zipFilePath = path.join(distDir, zipFileName);
 
@@ -28,11 +35,13 @@ const includeItems = [
   '_locales',
   'assets',
   'src',
-  'README.md',
   'LICENSE'
 ];
 
+const COMPRESSIBLE_EXTS = new Set(['.js', '.json', '.html', '.css', '.md', '.txt', '.svg', '']);
+
 function getAllFiles(dir, base = '') {
+  /** @type {Array<{ relPath: string, fullPath: string }>} */
   let results = [];
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
@@ -40,7 +49,7 @@ function getAllFiles(dir, base = '') {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       results = results.concat(getAllFiles(fullPath, relPath));
-    } else {
+    } else if (!relPath.endsWith('.d.ts')) {
       results.push({ relPath, fullPath });
     }
   }
@@ -58,8 +67,7 @@ for (const item of includeItems) {
   }
   const stat = fs.statSync(itemPath);
   if (stat.isDirectory()) {
-    const files = getAllFiles(itemPath, item);
-    fileList.push(...files);
+    fileList.push(...getAllFiles(itemPath, item));
   } else {
     fileList.push({ relPath: item, fullPath: itemPath });
   }
@@ -67,7 +75,22 @@ for (const item of includeItems) {
 
 console.log(`[Build] Collected ${fileList.length} files for extension bundle.`);
 
-// Build PKZIP 2.0 file
+// Sync unpacked dist/chrome directory cleanly
+fs.rmSync(unpackedDir, { recursive: true, force: true });
+for (const file of fileList) {
+  const dest = path.join(unpackedDir, file.relPath);
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(file.fullPath, dest);
+}
+
+// Remove stale versioned chrome ZIP artifacts from dist/
+for (const entry of fs.readdirSync(distDir)) {
+  if (/^social-media-downloader-v.*-chrome\.zip$/i.test(entry) && entry !== zipFileName) {
+    fs.rmSync(path.join(distDir, entry), { force: true });
+  }
+}
+
+// Build PKZIP 2.0 file (DEFLATE text assets when beneficial, STORE binary assets)
 const CRC32_TABLE = new Uint32Array(256);
 for (let i = 0; i < 256; i++) {
   let c = i;
@@ -95,39 +118,52 @@ function dosDateTime(date) {
 const entries = [];
 const chunks = [];
 let currentOffset = 0;
-const now = new Date();
-const { time: dosTime, date: dosDate } = dosDateTime(now);
+const { time: dosTime, date: dosDate } = dosDateTime(new Date());
 
 for (const file of fileList) {
-  const data = fs.readFileSync(file.fullPath);
+  const rawData = fs.readFileSync(file.fullPath);
   const nameBytes = Buffer.from(file.relPath.replace(/\\/g, '/'), 'utf8');
-  const crc = calculateCrc32(data);
-  const size = data.length;
+  const crc = calculateCrc32(rawData);
+  const uncompressedSize = rawData.length;
+
+  let method = 0;
+  let payload = rawData;
+  const ext = path.extname(file.relPath).toLowerCase();
+  if (COMPRESSIBLE_EXTS.has(ext) && rawData.length > 64) {
+    const deflated = zlib.deflateRawSync(rawData, { level: 9 });
+    if (deflated.length < rawData.length) {
+      method = 8;
+      payload = deflated;
+    }
+  }
+  const compressedSize = payload.length;
 
   const localHeader = Buffer.alloc(30 + nameBytes.length);
   localHeader.writeUInt32LE(0x04034b50, 0); // signature
   localHeader.writeUInt16LE(20, 4);         // version needed: 2.0
   localHeader.writeUInt16LE(0x0800, 6);     // flags: UTF-8
-  localHeader.writeUInt16LE(0, 8);          // compression: STORE
+  localHeader.writeUInt16LE(method, 8);     // compression: STORE (0) or DEFLATE (8)
   localHeader.writeUInt16LE(dosTime, 10);
   localHeader.writeUInt16LE(dosDate, 12);
   localHeader.writeUInt32LE(crc, 14);
-  localHeader.writeUInt32LE(size, 18);
-  localHeader.writeUInt32LE(size, 22);
+  localHeader.writeUInt32LE(compressedSize, 18);
+  localHeader.writeUInt32LE(uncompressedSize, 22);
   localHeader.writeUInt16LE(nameBytes.length, 26);
   localHeader.writeUInt16LE(0, 28);
   nameBytes.copy(localHeader, 30);
 
   entries.push({
     nameBytes,
+    method,
     crc,
-    size,
+    compressedSize,
+    uncompressedSize,
     offset: currentOffset
   });
 
   chunks.push(localHeader);
-  chunks.push(data);
-  currentOffset += localHeader.length + data.length;
+  chunks.push(payload);
+  currentOffset += localHeader.length + payload.length;
 }
 
 const centralDirStart = currentOffset;
@@ -139,12 +175,12 @@ for (const entry of entries) {
   cdHeader.writeUInt16LE(20, 4);         // version made by
   cdHeader.writeUInt16LE(20, 6);         // version needed
   cdHeader.writeUInt16LE(0x0800, 8);     // flags: UTF-8
-  cdHeader.writeUInt16LE(0, 10);         // compression: STORE
+  cdHeader.writeUInt16LE(entry.method, 10);
   cdHeader.writeUInt16LE(dosTime, 12);
   cdHeader.writeUInt16LE(dosDate, 14);
   cdHeader.writeUInt32LE(entry.crc, 16);
-  cdHeader.writeUInt32LE(entry.size, 20);
-  cdHeader.writeUInt32LE(entry.size, 24);
+  cdHeader.writeUInt32LE(entry.compressedSize, 20);
+  cdHeader.writeUInt32LE(entry.uncompressedSize, 24);
   cdHeader.writeUInt16LE(entry.nameBytes.length, 28);
   cdHeader.writeUInt16LE(0, 30);         // extra len
   cdHeader.writeUInt16LE(0, 32);         // comment len
@@ -176,6 +212,7 @@ const finalBuffer = Buffer.concat(chunks);
 fs.writeFileSync(zipFilePath, finalBuffer);
 
 console.log(`✔ Successfully built Chrome extension bundle:`);
-console.log(`  Path: ${zipFilePath}`);
+console.log(`  ZIP: ${zipFilePath}`);
+console.log(`  Unpacked: ${unpackedDir}`);
 console.log(`  Size: ${(finalBuffer.length / 1024).toFixed(1)} KB`);
 console.log(`  Files: ${entries.length}`);

@@ -8,87 +8,119 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '../..');
-const srcDir = path.join(rootDir, 'src');
+const defaultRootDir = path.resolve(__dirname, '../..');
 
-function getAllJsFiles(dir) {
+function collectFiles(dir, extensions) {
   let results = [];
   if (!fs.existsSync(dir)) return results;
-  const list = fs.readdirSync(dir);
-  for (const file of list) {
+  for (const file of fs.readdirSync(dir)) {
     const fullPath = path.join(dir, file);
     const stat = fs.statSync(fullPath);
-    if (stat && stat.isDirectory()) {
-      results = results.concat(getAllJsFiles(fullPath));
-    } else if (file.endsWith('.js')) {
+    if (stat.isDirectory()) {
+      results = results.concat(collectFiles(fullPath, extensions));
+    } else if (extensions.some((ext) => file.endsWith(ext))) {
       results.push(fullPath);
     }
   }
   return results;
 }
 
-export function checkDependencyRules() {
+function stripComments(source) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+    .replace(/(^|[^:\\])\/\/[^\n]*/g, '$1');
+}
+
+function resolveSpecifiers(filePath, content, rootDir) {
+  const specs = [];
+  const fileDir = path.dirname(filePath);
+  const relFile = path.relative(rootDir, filePath).replace(/\\/g, '/');
+  if (filePath.endsWith('.html')) {
+    const lines = content.split('\n');
+    lines.forEach((line, i) => {
+      for (const m of line.matchAll(/<script\b[^>]*\bsrc\s*=\s*['"]([^'"]+)['"]/gi)) {
+        const raw = m[1];
+        const target = raw.startsWith('/') ? raw.slice(1) : path.relative(rootDir, path.resolve(fileDir, raw)).replace(/\\/g, '/');
+        specs.push({ line: i + 1, target, raw });
+      }
+    });
+    return specs;
+  }
+
+  const clean = stripComments(content);
+  const lines = clean.split('\n');
+  lines.forEach((line, i) => {
+    const lineNum = i + 1;
+    for (const m of line.matchAll(/\b(?:import|export)\s+(?:[^'"]*?\s+from\s+)?['"]([^'"]+)['"]/g)) {
+      const raw = m[1];
+      const target = raw.startsWith('.') ? path.relative(rootDir, path.resolve(fileDir, raw)).replace(/\\/g, '/') : raw;
+      specs.push({ line: lineNum, target, raw });
+    }
+    for (const m of line.matchAll(/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+      const raw = m[1];
+      const target = raw.startsWith('.') ? path.relative(rootDir, path.resolve(fileDir, raw)).replace(/\\/g, '/') : raw;
+      specs.push({ line: lineNum, target, raw });
+    }
+    for (const m of line.matchAll(/\bimportScripts\s*\(([^)]+)\)/g)) {
+      for (const s of m[1].matchAll(/['"]([^'"]+)['"]/g)) {
+        const raw = s[1];
+        const target = raw.startsWith('/') ? raw.slice(1) : path.relative(rootDir, path.resolve(fileDir, raw)).replace(/\\/g, '/');
+        specs.push({ line: lineNum, target, raw });
+      }
+    }
+    for (const m of line.matchAll(/chrome\.runtime\.getURL\(\s*['"]([^'"]+)['"]\s*\)/g)) {
+      const raw = m[1];
+      specs.push({ line: lineNum, target: raw.replace(/^\/+/, ''), raw });
+    }
+  });
+  void relFile;
+  return specs;
+}
+
+/** @param {{ rootDir?: string }} [options] */
+export function checkDependencyRules({ rootDir: suppliedRootDir } = {}) {
+  const rootDir = suppliedRootDir || defaultRootDir;
+  const srcDir = path.join(rootDir, 'src');
   const violations = [];
-  const files = getAllJsFiles(srcDir);
+  const files = collectFiles(srcDir, ['.js', '.html']);
 
   for (const filePath of files) {
     const relPath = path.relative(rootDir, filePath).replace(/\\/g, '/');
     const content = fs.readFileSync(filePath, 'utf8');
-    const lines = content.split('\n');
+    const specs = resolveSpecifiers(filePath, content, rootDir);
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const importMatch = line.match(/(?:import|from)\s+['"]([^'"]+)['"]/);
-      if (!importMatch) continue;
-
-      const importTarget = importMatch[1];
-
-      // Rule 1: Core MUST NOT import platform implementations
+    for (const { line, target, raw } of specs) {
       if (relPath.startsWith('src/core/')) {
-        if (importTarget.includes('/plugins/instagram') ||
-            importTarget.includes('/plugins/facebook') ||
-            importTarget.includes('/plugins/reddit') ||
-            importTarget.includes('/plugins/meta-shared')) {
-          violations.push({
-            file: relPath,
-            line: i + 1,
-            rule: 'Core MUST NOT import platform plugins or meta-shared',
-            importTarget
-          });
+        if (target.startsWith('src/plugins/')) {
+          violations.push({ file: relPath, line, rule: 'Core MUST NOT depend on plugins or meta-shared', importTarget: raw });
         }
-      }
-
-      // Rule 2: Platform plugins MUST NOT import other platform plugins
-      if (relPath.startsWith('src/plugins/instagram/')) {
-        if (importTarget.includes('/plugins/facebook') || importTarget.includes('/plugins/reddit')) {
-          violations.push({
-            file: relPath,
-            line: i + 1,
-            rule: 'Instagram plugin MUST NOT import Facebook or Reddit',
-            importTarget
-          });
+      } else if (relPath.startsWith('src/offscreen/')) {
+        if (target.startsWith('src/plugins/')) {
+          violations.push({ file: relPath, line, rule: 'Offscreen MUST NOT depend on platform plugins', importTarget: raw });
         }
-      }
-
-      if (relPath.startsWith('src/plugins/facebook/')) {
-        if (importTarget.includes('/plugins/instagram') || importTarget.includes('/plugins/reddit')) {
-          violations.push({
-            file: relPath,
-            line: i + 1,
-            rule: 'Facebook plugin MUST NOT import Instagram or Reddit',
-            importTarget
-          });
+      } else if (relPath.startsWith('src/popup/')) {
+        if (target.startsWith('src/plugins/')) {
+          violations.push({ file: relPath, line, rule: 'Popup MUST NOT depend directly on platform plugins', importTarget: raw });
         }
-      }
-
-      if (relPath.startsWith('src/plugins/reddit/')) {
-        if (importTarget.includes('/plugins/instagram') || importTarget.includes('/plugins/facebook') || importTarget.includes('/plugins/meta-shared')) {
-          violations.push({
-            file: relPath,
-            line: i + 1,
-            rule: 'Reddit plugin MUST NOT import Instagram, Facebook, or Meta Shared',
-            importTarget
-          });
+      } else if (relPath.startsWith('src/content/ui/') || relPath.startsWith('src/content/runtime/') || relPath.startsWith('src/content/bridge/')) {
+        if (target.startsWith('src/plugins/')) {
+          violations.push({ file: relPath, line, rule: 'Content runtime/UI/bridge MUST remain platform-agnostic (no plugin imports)', importTarget: raw });
+        }
+      } else if (relPath.startsWith('src/plugins/instagram/')) {
+        if (target.startsWith('src/plugins/facebook/') || target.startsWith('src/plugins/reddit/') || target.startsWith('src/content/')) {
+          violations.push({ file: relPath, line, rule: 'Instagram plugin MUST NOT import Facebook, Reddit, or content shell', importTarget: raw });
+        }
+      } else if (relPath.startsWith('src/plugins/facebook/')) {
+        if (target.startsWith('src/plugins/instagram/') || target.startsWith('src/plugins/reddit/') || target.startsWith('src/content/')) {
+          violations.push({ file: relPath, line, rule: 'Facebook plugin MUST NOT import Instagram, Reddit, or content shell', importTarget: raw });
+        }
+      } else if (relPath.startsWith('src/plugins/reddit/')) {
+        if (target.startsWith('src/plugins/instagram/') || target.startsWith('src/plugins/facebook/') || target.startsWith('src/plugins/meta-shared/') || target.startsWith('src/content/')) {
+          violations.push({ file: relPath, line, rule: 'Reddit plugin MUST NOT import Instagram, Facebook, Meta Shared, or content shell', importTarget: raw });
+        }
+      } else if (relPath.startsWith('src/plugins/meta-shared/')) {
+        if (target.startsWith('src/plugins/instagram/') || target.startsWith('src/plugins/facebook/') || target.startsWith('src/plugins/reddit/') || target.startsWith('src/content/')) {
+          violations.push({ file: relPath, line, rule: 'Meta Shared MUST NOT depend on any platform plugin or content shell', importTarget: raw });
         }
       }
     }
@@ -97,7 +129,7 @@ export function checkDependencyRules() {
   return violations;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
   console.log('Checking architectural dependency rules...');
   const violations = checkDependencyRules();
   if (violations.length === 0) {

@@ -12,6 +12,14 @@ import { RedditPlugin } from '../../src/plugins/reddit/RedditPlugin.js';
 import { RedditMessages } from '../../src/plugins/reddit/RedditMessages.js';
 
 export async function runRedditMessageRoutingTests() {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = /** @type {any} */ (async (url) => {
+    if (String(url).includes('api.redgifs.com/v2/auth/temporary')) {
+      return { ok: true, status: 200, json: async () => ({ token: 'stub-token' }) };
+    }
+    return { ok: false, status: 404, json: async () => ({}) };
+  });
+  try {
   // 1. Generic message types are not claimed by the Reddit plugin.
   {
     const result = await RedditPlugin.handleMessage('SCAN_START', { payload: {} });
@@ -91,5 +99,8 @@ export async function runRedditMessageRoutingTests() {
       'TRIGGER_SCAN_REDGIFS',
       'TRIGGER_SCAN_REDGIFS constant must be stable'
     );
+  }
+  } finally {
+    globalThis.fetch = originalFetch;
   }
 }

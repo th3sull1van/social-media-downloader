@@ -6,6 +6,7 @@ export async function runBackgroundResourceTests() {
   const source = fs.readFileSync('src/background/background.js', 'utf8').replace(/^import .*;$/gm, '');
   function worker({ queryFails = false } = {}) {
     const messages = [];
+    /** @type {any} */
     let onChanged;
     let onMessage;
     let exists = true;
@@ -84,4 +85,47 @@ export async function runBackgroundResourceTests() {
   assert.equal(failed.messages.length, 0, 'unknown browser state must never trigger deletion');
   assert.equal((await failed.start()).success, false);
   assert.equal(failed.messages.length, 0);
+
+  // AUDIT-06: Unrelated third-party browser downloads must NOT create the offscreen document.
+  {
+    let offscreenCreations = 0;
+    /** @type {any} */
+    let onChanged;
+    const extSandbox = {
+      defaultRegistry: { register() {} },
+      InstagramPlugin: {}, FacebookPlugin: {}, RedditPlugin: {}, StorageService: {},
+      DownloadManager: class {
+        downloadBlobUrls = new Map();
+        activeJob = null;
+        logger = { warn() {} };
+        handleDownloadChanged() {}
+      },
+      ArchiveService: {
+        async sendToOffscreen() { return { ok: true }; },
+        async revokeBlobUrls() {}
+      },
+      chrome: {
+        runtime: {
+          getURL: (file) => `chrome-extension://test/${file}`,
+          async getContexts() { return []; },
+          onMessage: { addListener() {} }
+        },
+        offscreen: { async createDocument() { offscreenCreations++; } },
+        downloads: {
+          onChanged: { addListener(listener) { onChanged = listener; } },
+          async search(query) {
+            if (query.id === 999) return [{ id: 999, url: 'https://ubuntu.com/ubuntu.iso', state: 'complete' }];
+            return [];
+          }
+        }
+      }
+    };
+    vm.runInNewContext(source, extSandbox);
+    await flush();
+    const afterBoot = offscreenCreations;
+    assert.ok(onChanged, 'onChanged listener should be registered');
+    onChanged({ id: 999, state: { current: 'complete' } });
+    await flush();
+    assert.equal(offscreenCreations, afterBoot, 'unrelated third-party download must never wake the offscreen document');
+  }
 }

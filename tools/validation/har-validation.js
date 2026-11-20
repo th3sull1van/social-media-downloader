@@ -1,15 +1,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const SENSITIVE_NAMES = /^(cookie|set-cookie|authorization|proxy-authorization|x-csrf-token|x-xsrf-token|access[-_]?token|csrf(?:[-_]?token)?|xsrf(?:[-_]?token)?|password|passwd|secret|session(?:[-_]?id)?|jwt)$/i;
-const SENSITIVE_TEXT = /(?:bearer\s+[a-z0-9._-]{20,}|(?:sessionid|c_user|datr|csrftoken|access_token)\s*=\s*(?![`$<])[^;\s]{20,})/i;
+const SENSITIVE_NAMES = /^(cookie|set-cookie|authorization|proxy-authorization|x-csrf-token|x-csrftoken|x-xsrf-token|x-fb-lsd|access[-_]?token|refresh[-_]?token|id[-_]?token|api[-_]?key|csrf(?:[-_]?token)?|xsrf(?:[-_]?token)?|fb_dtsg|lsd|jazoest|password|passwd|secret|session(?:[-_]?id)?|jwt)$/i;
+const SENSITIVE_TEXT = /(?:bearer\s+[a-z0-9._~+/=-]{20,}|\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}(?:\.[A-Za-z0-9_-]+)?\b|(?:^|[?&;,\s"'])(?:sessionid|c_user|datr|csrftoken|access_token|fb_dtsg|lsd)\s*=\s*(?![`$<])[^;\s]{12,})/i;
 const MAX_STRUCTURED_JSON_CHARS = 4_000_000;
 const MAX_STRUCTURED_DEPTH = 12;
 
 export function classifyHarPath(filePath) {
   const normalized = String(filePath).replace(/[\\/]+/g, '/').toLowerCase();
   for (const platform of ['instagram', 'facebook', 'reddit']) {
-    if (normalized.includes(`/${platform}/`) || normalized.includes(`www.${platform}.com`)) return platform;
+    if (
+      normalized.includes(`/${platform}/`) ||
+      normalized.includes(`www.${platform}.com`) ||
+      new RegExp(`(?:^|/)${platform}[-_.]`).test(normalized)
+    ) {
+      return platform;
+    }
   }
   return 'unknown';
 }
@@ -79,6 +85,21 @@ function scanCookies(cookies, location, findings) {
   }
 }
 
+function scanUrlParams(rawUrl, location, findings) {
+  if (typeof rawUrl !== 'string' || !rawUrl) return;
+  scanValue(rawUrl, location, findings);
+  try {
+    const parsed = new URL(rawUrl, 'https://har.invalid');
+    for (const [k, v] of parsed.searchParams.entries()) {
+      if (SENSITIVE_NAMES.test(k) && !isSanitizedPlaceholder(v)) {
+        findings.push(`${location}?${k}`);
+      }
+    }
+  } catch {
+    // Unparseable URI already scanned by scalar scanValue above.
+  }
+}
+
 export function validateHarDocument(document) {
   const entries = document?.log?.entries;
   if (!Array.isArray(entries)) throw new Error('HAR must contain log.entries');
@@ -86,23 +107,31 @@ export function validateHarDocument(document) {
   for (const [index, entry] of entries.entries()) {
     for (const header of [...(entry?.request?.headers || []), ...(entry?.response?.headers || [])]) {
       const headerName = String(header?.name || '');
-      if (SENSITIVE_NAMES.test(headerName)) {
+      if (SENSITIVE_NAMES.test(headerName) && !isSanitizedPlaceholder(header?.value)) {
         findings.push(`entry[${index}].headers.${headerName}`);
         scanValue(header?.value, `entry[${index}].headers.${headerName}`, findings);
       }
     }
     const request = entry?.request || {};
     const response = entry?.response || {};
-    // URLs may contain opaque CDN signatures and are not scanned as secrets.
-    // Only structured query/body fields are inspected; normal response text is
-    // intentionally left alone to avoid rejecting public API fixtures.
+    scanUrlParams(request.url, `entry[${index}].request.url`, findings);
+    scanUrlParams(response.redirectURL, `entry[${index}].response.redirectURL`, findings);
     scanNamedPairs(request.queryString, `entry[${index}].request.queryString`, findings);
     scanNamedPairs(request.postData?.params, `entry[${index}].request.postData.params`, findings);
     scanJsonText(request.postData?.text, `entry[${index}].request.postData`, findings);
     scanStructured(request.postData, `entry[${index}].request.postData`, findings);
     scanCookies(request.cookies, `entry[${index}].request.cookies`, findings);
     scanCookies(response.cookies, `entry[${index}].response.cookies`, findings);
-    scanJsonText(response.content?.text, `entry[${index}].response.content`, findings);
+    let responseText = response.content?.text;
+    if (response.content?.encoding === 'base64' && typeof responseText === 'string' && responseText.length > 0) {
+      try {
+        responseText = Buffer.from(responseText, 'base64').toString('utf8');
+        scanValue(responseText, `entry[${index}].response.content`, findings);
+      } catch {
+        findings.push(`entry[${index}].response.content.base64`);
+      }
+    }
+    scanJsonText(responseText, `entry[${index}].response.content`, findings);
     scanStructured(response.content, `entry[${index}].response.content`, findings);
   }
   if (findings.length) throw new Error(`sensitive HAR data found: ${findings.slice(0, 5).join(', ')}`);

@@ -35,6 +35,7 @@ const SAFE_CAPTURE_IDS = new Set([
   'example-feed',
   'instagram-profile',
   'instagram-profile-v2',
+  'instagram-profile-v5',
   'reddit-feed',
   'reddit-post',
   'reddit-gallery',
@@ -290,15 +291,73 @@ function baseFixture(platform, fixtureType, sourceCaptureId, purpose) {
   };
 }
 
+function extractInstagramTimelineQueries(harPath, anonymizer) {
+  const har = JSON.parse(fs.readFileSync(harPath, 'utf8'));
+  const entries = har.log?.entries || [];
+  const queries = [];
+  let offset = 0;
+
+  for (const entry of entries) {
+    let parsedUrl;
+    try { parsedUrl = new URL(entry?.request?.url || ''); } catch { continue; }
+    if (!parsedUrl.pathname.includes('/graphql/query')) continue;
+    const params = new URLSearchParams(entry?.request?.postData?.text || '');
+    const name = params.get('fb_api_req_friendly_name');
+    if (name !== 'PolarisProfilePostsQuery' && name !== 'PolarisProfilePostsTabContentQuery_connection') continue;
+    const bodyText = decodeEntryBody(entry);
+    if (!bodyText) continue;
+    let body;
+    try { body = JSON.parse(bodyText); } catch { continue; }
+    const tl = body?.data?.xdt_api__v1__feed__user_timeline_graphql_connection;
+    if (!Array.isArray(tl?.edges)) continue;
+    const qIdx = queries.length;
+    const rawEdges = tl.edges;
+    const rawErrors = Array.isArray(body?.errors) ? body.errors : [];
+    const projectedBody = {
+      data: {
+        xdt_api__v1__feed__user_timeline_graphql_connection: {
+          edges: rawEdges.map((edge, i) => ({ node: projectInstagramNode(edge?.node || edge, anonymizer, offset + i) })),
+          page_info: {
+            has_next_page: Boolean(tl.page_info?.has_next_page),
+            end_cursor: tl.page_info?.end_cursor ? `cursor_page_${qIdx + 1}` : null
+          }
+        }
+      },
+      ...(rawErrors.length
+        ? {
+            errors: rawErrors.map((err) => ({
+              message: 'A server error field_exception occured. Check server logs for details.',
+              severity: String(err?.severity || 'ERROR'),
+              ...(Array.isArray(err?.path)
+                ? { path: err.path.map((seg) => (typeof seg === 'number' ? seg : String(seg).replace(/[^A-Za-z0-9_]/g, '_'))) }
+                : {})
+            }))
+          }
+        : {})
+    };
+    offset += rawEdges.length;
+    queries.push({
+      name,
+      docId: String(params.get('doc_id') || ''),
+      body: projectedBody
+    });
+  }
+  return queries;
+}
+
 function extractInstagramFixture(harPath) {
   const sourceCaptureId = captureIdFor(harPath, 'instagram');
   const anonymizer = createAnonymizer();
   const timeline = extractTimelineNodes(harPath);
   const stories = extractStoryItems(harPath);
+  const timelineQueries = sourceCaptureId === 'instagram-profile-v5'
+    ? extractInstagramTimelineQueries(harPath, anonymizer)
+    : null;
   return {
     ...baseFixture('instagram', 'instagram-replay', sourceCaptureId, 'Offline Instagram parser and content-script parity regression'),
     nodes: timeline.nodes.map((node, index) => projectInstagramNode(node, anonymizer, index)),
     storyItems: stories.storyItems.map((item, index) => projectInstagramStory(item, anonymizer, index)),
+    ...(timelineQueries ? { timelineQueries } : {}),
     expected: {
       timelineResponses: timeline.timelineResponses,
       nodeCount: timeline.nodes.length,
@@ -790,7 +849,8 @@ function main() {
   const igSources = [
     existing('tests/fixtures/har/instagram/example-profile.har'),
     existing('fixtures-private/instagram-profile.har'),
-    existing('fixtures-private/instagram-profile-v2.har')
+    existing('fixtures-private/instagram-profile-v2.har'),
+    existing('fixtures-private/instagram-profile-v5.har')
   ].filter(Boolean);
   for (const source of igSources) {
     const fixture = extractInstagramFixture(source);

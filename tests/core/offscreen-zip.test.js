@@ -362,6 +362,29 @@ export async function runOffscreenZipTests() {
     manager.handleDownloadChanged({ id: manager.activeJob.receiptDownloadId, state: { current: 'complete' } });
     await flush();
     assert.equal(transport.opfs.files.size, 0);
+
+    // AUDIT-02: Long colliding CJK archive paths must stay distinct and keep extensions in offscreen ZIP.
+    const cjkSession = makeContext();
+    assert.equal((await cjkSession.send({ type: 'OFFSCREEN_BEGIN_ZIP' })).ok, true);
+    const usedCjk = new Set();
+    const rawCjk = `album/${'日本語テスト画像'.repeat(12)}.jpg`;
+    const cjk1 = DownloadManager.uniquifyArchivePath(rawCjk, usedCjk);
+    const cjk2 = DownloadManager.uniquifyArchivePath(rawCjk, usedCjk);
+    for (const entryPath of [cjk1, cjk2]) {
+      const b = await cjkSession.send({ type: 'OFFSCREEN_BEGIN_ENTRY', name: entryPath });
+      assert.equal(b.ok, true);
+      assert.ok(b.path.endsWith('.jpg'), `offscreen entry path must retain .jpg: ${b.path}`);
+      assert.ok(new TextEncoder().encode(b.path.split('/').pop()).length <= 200);
+      assert.equal((await cjkSession.send({ type: 'OFFSCREEN_WRITE_CHUNK', entryId: b.entryId, dataB64: Buffer.from('x').toString('base64') })).ok, true);
+      assert.equal((await cjkSession.send({ type: 'OFFSCREEN_END_ENTRY', entryId: b.entryId })).ok, true);
+    }
+    const finCjk = await cjkSession.send({ type: 'OFFSCREEN_FINISH_ZIP', zipFilename: 'cjk.zip', discard: false });
+    assert.equal(finCjk.ok, true);
+    const cjkZipBytes = new Uint8Array(await cjkSession.getLastObject().arrayBuffer());
+    const cjkEntries = await readZipEntries(cjkZipBytes);
+    assert.equal(cjkEntries.length, 2);
+    assert.notEqual(cjkEntries[0].name, cjkEntries[1].name, 'CJK ZIP entries must remain distinct');
+    assert.ok(cjkEntries.every((e) => e.name.endsWith('.jpg')), 'all CJK ZIP entries must retain .jpg extension');
   } finally {
     runtime.chrome = savedChrome;
     globalThis.fetch = savedFetch;

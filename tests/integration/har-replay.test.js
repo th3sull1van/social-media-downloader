@@ -27,6 +27,7 @@ const rootDir = path.resolve(__dirname, '../..');
 const HAR_FILES = [
   path.join(rootDir, 'tests/fixtures/har/instagram/example-profile.har'),
   path.join(rootDir, 'fixtures-private/instagram-profile-v2.har'),
+  path.join(rootDir, 'fixtures-private/instagram-profile-v5.har'),
   path.join(rootDir, 'fixtures-private/instagram-profile.har')
 ];
 

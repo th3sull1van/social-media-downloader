@@ -65,7 +65,11 @@ if (process.argv[1]?.endsWith('har-compare.js')) {
   const actual = readJson(reportPath);
   if (update) {
     fs.mkdirSync(path.dirname(path.resolve(baselinePath)), { recursive: true });
-    fs.writeFileSync(baselinePath, `${JSON.stringify(actual, null, 2)}\n`, 'utf8');
+    // Never write local fixtures-private/* filenames into the versioned baseline.
+    const sanitizedActual = actual && Array.isArray(actual.private)
+      ? { ...actual, private: [], privateFixtureCount: 0 }
+      : actual;
+    fs.writeFileSync(baselinePath, `${JSON.stringify(sanitizedActual, null, 2)}\n`, 'utf8');
     console.log(`HAR baseline updated: ${baselinePath}`);
   } else {
     const expected = readJson(baselinePath);

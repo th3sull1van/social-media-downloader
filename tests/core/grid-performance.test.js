@@ -2,10 +2,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { InstagramNormalizer } from '../../src/plugins/instagram/InstagramNormalizer.js';
+import { createMediaGrid } from '../../src/content/ui/MediaGrid.js';
 
 // Execute the production render/filter/observer functions, without a second
 // implementation of their behavior. The DOM double counts real node creation.
-export function createGridHarness(source = fs.readFileSync('src/content/content.js', 'utf8')) {
+// When `source` contains the legacy pre-modularization inline grid (e.g. `git show HEAD`
+// in tools/benchmark-downloads.js), evaluate that slice for apples-to-apples comparison;
+// otherwise instantiate the real production MediaGrid module directly.
+export function createGridHarness(source = '') {
   let created = 0;
   const observed = new Set();
   function element(tag = 'div') {
@@ -48,26 +52,52 @@ export function createGridHarness(source = fs.readFileSync('src/content/content.
   }
   const elements = new Map(['smd-grid', 'smd-empty'].map((id) => [id, element()]));
   const state = { media: new Map(), selectedIds: new Set(), activeFilter: 'all' };
-  const sandbox = {
-    state, floatingModal: { style: { display: 'flex' } },
-    document: { createElement: element, createDocumentFragment: () => element('fragment') },
-    uiGetById: (id) => elements.get(id),
-    t: (key) => key,
-    isAllowedMediaUrl: (url) => /^https:\/\//.test(url),
-    updateSelectionSummary() {},
-    IntersectionObserver: class {
-      observe(image) { observed.add(image); }
-      unobserve(image) { observed.delete(image); }
-      disconnect() { observed.clear(); }
-    }
+  const FakeIO = class {
+    observe(image) { observed.add(image); }
+    unobserve(image) { observed.delete(image); }
+    disconnect() { observed.clear(); }
   };
-  const functions = source.slice(source.indexOf('  function matchesActiveFilter('), source.indexOf('  function updateSelectionSummary('));
-  const context = vm.createContext(sandbox);
-  vm.runInContext(functions + '\nglobalThis.render = renderModalGrid; globalThis.select = typeof updateGridSelection === "function" ? updateGridSelection : renderModalGrid;', context);
+
+  if (typeof source === 'string' && source.includes('  function matchesActiveFilter(')) {
+    const sandbox = {
+      state, floatingModal: { style: { display: 'flex' } },
+      document: { createElement: element, createDocumentFragment: () => element('fragment') },
+      uiGetById: (id) => elements.get(id),
+      t: (key) => key,
+      isAllowedMediaUrl: (url) => /^https:\/\//.test(url),
+      updateSelectionSummary() {},
+      IntersectionObserver: FakeIO
+    };
+    const functions = source.slice(source.indexOf('  function matchesActiveFilter('), source.indexOf('  function updateSelectionSummary('));
+    const context = vm.createContext(sandbox);
+    vm.runInContext(functions + '\nglobalThis.render = renderModalGrid; globalThis.select = typeof updateGridSelection === "function" ? updateGridSelection : renderModalGrid;', context);
+    return {
+      state, grid: elements.get('smd-grid'), empty: elements.get('smd-empty'), observed,
+      render: () => vm.runInContext('render()', context),
+      select: () => vm.runInContext('select()', context),
+      get created() { return created; }
+    };
+  }
+
+  const mediaGrid = createMediaGrid({
+    env: {
+      document: { createElement: element },
+      IntersectionObserver: FakeIO
+    },
+    state,
+    uiGetById: (id) => elements.get(id),
+    isModalVisible: () => true,
+    isAllowedMediaUrl: (url) => /^https:\/\//.test(url),
+    t: (key) => key,
+    filterTabs: [
+      { id: 'all' }, { id: 'image' }, { id: 'video' },
+      { id: 'stories' }, { id: 'highlights' }, { id: 'gallery' }, { id: 'redgifs' }
+    ]
+  });
   return {
     state, grid: elements.get('smd-grid'), empty: elements.get('smd-empty'), observed,
-    render: () => vm.runInContext('render()', context),
-    select: () => vm.runInContext('select()', context),
+    render: () => mediaGrid.render(),
+    select: () => mediaGrid.updateSelection(),
     get created() { return created; }
   };
 }
@@ -101,6 +131,22 @@ export async function runGridPerformanceTests() {
   assert.equal(ui.grid.children.length, 0);
   assert.equal(ui.observed.size, 0);
   assert.equal(ui.empty.style.display, 'flex');
+
+  // Video card without image thumbnail renders placeholder without broken <img src="...mp4">
+  {
+    const vidUi = createGridHarness();
+    vidUi.state.media.set('v1', {
+      id: 'v1', type: 'video', url: 'https://v.redd.it/clip/DASH_720.mp4',
+      thumbnailUrl: 'https://v.redd.it/clip/DASH_720.mp4', width: 1280, height: 720
+    });
+    vidUi.render();
+    const vidCard = vidUi.grid.firstChild;
+    assert.equal(vidCard.children.some((c) => c.tag === 'img'), false, 'video .mp4 URL must not be placed in <img src>');
+    assert.ok(vidCard.children.some((c) => c.className === 'smd-video-placeholder'), 'video card without image thumb must render placeholder');
+    const nodesAfterFirst = vidUi.created;
+    vidUi.render();
+    assert.equal(vidUi.created, nodesAfterFirst, 'placeholder card must be reused on re-render');
+  }
 
   for (const count of [1000, 10000]) {
     const large = createGridHarness();

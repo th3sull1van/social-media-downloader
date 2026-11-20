@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import vm from 'node:vm';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { extractTimelineNodes, extractStoryItems } from './har-replay.js';
 import { InstagramNormalizer } from '../src/plugins/instagram/InstagramNormalizer.js';
 
@@ -96,7 +97,7 @@ export async function replayContentScriptData({ nodes, storyItems, highlightItem
   const onMessageListeners = [];
   const chromeStub = {
     runtime: {
-      getURL: (p) => 'chrome-extension://smd/' + p,
+      getURL: (p) => p.endsWith('.js') ? pathToFileURL(path.resolve(p)).href : 'chrome-extension://smd/' + p,
       lastError: null,
       sendMessage: (msg, cb) => {
         sentRuntimeMessages.push(msg);
@@ -194,9 +195,21 @@ export async function replayContentScriptData({ nodes, storyItems, highlightItem
     };
     switch (msg.type) {
       case 'FETCH_IG_PROFILE': reply(profileReply); break;
-      case 'FETCH_IG_POSTS': reply({ success: true, payload: { nodes: [] } }); break;
+      case 'FETCH_IG_POSTS': {
+        if (nodes.length > 0) {
+          queueMicrotask(() => deliver({ source: 'SMD_IG_BATCH_POSTS', nonce: expectedNonce, payload: { nodes, requestId: msg.requestId, generation: msg.payload?.generation } }));
+        }
+        reply({ success: true, status: nodes.length > 0 ? 'success' : 'empty', payload: { nodes } });
+        break;
+      }
       case 'FETCH_IG_STORIES': reply(storiesReply); break;
-      case 'FETCH_IG_HIGHLIGHTS': reply({ success: true, payload: { items: [] } }); break;
+      case 'FETCH_IG_HIGHLIGHTS': {
+        if (highlightItems.length > 0) {
+          queueMicrotask(() => deliver({ source: 'SMD_IG_BATCH_HIGHLIGHTS', nonce: expectedNonce, payload: { items: highlightItems, requestId: msg.requestId, generation: msg.payload?.generation } }));
+        }
+        reply({ success: true, status: highlightItems.length > 0 ? 'success' : 'empty', payload: { items: highlightItems } });
+        break;
+      }
       default: reply({ success: true }); break;
     }
   };
@@ -208,10 +221,10 @@ export async function replayContentScriptData({ nodes, storyItems, highlightItem
   // the replay exercises the actual production code path.
   vm.runInContext(contentSource, context, {
     filename: 'src/content/content.js',
-    importModuleDynamically: (specifier) => {
+    importModuleDynamically: /** @type {any} */ (vm.constants?.USE_MAIN_CONTEXT_DEFAULT_LOADER) || ((specifier) => {
       const file = String(specifier).replace('chrome-extension://smd/', '');
-      return import(path.resolve(file));
-    }
+      return import(pathToFileURL(path.resolve(file)).href);
+    })
   });
 
   // The content script compares event.source against its in-context `window`.
@@ -229,25 +242,32 @@ export async function replayContentScriptData({ nodes, storyItems, highlightItem
     return { sendResponse, get: () => captured };
   };
 
-  function pageState() {
+  async function pageState() {
     for (const fn of onMessageListeners) {
-      const sr = getSendResponse();
-      fn({ type: 'GET_PAGE_STATE' }, {}, sr.sendResponse);
-      if (sr.get()) return sr.get();
+      const res = await new Promise((resolve) => {
+        const ret = fn({ type: 'GET_PAGE_STATE' }, {}, resolve);
+        if (ret !== true) resolve(null);
+      });
+      if (res) return res;
     }
     return null;
   }
 
-  const sizeAfterInit = (pageState()?.media || []).length;
+  const sizeAfterInit = ((await pageState())?.media || []).length;
 
   // 1. Spoofed batch (no nonce) must be ignored.
   deliver({ source: 'SMD_IG_BATCH_POSTS', payload: { nodes } });
-  const sizeAfterSpoof = (pageState()?.media || []).length;
+  deliver({ source: 'SMD_IG_BATCH_POSTS', nonce: expectedNonce, payload: { nodes } });
+  const sizeAfterSpoof = ((await pageState())?.media || []).length;
 
   // 2. Genuine batch (with nonce) must be ingested.
-  deliver({ source: 'SMD_IG_BATCH_POSTS', nonce: expectedNonce, payload: { nodes } });
+  for (const fn of onMessageListeners) {
+    const sr = getSendResponse();
+    fn({ type: 'TRIGGER_SCAN_POSTS' }, {}, sr.sendResponse);
+  }
   await new Promise((r) => setImmediate(r));
-  const sizeAfterBatch = (pageState()?.media || []).length;
+  await new Promise((r) => setImmediate(r));
+  const sizeAfterBatch = ((await pageState())?.media || []).length;
 
   // 3. Stories through the real request path (TRIGGER_SCAN_STORIES → bridge → reply).
   for (const fn of onMessageListeners) {
@@ -256,11 +276,19 @@ export async function replayContentScriptData({ nodes, storyItems, highlightItem
   }
   await new Promise((r) => setImmediate(r));
   await new Promise((r) => setImmediate(r));
-  const sizeAfterStories = (pageState()?.media || []).length;
+  const sizeAfterStories = ((await pageState())?.media || []).length;
 
-  deliver({ source: 'SMD_IG_BATCH_HIGHLIGHTS', nonce: expectedNonce, payload: { items: highlightItems } });
+  // 4. Highlights through the real request path (TRIGGER_SCAN_HIGHLIGHTS → bridge → batch/reply).
+  if (highlightItems.length > 0) {
+    for (const fn of onMessageListeners) {
+      const sr = getSendResponse();
+      fn({ type: 'TRIGGER_SCAN_HIGHLIGHTS' }, {}, sr.sendResponse);
+    }
+    await new Promise((r) => setImmediate(r));
+    await new Promise((r) => setImmediate(r));
+  }
 
-  const contentItems = pageState()?.media || [];
+  const contentItems = (await pageState())?.media || [];
 
   // --- canonical parity ---
   // Build the canonical set with the SAME dedup rule the content script uses
@@ -348,9 +376,15 @@ export async function replayTargetAvatarContentScript(options) {
   const messageListeners = [];
   const messages = [];
   const redditAvatarUrl = options.redditAvatarUrl || '';
+  const rawGetResourceURL = options.getResourceURL || ((p) => 'chrome-extension://smd/' + p);
   const chromeStub = {
     runtime: {
-      getURL: options.getResourceURL || ((p) => 'chrome-extension://smd/' + p),
+      getURL: (p) => {
+        const res = rawGetResourceURL(p);
+        return p.endsWith('.js') && typeof res === 'string' && res.startsWith('chrome-extension://')
+          ? pathToFileURL(path.resolve(p)).href
+          : res;
+      },
       lastError: null,
       sendMessage: (msg, cb) => {
         messages.push(msg);
@@ -420,10 +454,10 @@ export async function replayTargetAvatarContentScript(options) {
   const context = vm.createContext(sandbox);
   vm.runInContext(contentSource, context, {
     filename: 'src/content/content.js',
-    importModuleDynamically: (specifier) => {
+    importModuleDynamically: /** @type {any} */ (vm.constants?.USE_MAIN_CONTEXT_DEFAULT_LOADER) || ((specifier) => {
       const file = String(specifier).replace('chrome-extension://smd/', '');
-      return import(path.resolve(file));
-    }
+      return import(pathToFileURL(path.resolve(file)).href);
+    })
   });
   const realmGlobal = /** @type {any} */ (vm.runInContext('globalThis', context));
 
@@ -448,18 +482,24 @@ export async function replayTargetAvatarContentScript(options) {
   await new Promise((resolve) => setImmediate(resolve));
   await new Promise((resolve) => setImmediate(resolve));
 
-  let pageState = /** @type {any} */ (null);
-  for (const step of options.navigation || []) {
+  const queryPageState = async () => {
     for (const listener of onMessageListeners) {
-      listener({ type: 'GET_PAGE_STATE' }, {}, () => {});
+      const res = await new Promise((resolve) => {
+        const ret = listener({ type: 'GET_PAGE_STATE' }, {}, resolve);
+        if (ret !== true) resolve(null);
+      });
+      if (res) return res;
     }
+    return null;
+  };
+  await queryPageState();
+  for (const step of options.navigation || []) {
+    await queryPageState();
     const next = new URL(step.url);
     Object.assign(location, { href: next.href, pathname: next.pathname, search: next.search });
     sandbox.document.title = step.title;
   }
-  for (const listener of onMessageListeners) {
-    listener({ type: 'GET_PAGE_STATE' }, {}, (response) => { pageState = response; });
-  }
+  const pageState = await queryPageState();
   return {
     avatarUrl: pageState?.avatarUrl || '',
     targetName: pageState?.targetName || '',

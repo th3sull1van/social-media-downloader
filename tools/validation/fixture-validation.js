@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { COMPACT_FIXTURE_VERSION, discoverCompactFixtures } from '../fixture-replay.js';
 
-const SENSITIVE_KEY = /(?:cookie|set[-_]?cookie|authorization|proxy[-_]?authorization|access[-_]?token|csrf|xsrf|password|passwd|secret|session(?:[-_]?id)?|jwt)/i;
-const SENSITIVE_VALUE = /(?:bearer\s+[a-z0-9._~+/=-]{20,}|(?:sessionid|c_user|datr|csrftoken|access_token)\s*=\s*(?![`$<])[^;\s]{12,})/i;
-const PRIVATE_URL_VALUE = /(?:[?&](?:access_token|authorization|cookie|sessionid|csrftoken|sig(?:nature)?|token)=)(?!fixture|synthetic|redacted)/i;
+const SENSITIVE_KEY = /(?:cookie|set[-_]?cookie|authorization|proxy[-_]?authorization|access[-_]?token|refresh[-_]?token|id[-_]?token|auth[-_]?token|api[-_]?key|csrf|xsrf|fb_dtsg|lsd|jazoest|password|passwd|secret|session(?:[-_]?id)?|jwt)/i;
+const SENSITIVE_VALUE = /(?:bearer\s+[a-z0-9._~+/=-]{20,}|\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}(?:\.[A-Za-z0-9_-]+)?\b|(?:^|[?&;,\s"'])(?:sessionid|c_user|datr|csrftoken|access_token|fb_dtsg|lsd)\s*=\s*(?![`$<])[^;\s]{12,})/i;
+const PRIVATE_URL_VALUE = /(?:[?&](?:access_token|authorization|cookie|sessionid|csrftoken|sig(?:nature)?|token|oh|oe|_nc_ohc)=)(?!fixture|synthetic|redacted)/i;
 const FORBIDDEN_HTML = /<script\b|<iframe\b|<object\b|javascript:/i;
 
 const ALLOWED_TYPES = new Set([
@@ -27,12 +27,10 @@ function scanValue(value, location, findings, jsonDepth = 0) {
   if (FORBIDDEN_HTML.test(value)) findings.push(location);
 
   // Fixture payloads often preserve an API body as a JSON string. Inspect a
-  // small, bounded tree inside those strings too, without treating ordinary
-  // response text as a credential-bearing document.
-  if (jsonDepth >= 4) return;
+  // small, bounded tree inside those strings too, rejecting deeper nesting (fail-closed).
   const trimmed = value.trim();
   if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return;
-  if (trimmed.length > MAX_SERIALIZED_JSON_CHARS) {
+  if (jsonDepth >= 4 || trimmed.length > MAX_SERIALIZED_JSON_CHARS) {
     findings.push(location);
     return;
   }
@@ -200,6 +198,39 @@ function validateCompactManifest(rootDir, files, report) {
   }
 }
 
+function scanStandalonePlatformFixtures(rootDir) {
+  for (const platform of ['instagram', 'facebook', 'reddit']) {
+    const dir = path.join(rootDir, 'tests', 'fixtures', platform);
+    if (!fs.existsSync(dir)) continue;
+    const walk = (cur) => {
+      for (const entry of fs.readdirSync(cur, { withFileTypes: true })) {
+        const full = path.join(cur, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+          continue;
+        }
+        const rel = path.relative(rootDir, full).replace(/[\\/]+/g, '/');
+        if (entry.name.toLowerCase().endsWith('.json')) {
+          const parsed = JSON.parse(fs.readFileSync(full, 'utf8'));
+          const findings = [];
+          scanTree(parsed, `$`, findings);
+          if (findings.length > 0) {
+            throw new Error(`Sensitive or executable data found in standalone fixture ${rel}: ${findings.slice(0, 5).join(', ')}`);
+          }
+        } else if (/\.(?:html?|txt)$/i.test(entry.name)) {
+          const text = fs.readFileSync(full, 'utf8');
+          const findings = [];
+          scanValue(text, `$`, findings);
+          if (findings.length > 0) {
+            throw new Error(`Sensitive or executable data found in standalone fixture ${rel}: ${findings.slice(0, 5).join(', ')}`);
+          }
+        }
+      }
+    };
+    walk(dir);
+  }
+}
+
 /**
  * @param {string} rootDir
  * @returns {ReturnType<typeof validateCompactFiles>}
@@ -209,5 +240,6 @@ export function validateCompactFixtureSet(rootDir) {
   if (files.length === 0) throw new Error('No compact fixtures found under tests/fixtures/extracted');
   const report = validateCompactFiles(files);
   validateCompactManifest(rootDir, files, report);
+  scanStandalonePlatformFixtures(rootDir);
   return report;
 }

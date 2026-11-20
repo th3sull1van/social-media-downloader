@@ -603,4 +603,196 @@ export async function runDownloadManagerTests() {
     uninstallChromeStub();
     void recorded;
   }
+
+  // 18. [P1-08] downloadUrl rejects javascript: / file: / data: protocols.
+  {
+    installChromeStub();
+    const dm = new DownloadManager(registry);
+    await assert.rejects(
+      dm.downloadUrl('javascript:alert(1)', 'SMD/Test/xss.jpg'),
+      /Unsupported download URL protocol/
+    );
+    await assert.rejects(
+      dm.downloadUrl('data:text/plain;base64,QQ==', 'SMD/Test/data.txt'),
+      /Unsupported download URL protocol/
+    );
+    uninstallChromeStub();
+  }
+
+  // 19. [P1-09] ZIP job with skippedDuplicates > 0 && failed > 0 && completed === 0 must FAIL without finishing an empty ZIP,
+  //     and opfs_quota_exceeded aborts the ZIP job with a fatal error.
+  {
+    let zipFinishedCount = 0;
+    installChromeStub({
+      offscreenReply: (msg) => {
+        if (msg.type === 'OFFSCREEN_ZIP_END' || msg.type === 'OFFSCREEN_FINISH_ZIP') zipFinishedCount++;
+        return { ok: true };
+      }
+    });
+    const dupBytes = new Uint8Array([1, 2]);
+    const dupSig = await ArchiveService.getSignature(dupBytes);
+    await StorageService.clearHistory();
+    await StorageService.addHistoricalSignatures([dupSig]);
+    const dm = new DownloadManager(registry);
+    const originalFetch = anyFetch.fetch;
+    anyFetch.fetch = async (url) => {
+      if (String(url).includes('dup.jpg')) {
+        return { ok: true, status: 200, arrayBuffer: async () => dupBytes.slice().buffer };
+      }
+      return { ok: false, status: 500 };
+    };
+    const items = /** @type {any} */ ([
+      makeItem('dup_1', 'https://cdn.test/dup.jpg'),
+      makeItem('fail_1', 'https://cdn.test/fail.jpg')
+    ]);
+    await dm.startDownload({
+      platform: 'testplatform',
+      targetName: 'T',
+      items,
+      format: 'zip',
+      options: { deduplicate: true, historicalDedup: true }
+    });
+    await new Promise((resolve) => {
+      const check = () => {
+        if (dm.activeJob && (dm.activeJob.status === 'FAILED' || dm.activeJob.status === 'COMPLETED')) resolve();
+        else setTimeout(check, 10);
+      };
+      check();
+    });
+    assert.strictEqual(dm.activeJob.status, 'FAILED');
+    assert.strictEqual(zipFinishedCount, 0, 'empty ZIP must not be packaged when all remaining items failed');
+    await StorageService.clearHistory();
+
+    // Quota exhaustion from offscreen worker
+    let quotaEntry = 0;
+    installChromeStub({
+      offscreenReply: (msg) => {
+        if (msg.type === 'OFFSCREEN_BEGIN_ZIP') return { ok: true, sessionId: 'quota-session' };
+        if (msg.type === 'OFFSCREEN_BEGIN_ENTRY') return { ok: true, entryId: `quota-entry-${++quotaEntry}` };
+        if (msg.type === 'OFFSCREEN_WRITE_CHUNK') return { ok: false, reason: 'opfs_quota_exceeded' };
+        return { ok: true };
+      }
+    });
+    const dmQuota = new DownloadManager(registry);
+    anyFetch.fetch = async () => ({
+      ok: true,
+      status: 200,
+      arrayBuffer: async () => new Uint8Array([9, 9]).buffer
+    });
+    await dmQuota.startDownload({
+      platform: 'testplatform',
+      targetName: 'T',
+      items: /** @type {any} */ ([makeItem('q_1', 'https://cdn.test/q1.jpg')]),
+      format: 'zip'
+    });
+    await new Promise((resolve) => {
+      const check = () => {
+        if (dmQuota.activeJob && (dmQuota.activeJob.status === 'FAILED' || dmQuota.activeJob.status === 'COMPLETED')) resolve();
+        else setTimeout(check, 10);
+      };
+      check();
+    });
+    assert.strictEqual(dmQuota.activeJob.status, 'FAILED');
+    assert.match(dmQuota.activeJob.error, /opfs_quota_exceeded/);
+    anyFetch.fetch = originalFetch;
+    uninstallChromeStub();
+  }
+
+  // 20. [P2-10] Failed item before ArchiveService write releases its unique archive path slot.
+  {
+    let failedFirst = false;
+    /** @type {(value?: any) => void} */
+    let releaseSecondFetch = () => {};
+    const secondFetchGate = new Promise((resolve) => { releaseSecondFetch = resolve; });
+    const recorded = installChromeStub({
+      offscreenReply: (msg) => {
+        if (msg.type === 'OFFSCREEN_BEGIN_ZIP') return { ok: true, sessionId: 'slot-session' };
+        if (msg.type === 'OFFSCREEN_BEGIN_ENTRY') {
+          return { ok: true, entryId: failedFirst ? 'entry-ok' : 'entry-fail' };
+        }
+        if (msg.type === 'OFFSCREEN_WRITE_CHUNK' && msg.entryId === 'entry-fail') {
+          failedFirst = true;
+          setTimeout(() => releaseSecondFetch(), 20);
+          return { ok: false, reason: 'write_failed' };
+        }
+        return { ok: true, objectUrl: 'blob:ok-zip' };
+      }
+    });
+    const samePathRegistry = /** @type {any} */ ({
+      get: () => ({
+        ...fakePlugin,
+        getArchivePath: () => 'shared/photo.jpg'
+      })
+    });
+    const dm = new DownloadManager(samePathRegistry);
+    const originalFetch = anyFetch.fetch;
+    anyFetch.fetch = async (url) => {
+      if (String(url).includes('b.jpg')) await secondFetchGate;
+      return {
+        ok: true,
+        status: 200,
+        arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer
+      };
+    };
+    const sameNameItems = /** @type {any} */ ([
+      makeItem('p_fail', 'https://cdn.test/a.jpg'),
+      makeItem('p_ok', 'https://cdn.test/b.jpg')
+    ]);
+    await dm.startDownload({ platform: 'testplatform', targetName: 'T', items: sameNameItems, format: 'zip' });
+    await new Promise((resolve) => {
+      const check = () => {
+        if (dm.activeJob && (dm.activeJob.status === 'FAILED' || dm.activeJob.status === 'COMPLETED')) resolve();
+        else setTimeout(check, 10);
+      };
+      check();
+    });
+    anyFetch.fetch = originalFetch;
+    uninstallChromeStub();
+    const entryNames = recorded.offscreenMessages
+      .filter((m) => m.type === 'OFFSCREEN_BEGIN_ENTRY')
+      .map((m) => m.name);
+    assert.deepStrictEqual(entryNames, ['shared/photo.jpg', 'shared/photo.jpg'],
+      'failed ZIP item must release its reserved archive path so the next item does not become _2');
+  }
+
+  // 15. AUDIT-07: Individual download with 1 duplicate skipped + 1 failed must finish FAILED, not COMPLETED.
+  {
+    const { StorageService } = await import('../../src/core/services/StorageService.js');
+    const { ArchiveService } = await import('../../src/core/services/ArchiveService.js');
+    await StorageService.clearHistory();
+    await StorageService.addHistoricalSignatures([
+      await ArchiveService.getSignature(new Uint8Array([10, 20, 30, 40]))
+    ]);
+    installChromeStub();
+    const originalFetch = anyFetch.fetch;
+    anyFetch.fetch = async (url) => {
+      if (String(url).includes('dup.jpg')) {
+        return { ok: true, status: 200, arrayBuffer: async () => new Uint8Array([10, 20, 30, 40]).buffer };
+      }
+      return { ok: false, status: 500, arrayBuffer: async () => new ArrayBuffer(0) };
+    };
+    const dm = new DownloadManager(registry);
+    await dm.processIndividualDownloads(null, 'testplatform', 'T', /** @type {any} */ ([
+      makeItem('ind_dup', 'https://cdn.test/dup.jpg'),
+      makeItem('ind_fail', 'https://cdn.test/fail.jpg')
+    ]), { deduplicate: true, historicalDedup: true });
+    anyFetch.fetch = originalFetch;
+    uninstallChromeStub();
+    await StorageService.clearHistory();
+    assert.strictEqual(dm.activeJob.status, 'FAILED', '0 delivered + >=1 failed with skipped duplicates must be FAILED');
+    assert.strictEqual(dm.activeJob.skippedDuplicates, 1);
+    assert.strictEqual(dm.activeJob.failed, 1);
+  }
+
+  // 16. AUDIT-02: uniquifyArchivePath preserves extension and <= 200 UTF-8 bytes for colliding CJK names.
+  {
+    const used = new Set();
+    const longCjkPath = `dir/${'日本語テスト画像'.repeat(12)}.jpg`;
+    const first = DownloadManager.uniquifyArchivePath(longCjkPath, used);
+    const second = DownloadManager.uniquifyArchivePath(longCjkPath, used);
+    assert.notStrictEqual(first, second);
+    assert.ok(first.endsWith('.jpg') && second.endsWith('.jpg'), 'uniquified CJK paths must retain .jpg');
+    assert.ok(new TextEncoder().encode(first.split('/').pop()).length <= 200);
+    assert.ok(new TextEncoder().encode(second.split('/').pop()).length <= 200);
+  }
 };

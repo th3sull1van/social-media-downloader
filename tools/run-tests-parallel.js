@@ -6,6 +6,7 @@
  * singleton registries. This is why this runner uses Bun.spawn instead of
  * Promise.all over suite functions in one process.
  */
+import { spawn } from 'node:child_process';
 import { suites } from '../tests/suites.js';
 
 const bunRuntime = /** @type {any} */ (globalThis).Bun;
@@ -19,23 +20,38 @@ function parseJobs() {
 }
 
 async function runSuite(suite) {
-  if (!bunRuntime || typeof bunRuntime.spawn !== 'function') {
-    throw new Error('test:parallel requires the Bun runtime');
+  if (bunRuntime && typeof bunRuntime.spawn === 'function') {
+    const child = bunRuntime.spawn([process.execPath, 'tests/run-suite.js', suite.id], {
+      cwd: process.cwd(),
+      stdout: 'pipe',
+      stderr: 'pipe',
+      env: process.env
+    });
+
+    const [stdout, stderr, exitCode] = await Promise.all([
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+      child.exited
+    ]);
+
+    return { suite, stdout, stderr, exitCode };
   }
-  const child = bunRuntime.spawn([process.execPath, 'tests/run-suite.js', suite.id], {
-    cwd: process.cwd(),
-    stdout: 'pipe',
-    stderr: 'pipe',
-    env: process.env
+
+  return await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ['tests/run-suite.js', suite.id], {
+      cwd: process.cwd(),
+      env: process.env,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout?.on('data', (chunk) => { stdout += chunk; });
+    child.stderr?.on('data', (chunk) => { stderr += chunk; });
+    child.on('error', reject);
+    child.on('close', (code) => {
+      resolve({ suite, stdout, stderr, exitCode: code ?? 1 });
+    });
   });
-
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(child.stdout).text(),
-    new Response(child.stderr).text(),
-    child.exited
-  ]);
-
-  return { suite, stdout, stderr, exitCode };
 }
 
 async function main() {

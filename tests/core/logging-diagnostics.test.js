@@ -18,6 +18,25 @@ export async function runLoggingDiagnosticsTests() {
   assert.ok(!cleanString.includes('NAf12345'));
   assert.ok(cleanString.includes('<REDACTED>'));
 
+  // 1a. AUDIT-13: Extended credential & signed URL parameter redaction
+  const extraSensitive = [
+    'Authorization: Basic dXNlcjpwYXNz',
+    'Authorization: Digest username="alice"',
+    'Authorization: Token tok_987654321',
+    'Cookie: sessionid=abc123; csrftoken=xyz789',
+    'Set-Cookie: ds_user_id=42; HttpOnly',
+    'https://scontent.cdninstagram.com/v/img.jpg?oh=abcdef123456&oe=6789ABCD'
+  ];
+  for (const raw of extraSensitive) {
+    const clean = /** @type {string} */ (Logger.sanitize(raw));
+    assert.ok(clean.includes('<REDACTED>'), `expected redaction in: ${raw} -> ${clean}`);
+    assert.ok(!clean.includes('dXNlcjpwYXNz'), 'Basic auth payload must be redacted');
+    assert.ok(!clean.includes('tok_987654321'), 'Token auth payload must be redacted');
+    assert.ok(!clean.includes('sessionid=abc123'), 'Cookie header must be redacted');
+    assert.ok(!clean.includes('ds_user_id=42'), 'Set-Cookie header must be redacted');
+    assert.ok(!clean.includes('6789ABCD'), 'oe= signed expiry parameter must be redacted');
+  }
+
   // 1b. Errors must be preserved with their message (previously logged as {}).
   {
     const err = new Error('HTTP 403 when fetching media');

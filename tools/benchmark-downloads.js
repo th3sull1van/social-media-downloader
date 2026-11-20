@@ -34,6 +34,7 @@ async function measureManager(Manager, count) {
   const items = Array.from({ length: count }, (_, i) => ({ id: String(i) }));
   const manager = new Manager({});
   manager.downloadItem = async () => 1;
+  manager.waitForDownloadCompletion = async () => {};
   manager.updateBadge = () => {};
   manager.scheduleBadgeClear = () => {};
   let peak = process.memoryUsage().heapUsed;

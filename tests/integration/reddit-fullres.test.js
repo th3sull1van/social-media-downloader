@@ -41,8 +41,8 @@ export async function runRedditFullResTests() {
     const externalPreview = 'https://external-preview.redd.it/abcxyz.jpg?width=640&crop=smart&auto=webp&s=123';
     assert.equal(
       RedditNormalizer.cleanMediaUrl(externalPreview),
-      'https://external-preview.redd.it/abcxyz.jpg',
-      'external-preview query parameters must be stripped'
+      externalPreview,
+      'external-preview signed HMAC query parameters must be preserved to prevent HTTP 403'
     );
   }
 

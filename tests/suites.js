@@ -16,6 +16,7 @@ import { runZipIntegrityTests } from './core/zip-integrity.test.js';
 import { runBackgroundResourceTests } from './core/background-resources.test.js';
 import { runGridPerformanceTests } from './core/grid-performance.test.js';
 import { runOffscreenZipTests } from './core/offscreen-zip.test.js';
+import { runPopupTests } from './core/popup.test.js';
 import { runContractTests } from './contracts/contracts.test.js';
 import { runInstagramNamingTests } from './contracts/instagram-naming.test.js';
 import { runFacebookNamingTests } from './contracts/facebook-naming.test.js';
@@ -25,6 +26,7 @@ import { runPipelineTests } from './integration/pipeline.test.js';
 import { runHarExtractionTests } from './integration/har-extraction.test.js';
 import { runCompactInstagramReplayTests } from './integration/fixture-replay.test.js';
 import { runInstagramHighlightsTests } from './integration/instagram-highlights.test.js';
+import { runContentScanRegressionTests } from './integration/content-scan-regressions.test.js';
 import { runCompactPlatformReplayTests } from './integration/har-replay-platforms.test.js';
 import { runAvatarReplayTests } from './integration/avatar-replay.test.js';
 import { runFbFullResTests } from './integration/fb-fullres.test.js';
@@ -46,6 +48,7 @@ function passingValidation(check, message) {
 
 export const suites = [
   { id: 'instagram-highlights', name: 'Instagram Highlights GraphQL and Rate-Limited Profile Replay', fn: runInstagramHighlightsTests },
+  { id: 'content-scan-regressions', name: 'Content Script Scan All, Bridge Nonce/RequestId & UI State Regressions', fn: runContentScanRegressionTests },
   {
     id: 'i18n-parity',
     name: 'i18n & 22 Locales Parity Tests',
@@ -68,6 +71,7 @@ export const suites = [
   { id: 'background-resources', name: 'Worker Restart & Temporary Resource Recovery', fn: runBackgroundResourceTests },
   { id: 'grid-performance', name: 'Incremental Grid Rendering & Large Galleries', fn: runGridPerformanceTests },
   { id: 'offscreen-zip', name: 'Offscreen OPFS ZIP Streaming Tests', fn: runOffscreenZipTests },
+  { id: 'popup-controller', name: 'Popup Controller UI, Metadata & Progress Tests', fn: runPopupTests },
   { id: 'reddit-scanner', name: 'Reddit Scanner (JSON API) Tests', fn: runRedditScannerTests },
   {
     id: 'reddit-muxer-redgifs',

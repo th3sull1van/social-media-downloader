@@ -28,18 +28,26 @@ export async function runStorageDedupTests() {
 
   // 2. StorageService settings persistence
   {
-    await StorageService.saveSettings({ deduplicate: true, historicalDedup: true });
+    await StorageService.saveSettings({ deduplicate: true, historicalDedup: true, defaultFormat: 'zip' });
     let settings = await StorageService.getSettings();
     assert.strictEqual(settings.deduplicate, true);
     assert.strictEqual(settings.historicalDedup, true);
+    assert.strictEqual(settings.defaultFormat, 'zip');
 
     await StorageService.saveSettings({ historicalDedup: false });
     settings = await StorageService.getSettings();
     assert.strictEqual(settings.deduplicate, true);
     assert.strictEqual(settings.historicalDedup, false);
+    assert.strictEqual(settings.defaultFormat, 'zip');
+
+    // Unknown keys and invalid defaultFormat values are ignored
+    await StorageService.saveSettings(/** @type {any} */ ({ defaultFormat: 'rar', injectedKey: 'bad' }));
+    settings = await StorageService.getSettings();
+    assert.strictEqual(settings.defaultFormat, 'zip');
+    assert.strictEqual(/** @type {any} */ (settings).injectedKey, undefined);
 
     // Reset settings
-    await StorageService.saveSettings({ deduplicate: false, historicalDedup: false });
+    await StorageService.saveSettings({ deduplicate: false, historicalDedup: false, defaultFormat: 'individual' });
   }
 
   // 3. Historical Deduplication Signature Registry

@@ -46,6 +46,13 @@
       "bytes": 1949809
     },
     {
+      "path": "instagram/instagram-profile-v5.json",
+      "platform": "instagram",
+      "fixtureType": "instagram-replay",
+      "sourceCaptureId": "instagram-profile-v5",
+      "bytes": 498827
+    },
+    {
       "path": "instagram/instagram-profile.json",
       "platform": "instagram",
       "fixtureType": "instagram-replay",
@@ -95,5 +102,5 @@
       "bytes": 8865
     }
   ],
-  "totalBytes": 5656650
+  "totalBytes": 6155477
 }

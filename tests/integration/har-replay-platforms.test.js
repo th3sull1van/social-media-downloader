@@ -338,7 +338,7 @@ export async function runHarPlatformReplayTests() {
     for (const harPath of REDDIT_HARS) {
       const stats = replayReddit(harPath);
       assert.strictEqual(stats.violations.length, 0, `Reddit replay violations in ${path.basename(harPath)}: ${stats.violations.slice(0, 4).join(' | ')}`);
-      if (harPath.includes('perfil-vazio')) {
+      if (harPath.includes('perfil-vazio') || harPath.includes('empty-profile')) {
         emptyStats = stats;
       } else {
         feedStats = feedStats || { items: 0, byType: {}, iconLeak: 0 };

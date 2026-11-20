@@ -94,4 +94,18 @@ export async function runContractTests() {
 
   const unknownDetected = defaultRegistry.detect({ hostname: 'www.twitter.com' });
   assert.strictEqual(unknownDetected, null);
+
+  // [P1-02] Post and gallery URL detection must take precedence over profile/route fallback.
+  const igPost = InstagramPlugin.detectTarget({ url: 'https://www.instagram.com/p/C123abc/', title: 'Post' });
+  assert.strictEqual(igPost.type, 'post');
+  const igReel = InstagramPlugin.detectTarget({ url: 'https://www.instagram.com/reel/C123abc/', title: 'Reel' });
+  assert.strictEqual(igReel.type, 'post');
+  const redditPost = RedditPlugin.detectTarget({ url: 'https://www.reddit.com/r/pics/comments/1abcde/title/', title: 'Title' });
+  assert.strictEqual(redditPost.type, 'post');
+  const redditGallery = RedditPlugin.detectTarget({ url: 'https://www.reddit.com/gallery/1abcde', title: 'Gallery' });
+  assert.strictEqual(redditGallery.type, 'post');
+
+  // [P2-11] Facebook photo-only capability parity: video capability & filter tab disabled.
+  assert.strictEqual(FacebookPlugin.getCapabilities().media.video, false);
+  assert.strictEqual(FacebookPlugin.getFilters().some((f) => f.id === 'video'), false);
 }

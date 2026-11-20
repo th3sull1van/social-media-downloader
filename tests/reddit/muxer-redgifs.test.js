@@ -334,6 +334,115 @@ export async function runMuxerTests() {
       anyFetch.fetch = originalFetch;
     }
   }
+
+  // 6. [P1-05] parseMp4Boxes supports size===0 extend-to-EOF boxes, and mergeMp4Streams rejects fragmented/multi-mdat inputs.
+  {
+    const ftyp = box('ftyp', new Uint8Array(8));
+    const mdatHeader = new Uint8Array(8 + 6);
+    new DataView(mdatHeader.buffer).setUint32(0, 0); // size === 0 -> extends to EOF
+    mdatHeader.set([0x6d, 0x64, 0x61, 0x74], 4);
+    const eofMp4 = new Uint8Array([...ftyp, ...mdatHeader]);
+    const boxes = /** @type {any} */ (RedditVideoMuxer.parseMp4Boxes(eofMp4));
+    assert.ok(boxes.ftyp && boxes.mdat);
+    assert.strictEqual(boxes.ftyp.size, 16);
+    assert.strictEqual(boxes.mdat.start, 16);
+    assert.strictEqual(boxes.mdat.size, 14);
+    assert.strictEqual(boxes.mdat.end, eofMp4.length);
+
+    const baseVideo = buildMp4(1, new Uint8Array(8));
+    const fragmentedVideo = new Uint8Array([...baseVideo, ...box('moof', new Uint8Array(8))]);
+    const validAudio = buildMp4(1, new Uint8Array(8));
+    await assert.rejects(
+      RedditVideoMuxer.mergeMp4Streams(fragmentedVideo.buffer, validAudio.buffer, true),
+      /Fragmented or multi-mdat/i
+    );
+  }
+
+  // 7. AUDIT-11: _withMuxSlot enforces strict concurrency cap under barging and aborts queued waiters immediately.
+  {
+    let active = 0;
+    let peak = 0;
+    const resolvers = [];
+    /** @type {any} */
+    let rel1;
+    const q1 = RedditVideoMuxer._withMuxSlot(() => new Promise((r) => {
+      active++; peak = Math.max(peak, active);
+      rel1 = () => { active--; r(undefined); };
+    }));
+    const q2 = RedditVideoMuxer._withMuxSlot(() => new Promise((r) => {
+      active++; peak = Math.max(peak, active);
+      resolvers.push(() => { active--; r(undefined); });
+    }));
+    const q3 = RedditVideoMuxer._withMuxSlot(() => new Promise((r) => {
+      active++; peak = Math.max(peak, active);
+      resolvers.push(() => { active--; r(undefined); });
+    }));
+    const acWaiter = new AbortController();
+    const qAbort = RedditVideoMuxer._withMuxSlot(async () => 'never', acWaiter.signal);
+    acWaiter.abort();
+    await assert.rejects(qAbort, /Abort/i);
+
+    assert.ok(rel1, 'rel1 should be assigned');
+    rel1();
+    await Promise.resolve();
+    const q4 = RedditVideoMuxer._withMuxSlot(() => new Promise((r) => {
+      active++; peak = Math.max(peak, active);
+      resolvers.push(() => { active--; r(undefined); });
+    }));
+    while (resolvers.length || active > 0) {
+      if (resolvers.length) resolvers.shift()();
+      await Promise.resolve();
+    }
+    await Promise.all([q1, q2, q3, q4]);
+    assert.strictEqual(peak, 2, `mux semaphore must never exceed cap 2 (observed peak ${peak})`);
+  }
+
+  // 8. AUDIT-12: mergeMp4Streams rescales audio tkhd.duration when mvhd timescales differ.
+  {
+    const makeTimedMp4 = (timescale, tkhdDur) => {
+      const ftyp = box('ftyp', new Uint8Array(8));
+      const mdat = box('mdat', new Uint8Array(16));
+      const stco = new Uint8Array(20);
+      new DataView(stco.buffer).setUint32(0, 20);
+      stco.set([115, 116, 99, 111], 4);
+      new DataView(stco.buffer).setUint32(12, 1);
+      const mdia = box('mdia', box('minf', box('stbl', stco)));
+      const tkhd = new Uint8Array(32);
+      new DataView(tkhd.buffer).setUint32(0, 32);
+      tkhd.set([116, 107, 104, 100], 4);
+      new DataView(tkhd.buffer).setUint32(20, 1);
+      new DataView(tkhd.buffer).setUint32(28, tkhdDur);
+      const trak = box('trak', new Uint8Array([...tkhd, ...mdia]));
+      const mvhdPayload = new Uint8Array(104);
+      new DataView(mvhdPayload.buffer).setUint32(12, timescale);
+      new DataView(mvhdPayload.buffer).setUint32(16, tkhdDur);
+      new DataView(mvhdPayload.buffer).setUint32(96, 2);
+      const moov = box('moov', new Uint8Array([...box('mvhd', mvhdPayload), ...trak]));
+      const file = new Uint8Array(ftyp.length + moov.length + mdat.length);
+      file.set(ftyp, 0);
+      file.set(moov, ftyp.length);
+      file.set(mdat, ftyp.length + moov.length);
+      const stcoOff = findBoxDeep(file, ftyp.length + 8, ftyp.length + moov.length, 'stco').start;
+      new DataView(file.buffer).setUint32(stcoOff + 16, ftyp.length + moov.length + 8);
+      return file;
+    };
+    const vFile = makeTimedMp4(1000, 10000);
+    const aFile = makeTimedMp4(48000, 480000);
+    const merged = await RedditVideoMuxer.mergeMp4Streams(vFile.buffer, aFile.buffer, true);
+    const bytes = new Uint8Array(await merged.arrayBuffer());
+    const view = new DataView(bytes.buffer);
+    const moov = findBoxDeep(bytes, 0, bytes.length, 'moov');
+    const traks = [];
+    let off = moov.start + 8;
+    while (off + 8 <= moov.end) {
+      const sz = view.getUint32(off);
+      const tp = String.fromCharCode(bytes[off + 4], bytes[off + 5], bytes[off + 6], bytes[off + 7]);
+      if (tp === 'trak') traks.push({ start: off, end: off + sz });
+      off += sz;
+    }
+    const audioTkhd = findBoxDeep(bytes, traks[1].start + 8, traks[1].end, 'tkhd');
+    assert.strictEqual(view.getUint32(audioTkhd.start + 28), 10000, 'audio tkhd.duration must rescale into video mvhd.timescale');
+  }
 }
 
 export async function runRedGifsTests() {
@@ -408,6 +517,29 @@ export async function runRedGifsTests() {
         () => RedGifsResolver.resolve('https://www.redgifs.com/watch/fail'),
         /HTTP 503/
       );
+    }
+
+    // 4. AUDIT-11: Aborting Caller A during shared getToken must NOT reject Caller B.
+    {
+      RedGifsResolver._token = null;
+      RedGifsResolver._tokenExpiry = 0;
+      RedGifsResolver._tokenPromise = null;
+      /** @type {any} */
+      let finishToken;
+      anyFetch.fetch = async (_url, opts) => new Promise((resolve, reject) => {
+        opts?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+        finishToken = () => resolve({ ok: true, json: async () => ({ token: 'shared_tok_ok' }) });
+      });
+      const acA = new AbortController();
+      const acB = new AbortController();
+      const pA = RedGifsResolver.getToken(acA.signal);
+      const pB = RedGifsResolver.getToken(acB.signal);
+      acA.abort();
+      await assert.rejects(pA, /Abort/i);
+      assert.ok(finishToken, 'finishToken should be assigned');
+      finishToken();
+      const tokB = await pB;
+      assert.strictEqual(tokB, 'shared_tok_ok', 'Caller B must still receive token when only Caller A aborts');
     }
   } finally {
     RedGifsResolver._token = null;

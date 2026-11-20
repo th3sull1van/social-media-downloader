@@ -56,7 +56,7 @@ export async function runAvatarReplayTests() {
   }
   const facebookAvatar = facebookOwner?.profile_picture?.uri
     || 'https://scontent.example.fbcdn.net/v/t39.30808-1/profile.jpg?cstp=mx1080x1080&ctp=s200x200';
-  const facebookTargetUrl = facebookOwner?.url || 'https://www.facebook.com/target-page';
+  const facebookTargetUrl = (facebookOwner?.url || 'https://www.facebook.com/target-page').replace(/\.example(?=\/|$)/i, '.com');
   const facebookTarget = new URL(facebookTargetUrl);
   const facebook = await replayTargetAvatarContentScript({
     platform: 'facebook',

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { FacebookDetector } from '../../src/plugins/facebook/FacebookDetector.js';
 import { FacebookNormalizer } from '../../src/plugins/facebook/FacebookNormalizer.js';
 import { readCompactFixture } from '../../tools/fixture-replay.js';
@@ -377,6 +379,191 @@ export async function runFbFullResTests() {
       assert.strictEqual(isDownscaledRender(fullUrl), false, 'full-resolution URL must NOT be detected as downscaled');
       console.log(`  fixture: ${downscaledRequests}/${totalRequests} requests flagged as downscaled (rejected at the gate)`);
     }
+  }
+
+  // 9. [P1-03] Execute the real content script Facebook walker & lookup map inside a VM:
+  //    (a) cyclic objects do not cause infinite recursion;
+  //    (b) fbSelectBestRender picks the larger image render over a smaller viewer_image;
+  //    (c) fbLookupFullRes does not collide on distinct photos that share a 6+ digit middle token.
+  {
+    const contentSource = fs.readFileSync(path.join(rootDir, 'src/content/content.js'), 'utf8');
+    /**
+     * @param {string} [tag]
+     * @param {Record<string, any>} [props]
+     * @returns {any}
+     */
+    const makeEl = (tag = 'div', props = {}) => ({
+      tagName: tag.toUpperCase(),
+      style: {},
+      dataset: {},
+      children: [],
+      attributes: {},
+      classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
+      setAttribute(k, v) { this.attributes[k] = String(v); },
+      getAttribute(k) { return this.attributes[k] ?? null; },
+      appendChild(c) { this.children.push(c); return c; },
+      insertBefore(c) { this.children.push(c); return c; },
+      replaceChildren() { this.children = []; },
+      attachShadow() {
+        const s = makeEl('shadow-root');
+        s.getElementById = (id) => s.querySelector(`#${id}`);
+        return s;
+      },
+      addEventListener() {},
+      removeEventListener() {},
+      querySelector(_sel = '') { return null; },
+      querySelectorAll(_sel = '') { return []; },
+      closest() { return null; },
+      contains() { return false; },
+      scrollIntoView() {},
+      dispatchEvent() { return true; },
+      getBoundingClientRect() { return { left: 0, top: 0, width: 100, height: 100 }; },
+      focus() {},
+      remove() {},
+      innerText: '',
+      textContent: '',
+      innerHTML: '',
+      src: '',
+      alt: '',
+      ...props
+    });
+
+    const imgB = makeEl('IMG', {
+      src: 'https://scontent.xx.fbcdn.net/v/999999_123456_888888_n.jpg?stp=dst-jpg_tt6&cstp=mx1200x1200&ctp=s1200x1200&oh=synthetic&oe=synthetic',
+      currentSrc: 'https://scontent.xx.fbcdn.net/v/999999_123456_888888_n.jpg?stp=dst-jpg_tt6&cstp=mx1200x1200&ctp=s1200x1200&oh=synthetic&oe=synthetic',
+      naturalWidth: 1200,
+      naturalHeight: 1200
+    });
+    const linkB = makeEl('A', {
+      attributes: { href: '/photo/?fbid=9990001' },
+      querySelector: (sel) => (sel === 'img' ? imgB : null)
+    });
+    const cyclicScript = { textContent: '{"__cyc":"fbcdn.net"}' };
+    const onMessageListeners = [];
+    const windowMessageListeners = [];
+    const realJsonParse = JSON.parse;
+
+    const sandbox = {
+      console: { log() {}, info() {}, warn() {}, error() {} },
+      Math: { random: () => 0.5, floor: Math.floor, min: Math.min, max: Math.max, round: Math.round, abs: Math.abs },
+      JSON: {
+        parse(text) {
+          const parsed = realJsonParse(text);
+          if (parsed && parsed.__cyc === 'fbcdn.net') {
+            const cyc = {
+              id: 'p_cyc_1',
+              image: { uri: 'https://scontent.xx.fbcdn.net/v/cyc_only_n.jpg?oh=synthetic&oe=synthetic', width: 800, height: 800 }
+            };
+            cyc.self = cyc;
+            return cyc;
+          }
+          return parsed;
+        },
+        stringify: JSON.stringify
+      },
+      Promise, Object, Array, String, Number, Boolean, RegExp, Error,
+      Map, Set, URL, URLSearchParams, Uint8Array, ArrayBuffer, Blob,
+      setTimeout: (fn) => setImmediate(() => fn()),
+      clearTimeout: () => {},
+      setInterval: () => 0,
+      clearInterval: () => {},
+      navigator: { userAgent: 'FB-FullRes-Test/1.0' },
+      chrome: {
+        runtime: {
+          getURL: (p) => p.endsWith('.js') ? pathToFileURL(path.resolve(rootDir, p)).href : `chrome-extension://smd/${p}`,
+          lastError: null,
+          sendMessage: (_m, cb) => { if (typeof cb === 'function') cb({}); return Promise.resolve({}); },
+          onMessage: { addListener: (fn) => onMessageListeners.push(fn) }
+        },
+        i18n: { getMessage: () => '' }
+      },
+      location: {
+        hostname: 'www.facebook.com',
+        pathname: '/example.page/photos',
+        search: '',
+        hash: '',
+        origin: 'https://www.facebook.com',
+        href: 'https://www.facebook.com/example.page/photos'
+      },
+      history: { pushState() {}, replaceState() {}, state: null, length: 1 },
+      Event: class Event { constructor(t) { this.type = t; } },
+      MouseEvent: class MouseEvent {},
+      PointerEvent: class PointerEvent {},
+      PopStateEvent: class PopStateEvent {},
+      document: {
+        readyState: 'complete',
+        title: 'Example Page',
+        head: makeEl('head'),
+        documentElement: makeEl('html'),
+        body: makeEl('body', {
+          querySelectorAll: (sel) => (sel.includes('photo.php') ? [linkB] : [])
+        }),
+        createElement: (tag) => makeEl(tag),
+        getElementById: () => null,
+        querySelector: () => null,
+        querySelectorAll: (sel) => {
+          if (sel === 'script[type="application/json"]') return [cyclicScript];
+          if (sel.includes('photo.php')) return [linkB];
+          return [];
+        },
+        addEventListener() {},
+        removeEventListener() {}
+      }
+    };
+    sandbox.window = sandbox;
+    sandbox.self = sandbox;
+    sandbox.globalThis = sandbox;
+    sandbox.top = sandbox;
+    sandbox.addEventListener = (type, fn) => { if (type === 'message') windowMessageListeners.push(fn); };
+    sandbox.removeEventListener = () => {};
+    sandbox.dispatchEvent = () => true;
+    sandbox.postMessage = () => {};
+
+    const ctx = vm.createContext(sandbox);
+    vm.runInContext(contentSource, ctx, {
+      filename: 'src/content/content.js',
+      importModuleDynamically: /** @type {any} */ (vm.constants?.USE_MAIN_CONTEXT_DEFAULT_LOADER)
+        || ((specifier) => import(pathToFileURL(path.resolve(rootDir, String(specifier).replace('chrome-extension://smd/', ''))).href))
+    });
+    const realm = /** @type {any} */ (vm.runInContext('globalThis', ctx));
+    await new Promise((r) => setImmediate(r));
+
+    const expectedNonce = 'smd_' + (0.5).toString(36).slice(2, 12);
+    const batchPayload = JSON.stringify({
+      data: {
+        node: {
+          id: 'photo_a_111',
+          viewer_image: {
+            uri: 'https://scontent.xx.fbcdn.net/v/111111_123456_222222_n.jpg?stp=dst-jpg_tt6&cstp=mx480x480&ctp=s480x480&oh=synthetic&oe=synthetic',
+            width: 480,
+            height: 480
+          },
+          image: {
+            uri: 'https://scontent.xx.fbcdn.net/v/111111_123456_222222_n.jpg?stp=dst-jpg_tt6&cstp=mx1080x1080&ctp=s1080x1080&oh=synthetic&oe=synthetic',
+            width: 1080,
+            height: 1080
+          }
+        }
+      }
+    });
+    for (const fn of windowMessageListeners) {
+      fn({ source: realm, data: { source: 'SMD_FB_BATCH_PHOTOS', nonce: expectedNonce, payload: { text: batchPayload } } });
+    }
+
+    /** @type {any} */
+    let pageState = null;
+    for (const listener of onMessageListeners) {
+      await new Promise((resolve) => listener({ type: 'TRIGGER_SCAN_PAGE' }, {}, resolve));
+      pageState = await new Promise((resolve) => listener({ type: 'GET_PAGE_STATE' }, {}, resolve));
+    }
+    const items = pageState?.media || [];
+    const cycItem = items.find((m) => m.id === 'p_cyc_1');
+    const itemA = items.find((m) => m.id === 'photo_a_111');
+    const itemB = items.find((m) => m.id === '9990001');
+    assert.ok(cycItem, 'cyclic script payload must be harvested cleanly without throwing');
+    assert.ok(itemA && itemA.width === 1080, 'fbSelectBestRender must choose larger image (1080) over smaller viewer_image (480)');
+    assert.ok(itemB && itemB.downloadUrl.includes('999999_123456_888888_n.jpg'),
+      'fbLookupFullRes must not collide on shared 6+ digit segment _123456_');
   }
 
 }

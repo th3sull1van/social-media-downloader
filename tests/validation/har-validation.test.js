@@ -70,6 +70,44 @@ export function runHarValidationUnitTests() {
   const publicOnly = validateFixtureSet(process.cwd(), { requirePublic: true });
   assert.ok(publicOnly.publicFixtureCount > 0);
   assert.equal(publicOnly.privateFixtureCount, 0);
+
+  // [P1-12] Additional secret surfaces: base64 response body, URL query secrets,
+  // facebook_dtsg / lsd / jazoest headers & params, and filename classification without directory prefix.
+  assert.throws(
+    () => validateHarDocument({
+      log: {
+        entries: [{
+          response: {
+            content: {
+              encoding: 'base64',
+              mimeType: 'application/json',
+              text: Buffer.from(JSON.stringify({ sessionid: 'live-secret-cookie-123456' })).toString('base64')
+            }
+          }
+        }]
+      }
+    }),
+    /sensitive/i
+  );
+  assert.throws(
+    () => validateHarDocument({
+      log: {
+        entries: [{
+          request: { url: 'https://www.facebook.com/api/graphql/?fb_dtsg=NAfLiveTokenValue123456' }
+        }]
+      }
+    }),
+    /sensitive/i
+  );
+  assert.doesNotThrow(() => validateHarDocument({
+    log: {
+      entries: [{
+        request: { headers: [{ name: 'X-FB-LSD', value: '<REDACTED>' }, { name: 'X-CSRFToken', value: '<REDACTED>' }] }
+      }]
+    }
+  }));
+  assert.equal(classifyHarPath('fixtures-private/facebook-profile.har'), 'facebook');
+  assert.equal(classifyHarPath('fixtures-private/instagram-v4.har'), 'instagram');
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
