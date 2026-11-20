@@ -34,8 +34,8 @@
       <!-- Target Info Card -->
       <section class="target-card">
         <div class="target-details">
-          <span id="target-type-label" class="target-type">Detected Target</span>
-          <h2 id="target-title" class="target-title">Loading...</h2>
+          <span id="target-type-label" class="target-type" data-i18n="detectedProfile">Detected Target</span>
+          <h2 id="target-title" class="target-title" data-i18n="loadingLabel">Loading...</h2>
         </div>
         <div class="target-stats">
           <span id="media-counter" class="counter-badge">0</span>
@@ -53,6 +53,10 @@
           <button id="btn-scan-stories" class="btn btn-secondary" data-i18n="scanStories">Stories</button>
           <button id="btn-scan-highlights" class="btn btn-secondary" data-i18n="scanHighlights">Highlights</button>
           <button id="btn-scan-avatar" class="btn btn-secondary" data-i18n="scanAvatar">HD Profile Pic</button>
+        </div>
+        <div id="fb-specific-buttons" class="quick-scanners fb-only" style="display: none;">
+          <button id="btn-scan-fb-page" class="btn btn-secondary" data-i18n="scanPage">Scan Page</button>
+          <button id="btn-scan-fb-tabs" class="btn btn-secondary" data-i18n="scanPhotoTabs">Scan Photo Tabs</button>
         </div>
         <div id="reddit-specific-buttons" class="quick-scanners reddit-only" style="display: none;">
           <button id="btn-scan-galleries" class="btn btn-secondary" data-i18n="scanGalleries">Galleries</button>
@@ -88,7 +92,7 @@
 
       <!-- Subreddit Filter (Reddit only) -->
       <div id="subreddit-filter-container" class="filter-row reddit-only" style="display: none;">
-        <label for="filter-subreddit">Subreddit:</label>
+        <label for="filter-subreddit" data-i18n="subredditLabel">Subreddit:</label>
         <select id="filter-subreddit" class="select-dropdown">
           <option value="all" data-i18n="filterSubredditAll">All Subreddits</option>
         </select>
@@ -100,7 +104,7 @@
           <button id="btn-select-all" class="btn-link" data-i18n="selectAll">Select All</button>
           <span class="divider">•</span>
           <button id="btn-deselect-all" class="btn-link" data-i18n="deselectAll">Deselect All</button>
-          <button id="btn-dedup" class="btn-link reddit-only active" style="display: none; margin-left: 8px;">Deduplicate</button>
+          <button id="btn-dedup" class="btn-link reddit-only active" data-i18n="deduplicateBtn" style="display: none; margin-left: 8px;">Deduplicate</button>
         </div>
         <div id="selected-summary" class="selection-summary">0 of 0 selected</div>
       </div>
@@ -138,6 +142,7 @@
                 <input type="checkbox" id="popup-historical-dedup-toggle">
                 <span data-i18n="dedupHistoricalLabel">Historical dedup</span>
               </label>
+              <button type="button" id="popup-clear-history-btn" class="btn-clear-history" data-i18n="clearHistoryBtn">Clear</button>
             </div>
           </div>
         </div>

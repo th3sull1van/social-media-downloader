@@ -44,6 +44,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   applyI18n();
+  try {
+    const uiLang = typeof chrome !== 'undefined' && chrome.i18n?.getUILanguage ? chrome.i18n.getUILanguage() : '';
+    if (uiLang) {
+      document.documentElement.lang = uiLang;
+      document.documentElement.dir = /^(?:ar|ur|he|fa)\b/i.test(uiLang) ? 'rtl' : 'ltr';
+    }
+  } catch (e) {}
 
   // DOM Elements
   const inactiveNotice = document.getElementById('inactive-notice');
@@ -56,11 +63,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const subredditFilterContainer = document.getElementById('subreddit-filter-container');
   const filterSubreddit = document.getElementById('filter-subreddit');
 
-  const btnScanAll = document.getElementById('btn-scan-all');
+  const btnScanAll = /** @type {HTMLButtonElement | null} */ (document.getElementById('btn-scan-all'));
+  const scanAllLabel = document.getElementById('scan-all-label');
   const btnScanPosts = document.getElementById('btn-scan-posts');
   const btnScanStories = document.getElementById('btn-scan-stories');
   const btnScanHighlights = document.getElementById('btn-scan-highlights');
   const btnScanAvatar = document.getElementById('btn-scan-avatar');
+  const btnScanFbPage = document.getElementById('btn-scan-fb-page');
+  const btnScanFbTabs = document.getElementById('btn-scan-fb-tabs');
   const btnScanGalleries = document.getElementById('btn-scan-galleries');
   const btnScanVideos = document.getElementById('btn-scan-videos');
   const btnScanRedgifs = document.getElementById('btn-scan-redgifs');
@@ -71,7 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const selectedSummary = document.getElementById('selected-summary');
   const mediaGrid = document.getElementById('media-grid');
   const emptyState = document.getElementById('empty-state');
-  const btnDownload = document.getElementById('btn-download');
+  const btnDownload = /** @type {HTMLButtonElement | null} */ (document.getElementById('btn-download'));
   const downloadBtnText = document.getElementById('download-btn-text');
 
   const progressContainer = document.getElementById('download-progress-container');
@@ -86,30 +96,35 @@ document.addEventListener('DOMContentLoaded', async () => {
   let targetName = 'Media_Collection';
   let allMedia = [];
   let selectedIds = new Set();
+  const seenMediaIds = new Set();
+  const gridCardMap = new Map();
   let activeFilter = 'all';
   let currentSubreddit = 'all';
   let dedupActive = true;
   let dedupEnabled = false;
   let isScanning = false;
   let subredditFilterEnabled = false;
-  let pluginFilters = [];
+  let pluginCapabilities = {};
   let progressHideTimer = null;
   let displayedProgressJob = null;
-
-  const MEDIA_HOST_SUFFIXES = [
-    'instagram.com', 'cdninstagram.com', 'fbcdn.net',
-    'reddit.com', 'redd.it', 'redditmedia.com', 'redgifs.com', 'imgur.com'
-  ];
+  /** @type {string[]} */
+  let allowedMediaHostSuffixes = [];
+  let activeThemeClass = '';
 
   function isAllowedMediaUrl(rawUrl) {
     if (!rawUrl || typeof rawUrl !== 'string') return false;
     if (!/^https?:\/\//i.test(rawUrl)) return false;
+    if (!allowedMediaHostSuffixes.length) return false;
     try {
       const host = new URL(rawUrl).hostname.toLowerCase();
-      return MEDIA_HOST_SUFFIXES.some((suffix) => host === suffix || host.endsWith('.' + suffix));
+      return allowedMediaHostSuffixes.some((suffix) => host === suffix || host.endsWith('.' + suffix));
     } catch (e) {
       return false;
     }
+  }
+
+  function isLikelyVideoUrl(rawUrl) {
+    return typeof rawUrl === 'string' && /\.(?:mp4|webm|m3u8|mpd)(?:[?#]|$)/i.test(rawUrl);
   }
 
   async function getActiveTab() {
@@ -136,14 +151,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     currentTabId = tab.id;
     platform = info.id;
-    pluginFilters = info.filters || [];
+    pluginCapabilities = info.capabilities || {};
 
     applyPluginExtras(info);
 
-    // Check background active job status
+    // Check background active job status (scoped to current platform, including QUEUED).
     chrome.runtime.sendMessage({ type: 'GET_DOWNLOAD_STATUS' }, (res) => {
       if (chrome.runtime.lastError) return;
-      if (res?.activeJob && ['DOWNLOADING', 'DOWNLOADING_BLOBS', 'PACKAGING_ZIP'].includes(res.activeJob.status)) {
+      if (res?.activeJob &&
+          (!res.activeJob.platform || res.activeJob.platform === platform) &&
+          ['QUEUED', 'DOWNLOADING', 'DOWNLOADING_BLOBS', 'PACKAGING_ZIP'].includes(res.activeJob.status)) {
         updateProgressUI(res.activeJob);
       }
     });
@@ -152,11 +169,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       chrome.tabs.sendMessage(currentTabId, { type: 'GET_PAGE_STATE' }, (response) => {
         if (chrome.runtime.lastError || !response) {
-          chrome.scripting.executeScript({
-            target: { tabId: currentTabId },
-            files: ['src/content/content.js']
-          }).then(() => {
-            setTimeout(refreshState, 300);
+          const injectSequence = async () => {
+            if (info.capabilities?.runtime?.mainWorld && info.mainWorldScript) {
+              await chrome.scripting.executeScript({
+                target: { tabId: currentTabId },
+                world: 'MAIN',
+                files: [info.mainWorldScript]
+              });
+            }
+            await chrome.scripting.executeScript({
+              target: { tabId: currentTabId },
+              files: ['src/content/content.js']
+            });
+          };
+          injectSequence().then(() => {
+            setTimeout(() => refreshState({ fallbackInactive: true }), 300);
           }).catch(() => {
             showInactiveState();
           });
@@ -198,12 +225,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (el) el.style.display = shouldShow ? '' : 'none';
   }
 
+  function updateTargetTypeLabel(typeHint = '') {
+    if (!targetTypeLabel) return;
+    const scan = pluginCapabilities?.scan || {};
+    const type = String(typeHint || '').toLowerCase();
+    if (type === 'post') {
+      targetTypeLabel.textContent = t('detectedPost');
+    } else if (type === 'subreddit') {
+      targetTypeLabel.textContent = t('detectedSubreddit');
+    } else if (type === 'album' || type === 'collection') {
+      targetTypeLabel.textContent = t('detectedAlbum');
+    } else if (type === 'feed') {
+      targetTypeLabel.textContent = t('detectedFeed');
+    } else if (type === 'profile' || type === 'story' || type === 'stories') {
+      targetTypeLabel.textContent = t('detectedProfile');
+    } else if (scan.subreddit || scan.collection === 'feed') {
+      targetTypeLabel.textContent = t('detectedFeed');
+    } else if (scan.album || scan.collection) {
+      targetTypeLabel.textContent = t('detectedAlbum');
+    } else {
+      targetTypeLabel.textContent = t('detectedProfile');
+    }
+  }
+
   /**
    * Applies plugin metadata (capabilities / filters) to the popup chrome:
    * platform badge, target label, quick-scanner buttons, filter tabs, and the
    * Reddit-specific subreddit filter / deduplicate control. Visibility is
    * derived from declared capabilities (SPEC §58), never from a platform id.
-   * @param {{ id: string, capabilities?: object, filters?: any[] }} info
+   * @param {{ id: string, displayName?: string, themeClass?: string, mediaHostSuffixes?: string[], capabilities?: any, filters?: any[] }} info
    */
   function applyPluginExtras(info) {
     const caps = info.capabilities || {};
@@ -213,27 +263,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     const filters = info.filters || [];
     const filterIds = filters.map((f) => f.id);
 
-    // Platform identity (badge / theme) is display metadata from the plugin.
-    const displayNames = { instagram: 'Instagram', facebook: 'Facebook', reddit: 'Reddit' };
-    platformBadge.textContent = displayNames[info.id] || info.id;
+    // Platform identity (badge / theme / allowed media hosts) comes from plugin metadata.
+    platformBadge.textContent = info.displayName || info.id;
     platformBadge.className = `platform-badge ${info.id}-badge`;
-    document.body.classList.toggle('fb-theme', info.id === 'facebook');
-    document.body.classList.toggle('reddit-theme', info.id === 'reddit');
-
-    // Target type label derived from capabilities (generic).
-    if (scan.subreddit || scan.collection === 'feed') {
-      targetTypeLabel.textContent = t('detectedFeed');
-    } else if (scan.album || scan.collection) {
-      targetTypeLabel.textContent = t('detectedAlbum');
-    } else {
-      targetTypeLabel.textContent = t('detectedProfile');
+    if (activeThemeClass) {
+      document.body.classList.remove(activeThemeClass);
+      activeThemeClass = '';
     }
+    if (typeof info.themeClass === 'string' && info.themeClass.trim()) {
+      activeThemeClass = info.themeClass.trim();
+      document.body.classList.add(activeThemeClass);
+    }
+    allowedMediaHostSuffixes = Array.isArray(info.mediaHostSuffixes) ? info.mediaHostSuffixes : [];
+
+    updateTargetTypeLabel();
 
     // Reddit-native state.
     subredditFilterEnabled = Boolean(scan.subreddit);
 
     // Quick scanner buttons — visibility from capabilities, not a platform id.
     showIf('ig-specific-buttons', Boolean(scan.stories || scan.highlights || media.avatar));
+    showIf('fb-specific-buttons', Boolean(scan.album && scan.page));
     showIf('reddit-specific-buttons', Boolean(filterIds.includes('redgifs') || (filterIds.includes('gallery') && media.gallery)));
     showIf('btn-scan-posts', Boolean(scan.post));
     showIf('btn-scan-stories', Boolean(scan.stories));
@@ -244,19 +294,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     showIf('btn-scan-redgifs', Boolean(filterIds.includes('redgifs')));
 
     // Filter tabs driven by the plugin's declared filters/capabilities.
+    document.querySelectorAll('.filter-tabs .tab[data-filter="video"]').forEach((el) => {
+      /** @type {HTMLElement} */ (el).style.display = media.video ? '' : 'none';
+    });
     document.querySelectorAll('.ig-only.tab').forEach((el) => {
       const dataFilter = el.getAttribute('data-filter');
       const show = dataFilter === 'stories' ? Boolean(scan.stories)
         : dataFilter === 'highlights' ? Boolean(scan.highlights)
         : true;
-      el.style.display = show ? '' : 'none';
+      /** @type {HTMLElement} */ (el).style.display = show ? '' : 'none';
     });
     document.querySelectorAll('.reddit-only.tab').forEach((el) => {
       const dataFilter = el.getAttribute('data-filter');
       const show = dataFilter === 'gallery' ? Boolean(media.gallery)
         : dataFilter === 'redgifs' ? Boolean(filterIds.includes('redgifs'))
         : true;
-      el.style.display = show ? '' : 'none';
+      /** @type {HTMLElement} */ (el).style.display = show ? '' : 'none';
     });
 
     // Subreddit filter row + deduplicate button.
@@ -272,10 +325,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeSection.style.display = 'none';
   }
 
-  function refreshState() {
+  function refreshState({ fallbackInactive = false } = {}) {
     if (!currentTabId) return;
     chrome.tabs.sendMessage(currentTabId, { type: 'GET_PAGE_STATE' }, (res) => {
       if (!chrome.runtime.lastError && res) renderPageState(res);
+      else if (fallbackInactive) showInactiveState();
+    });
+  }
+
+  function setScanButtonsDisabled(disabled) {
+    document.querySelectorAll('.scan-actions button').forEach((el) => {
+      /** @type {HTMLButtonElement} */ (el).disabled = disabled;
     });
   }
 
@@ -283,6 +343,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     inactiveNotice.style.display = 'none';
     activeSection.style.display = 'block';
 
+    updateTargetTypeLabel(pageState.targetType);
     targetName = pageState.targetName || pageState.username || 'Media_Collection';
     targetTitle.textContent = targetName;
     targetTitle.title = targetName;
@@ -290,21 +351,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     allMedia = Array.isArray(pageState.media) ? pageState.media : [];
     mediaCounter.textContent = String(allMedia.length);
     isScanning = !!pageState.isScanning;
+    setScanButtonsDisabled(isScanning);
+    if (scanAllLabel) {
+      scanAllLabel.textContent = isScanning ? t('scanning') : t('scanAll');
+    }
 
     const currentIds = new Set(allMedia.map((m) => m?.id).filter(Boolean));
     for (const id of selectedIds) {
       if (!currentIds.has(id)) selectedIds.delete(id);
     }
+    for (const id of seenMediaIds) {
+      if (!currentIds.has(id)) seenMediaIds.delete(id);
+    }
     allMedia.forEach((m) => {
-      if (m?.id) selectedIds.add(m.id);
+      if (m?.id && !seenMediaIds.has(m.id)) {
+        seenMediaIds.add(m.id);
+        selectedIds.add(m.id);
+      }
     });
 
     updateSubredditDropdown();
     renderGrid();
     updateSelectionSummary();
 
-    if (!window._smdAutoScanned && !isScanning && allMedia.length === 0) {
-      window._smdAutoScanned = true;
+    if (!/** @type {any} */ (window)._smdAutoScanned && !isScanning && allMedia.length === 0) {
+      /** @type {any} */ (window)._smdAutoScanned = true;
       triggerScan('TRIGGER_SCAN_ALL');
     }
   }
@@ -372,79 +443,123 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (filtered.length === 0) {
       mediaGrid.style.display = 'none';
       emptyState.style.display = 'flex';
-      btnDownload.disabled = true;
+      if (btnDownload) btnDownload.disabled = true;
       updateSelectionSummary();
       return;
     }
 
     mediaGrid.style.display = 'grid';
     emptyState.style.display = 'none';
-    mediaGrid.textContent = '';
 
+    const visibleIds = new Set(filtered.map((item) => item.id));
+    for (const [id, record] of gridCardMap) {
+      if (!visibleIds.has(id) || record.card.parentNode !== mediaGrid) {
+        record.card.remove();
+        gridCardMap.delete(id);
+      }
+    }
+
+    let cursor = mediaGrid.firstElementChild;
     filtered.forEach((item) => {
       const isSelected = selectedIds.has(item.id);
-      const div = document.createElement('div');
-      div.className = `grid-item ${isSelected ? 'selected' : ''}`;
+      let record = gridCardMap.get(item.id);
+      if (!record) {
+        const div = document.createElement('div');
+        div.className = 'grid-item';
+        div.setAttribute('role', 'button');
+        div.tabIndex = 0;
 
-      const thumb = item.thumbnailUrl || item.url;
-      if (isAllowedMediaUrl(thumb)) {
-        const img = document.createElement('img');
-        img.src = thumb;
-        img.alt = 'Preview';
-        img.loading = 'lazy';
-        div.appendChild(img);
-      }
-
-      const check = document.createElement('div');
-      check.className = 'check-overlay';
-      if (isSelected) check.textContent = '✓';
-      div.appendChild(check);
-
-      if (item.type === 'video') {
-        const tag = document.createElement('span');
-        tag.className = 'tag-video';
-        tag.textContent = 'VIDEO';
-        div.appendChild(tag);
-      }
-
-      if (item.metadata?.isCarousel) {
-        const tag = document.createElement('span');
-        tag.className = 'tag-car';
-        tag.textContent = `${item.metadata.slideIndex || 1}/${item.metadata.slideTotal || 1}`;
-        div.appendChild(tag);
-      }
-
-      if (item.width && item.height) {
-        const tag = document.createElement('span');
-        tag.className = 'tag-res';
-        tag.textContent = `${item.width}x${item.height}`;
-        div.appendChild(tag);
-      }
-
-      div.addEventListener('click', () => {
-        if (selectedIds.has(item.id)) {
-          selectedIds.delete(item.id);
-          div.classList.remove('selected');
-          div.querySelector('.check-overlay').textContent = '';
-        } else {
-          selectedIds.add(item.id);
-          div.classList.add('selected');
-          div.querySelector('.check-overlay').textContent = '✓';
+        const thumb = item.thumbnailUrl || item.url;
+        if (isAllowedMediaUrl(thumb) && !(item.type === 'video' && isLikelyVideoUrl(thumb))) {
+          const img = document.createElement('img');
+          img.src = thumb;
+          img.alt = t('mediaItemLabel');
+          img.loading = 'lazy';
+          div.appendChild(img);
+        } else if (item.type === 'video') {
+          const placeholder = document.createElement('div');
+          placeholder.className = 'video-placeholder';
+          placeholder.setAttribute('aria-hidden', 'true');
+          placeholder.textContent = '▶';
+          div.appendChild(placeholder);
         }
-        updateSelectionSummary();
-      });
 
-      mediaGrid.appendChild(div);
+        const check = document.createElement('div');
+        check.className = 'check-overlay';
+        div.appendChild(check);
+
+        if (item.type === 'video') {
+          const tag = document.createElement('span');
+          tag.className = 'tag-video';
+          const videoBadge = t('badgeVideo');
+          tag.textContent = videoBadge && videoBadge !== 'badgeVideo' ? videoBadge : 'VIDEO';
+          div.appendChild(tag);
+        }
+
+        if (item.metadata?.isCarousel) {
+          const tag = document.createElement('span');
+          tag.className = 'tag-car';
+          tag.textContent = `${item.metadata.slideIndex || 1}/${item.metadata.slideTotal || 1}`;
+          div.appendChild(tag);
+        }
+
+        if (item.width && item.height) {
+          const tag = document.createElement('span');
+          tag.className = 'tag-res';
+          tag.textContent = `${item.width}x${item.height}`;
+          div.appendChild(tag);
+        }
+
+        div.addEventListener('click', () => {
+          const nextSelected = !selectedIds.has(item.id);
+          if (nextSelected) selectedIds.add(item.id); else selectedIds.delete(item.id);
+          div.classList.toggle('selected', nextSelected);
+          div.setAttribute('aria-pressed', String(nextSelected));
+          check.textContent = nextSelected ? '✓' : '';
+          updateSelectionSummary();
+        });
+        div.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            div.click();
+          }
+        });
+
+        record = { card: div, check };
+        gridCardMap.set(item.id, record);
+      }
+
+      const resLabel = item.width && item.height ? `${item.width}x${item.height}` : t('mediaItemLabel');
+      record.card.setAttribute('aria-label', resLabel);
+      record.card.classList.toggle('selected', isSelected);
+      record.card.setAttribute('aria-pressed', String(isSelected));
+      record.check.textContent = isSelected ? '✓' : '';
+
+      if (record.card === cursor) cursor = cursor.nextElementSibling;
+      else mediaGrid.insertBefore(record.card, cursor);
     });
 
     updateSelectionSummary();
   }
 
   function updateTabCounts() {
+    let scoped = allMedia;
+    if (currentSubreddit !== 'all' && subredditFilterEnabled) {
+      scoped = scoped.filter((item) => {
+        const sub = (item?.metadata?.subreddit || item?.collection?.id || '').replace(/^r\//, '').trim();
+        return sub.toLowerCase() === currentSubreddit.toLowerCase();
+      });
+    }
+    if (dedupEnabled && dedupActive) {
+      scoped = MediaItemModel.deduplicate(scoped).uniqueItems;
+    }
+
     let allCount = 0, imgCount = 0, vidCount = 0, storyCount = 0, hlCount = 0, galCount = 0, rgCount = 0;
-    allMedia.forEach((m) => {
+    scoped.forEach((m) => {
+      if (!m) return;
       allCount++;
-      if (m.type === 'video') vidCount++; else imgCount++;
+      if (m.type === 'video') vidCount++;
+      else if (m.type === 'image') imgCount++;
       if (m.metadata?.category === 'stories') storyCount++;
       if (m.metadata?.category === 'highlights') hlCount++;
       if (m.sourceType === 'reddit_gallery' || m.metadata?.isGallery) galCount++;
@@ -465,16 +580,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function updateSelectionSummary() {
-    const selectedCount = selectedIds.size;
-    const totalCount = allMedia.length;
-    selectedSummary.textContent = t('selectedSummary', [String(selectedCount), String(totalCount)]);
+    const visible = getVisibleMedia();
+    const selectedVisibleCount = visible.reduce((acc, m) => acc + (selectedIds.has(m.id) ? 1 : 0), 0);
+    const totalVisibleCount = visible.length;
+    selectedSummary.textContent = t('selectedSummary', [String(selectedVisibleCount), String(totalVisibleCount)]);
 
-    if (selectedCount > 0) {
-      btnDownload.disabled = false;
-      downloadBtnText.textContent = t('downloadMediaBtn', [String(selectedCount)]);
-    } else {
-      btnDownload.disabled = true;
-      downloadBtnText.textContent = t('downloadBtnDefault');
+    if (btnDownload && downloadBtnText) {
+      if (selectedVisibleCount > 0) {
+        btnDownload.disabled = false;
+        downloadBtnText.textContent = selectedVisibleCount === 1
+          ? t('downloadMediaSingle')
+          : t('downloadMediaBtn', [String(selectedVisibleCount)]);
+      } else {
+        btnDownload.disabled = true;
+        downloadBtnText.textContent = t('downloadBtnDefault');
+      }
     }
   }
 
@@ -490,16 +610,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    progressContainer.style.display = 'block';
+    progressContainer.style.display = 'flex';
     const isPackaging = job.status === 'PACKAGING_ZIP';
+    const handled = (job.completed || 0) + (job.skippedDuplicates || 0);
     const percent = isPackaging && typeof job.zipPercent === 'number'
       ? job.zipPercent
-      : (job.total > 0 ? Math.round((job.completed / job.total) * 100) : 0);
+      : (job.total > 0 ? Math.min(100, Math.round((handled / job.total) * 100)) : 0);
 
-    progressPercentage.textContent = isPackaging ? `${percent}%` : `${percent}% (${job.completed}/${job.total})`;
+    progressPercentage.textContent = isPackaging ? `${percent}%` : `${percent}% (${handled}/${job.total})`;
     progressBarFill.style.width = `${percent}%`;
 
-    const jobRunning = ['DOWNLOADING', 'DOWNLOADING_BLOBS', 'PACKAGING_ZIP'].includes(job.status);
+    const jobRunning = ['QUEUED', 'DOWNLOADING', 'DOWNLOADING_BLOBS', 'PACKAGING_ZIP'].includes(job.status);
     btnCancelDownload.style.display = jobRunning ? 'inline-block' : 'none';
 
     if (isPackaging) {
@@ -545,10 +666,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Deduplication Settings Bindings
+  // Deduplication & Format Settings Bindings
   const popupDedupToggle = document.getElementById('popup-dedup-toggle');
   const popupHistoricalDedupToggle = document.getElementById('popup-historical-dedup-toggle');
   const popupHistoricalContainer = document.getElementById('popup-historical-dedup-container');
+  const popupClearHistoryBtn = /** @type {HTMLButtonElement | null} */ (document.getElementById('popup-clear-history-btn'));
 
   chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }, (res) => {
     if (res && res.success && res.settings) {
@@ -561,7 +683,37 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (popupHistoricalContainer) {
         popupHistoricalContainer.style.display = res.settings.deduplicate ? 'inline-flex' : 'none';
       }
+      const preferredFormat = res.settings.defaultFormat === 'zip' ? 'zip' : 'individual';
+      const radio = document.querySelector(`input[name="download-format"][value="${preferredFormat}"]`);
+      if (radio instanceof HTMLInputElement) radio.checked = true;
     }
+  });
+
+  document.querySelectorAll('input[name="download-format"]').forEach((input) => {
+    input.addEventListener('change', (e) => {
+      const value = /** @type {HTMLInputElement} */ (e.target).value === 'zip' ? 'zip' : 'individual';
+      chrome.runtime.sendMessage({
+        type: 'SAVE_SETTINGS',
+        payload: { defaultFormat: value }
+      });
+    });
+  });
+
+  popupClearHistoryBtn?.addEventListener('click', () => {
+    popupClearHistoryBtn.disabled = true;
+    chrome.runtime.sendMessage({ type: 'CLEAR_DEDUP_HISTORY' }, (res) => {
+      void chrome.runtime.lastError;
+      if (res?.success) {
+        const prev = popupClearHistoryBtn.textContent;
+        popupClearHistoryBtn.textContent = '✓';
+        setTimeout(() => {
+          popupClearHistoryBtn.textContent = prev || t('clearHistoryBtn');
+          popupClearHistoryBtn.disabled = false;
+        }, 1500);
+      } else {
+        popupClearHistoryBtn.disabled = false;
+      }
+    });
   });
 
   popupDedupToggle?.addEventListener('change', (e) => {
@@ -590,12 +742,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Filter Tabs
+  function setActiveFilterTab(filterId) {
+    activeFilter = filterId || 'all';
+    document.querySelectorAll('.filter-tabs .tab').forEach((tEl) => {
+      tEl.classList.toggle('active', tEl.getAttribute('data-filter') === activeFilter);
+    });
+    renderGrid();
+  }
+
   document.querySelectorAll('.filter-tabs .tab').forEach((tab) => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.filter-tabs .tab').forEach(tEl => tEl.classList.remove('active'));
-      tab.classList.add('active');
-      activeFilter = tab.getAttribute('data-filter') || 'all';
-      renderGrid();
+      setActiveFilterTab(tab.getAttribute('data-filter') || 'all');
     });
   });
 
@@ -635,32 +792,35 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Scanner triggers
-  function triggerScan(actionType) {
+  function triggerScan(actionType, filterAfter = null) {
     if (!currentTabId) return;
-    btnScanAll.disabled = true;
-    btnScanAll.textContent = t('scanning');
+    if (filterAfter) setActiveFilterTab(filterAfter);
+    setScanButtonsDisabled(true);
+    if (scanAllLabel) scanAllLabel.textContent = t('scanning');
 
     chrome.tabs.sendMessage(currentTabId, { type: actionType }, () => {
       if (chrome.runtime.lastError) {
         console.warn('[SMD Popup] Scan trigger failed:', chrome.runtime.lastError.message);
       }
-      btnScanAll.disabled = false;
-      btnScanAll.textContent = t('scanAll');
+      setScanButtonsDisabled(false);
+      if (scanAllLabel) scanAllLabel.textContent = t('scanAll');
       refreshState();
     });
   }
 
-  btnScanAll.addEventListener('click', () => triggerScan('TRIGGER_SCAN_ALL'));
-  btnScanPosts.addEventListener('click', () => triggerScan('TRIGGER_SCAN_POSTS'));
-  btnScanStories.addEventListener('click', () => triggerScan('TRIGGER_SCAN_STORIES'));
-  btnScanHighlights.addEventListener('click', () => triggerScan('TRIGGER_SCAN_HIGHLIGHTS'));
-  btnScanAvatar.addEventListener('click', () => triggerScan('TRIGGER_SCAN_AVATAR'));
-  btnScanGalleries.addEventListener('click', () => triggerScan('TRIGGER_SCAN_GALLERIES'));
-  btnScanVideos.addEventListener('click', () => triggerScan('TRIGGER_SCAN_VIDEOS'));
-  btnScanRedgifs.addEventListener('click', () => triggerScan('TRIGGER_SCAN_REDGIFS'));
+  btnScanAll?.addEventListener('click', () => triggerScan('TRIGGER_SCAN_ALL'));
+  btnScanPosts?.addEventListener('click', () => triggerScan('TRIGGER_SCAN_POSTS'));
+  btnScanStories?.addEventListener('click', () => triggerScan('TRIGGER_SCAN_STORIES'));
+  btnScanHighlights?.addEventListener('click', () => triggerScan('TRIGGER_SCAN_HIGHLIGHTS'));
+  btnScanAvatar?.addEventListener('click', () => triggerScan('TRIGGER_SCAN_AVATAR'));
+  btnScanFbPage?.addEventListener('click', () => triggerScan('TRIGGER_SCAN_PAGE'));
+  btnScanFbTabs?.addEventListener('click', () => triggerScan('TRIGGER_SCAN_ALL'));
+  btnScanGalleries?.addEventListener('click', () => triggerScan('TRIGGER_SCAN_GALLERIES', 'gallery'));
+  btnScanVideos?.addEventListener('click', () => triggerScan('TRIGGER_SCAN_VIDEOS', 'video'));
+  btnScanRedgifs?.addEventListener('click', () => triggerScan('TRIGGER_SCAN_REDGIFS', 'redgifs'));
 
   // Download Trigger
-  btnDownload.addEventListener('click', () => {
+  btnDownload?.addEventListener('click', () => {
     const visibleIds = new Set(getVisibleMedia().map((m) => m.id));
     const selectedItems = allMedia.filter(m => selectedIds.has(m.id) && visibleIds.has(m.id));
     if (!selectedItems.length) return;
@@ -678,12 +838,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       options: { deduplicate, historicalDedup }
     }, (response) => {
       if (chrome.runtime.lastError || !response?.success) {
-        if (chrome.runtime.lastError) {
-          console.warn('[SMD Popup] Download failed to start:', chrome.runtime.lastError.message);
+        const errMsg = chrome.runtime.lastError?.message || response?.error || t('errorDownloading');
+        console.warn('[SMD Popup] Download failed to start:', errMsg);
+        if (progressHideTimer) {
+          clearTimeout(progressHideTimer);
+          progressHideTimer = null;
         }
+        displayedProgressJob = null;
+        progressContainer.style.display = 'flex';
+        progressStatusText.textContent = response?.error || t('errorDownloading');
+        progressPercentage.textContent = '';
+        progressBarFill.style.width = '0%';
+        btnCancelDownload.style.display = 'none';
+        progressHideTimer = setTimeout(() => {
+          progressHideTimer = null;
+          if (!displayedProgressJob) progressContainer.style.display = 'none';
+        }, 5000);
         return;
       }
-      progressContainer.style.display = 'block';
+      progressContainer.style.display = 'flex';
       progressStatusText.textContent = t('downloadStarting');
       progressBarFill.style.width = '0%';
       progressPercentage.textContent = '0%';
@@ -700,6 +873,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   chrome.runtime.onMessage.addListener((message) => {
     if (message?.type === 'DOWNLOAD_PROGRESS_UPDATE' && message.job) {
+      if (message.job.platform && platform !== 'unknown' && message.job.platform !== platform) return;
       updateProgressUI(message.job);
     }
   });

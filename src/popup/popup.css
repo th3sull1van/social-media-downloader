@@ -43,6 +43,7 @@ body {
   font-size: 13px;
   user-select: none;
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .popup-container {
@@ -91,8 +92,10 @@ body {
   text-transform: uppercase;
 }
 
-.ig-badge { background: var(--accent-ig); }
-.fb-badge { background: var(--accent-fb); }
+.ig-badge,
+.instagram-badge { background: var(--accent-ig); }
+.fb-badge,
+.facebook-badge { background: var(--accent-fb); }
 .reddit-badge { background: var(--accent-reddit); }
 
 /* Notice Card */
@@ -119,12 +122,26 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
+}
+
+.target-details {
+  min-width: 0;
+  flex: 1;
 }
 
 .target-type { font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
-.target-title { font-size: 15px; font-weight: 700; color: var(--text-primary); margin-top: 2px; }
+.target-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-.target-stats { display: flex; flex-direction: column; align-items: flex-end; }
+.target-stats { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
 .counter-badge { font-size: 18px; font-weight: 800; color: var(--color-accent); }
 .counter-label { font-size: 10px; color: var(--text-muted); }
 
@@ -140,6 +157,7 @@ body {
   gap: 6px;
   transition: all 0.2s;
 }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-primary {
   background: var(--color-accent);
@@ -160,7 +178,7 @@ body {
 
 .quick-scanners {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
   gap: 6px;
   margin-top: 6px;
 }
@@ -280,11 +298,26 @@ body {
 .grid-item.selected, .grid-card.selected {
   border-color: var(--color-accent);
 }
+.grid-item:focus-visible, .grid-card:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
 
 .grid-item img, .grid-card img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.video-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #141417;
+  color: var(--text-muted);
+  font-size: 22px;
 }
 
 .check-overlay {
@@ -316,6 +349,12 @@ body {
   font-weight: 700;
   padding: 1px 4px;
   border-radius: 3px;
+}
+
+.tag-car {
+  top: 4px;
+  bottom: auto;
+  left: 4px;
 }
 
 .tag-res {
@@ -395,8 +434,28 @@ body {
 .nested-option {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   padding-left: 8px;
   border-left: 1px solid var(--border-color);
+}
+
+.btn-clear-history {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+.btn-clear-history:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+.btn-clear-history:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .radio-label {

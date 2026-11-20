@@ -42,7 +42,8 @@
       "matches": [
         "*://*.instagram.com/*",
         "*://*.facebook.com/*",
-        "*://*.reddit.com/*"
+        "*://*.reddit.com/*",
+        "*://*.redd.it/*"
       ],
       "js": ["src/content/content.js"],
       "world": "ISOLATED",
@@ -52,27 +53,70 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "src/plugins/instagram/main-world/injected.js",
-        "src/plugins/facebook/main-world/injected.js",
-        "src/plugins/meta-shared/MetaNode.js",
-        "src/plugins/meta-shared/MetaCdn.js",
-        "assets/icons/icon32.png",
-        "src/content/inpage_overlay.css"
+        "src/plugins/instagram/InstagramContentController.js",
+        "src/plugins/instagram/InstagramDetector.js",
+        "src/plugins/instagram/InstagramNormalizer.js",
+        "src/core/domain/MediaItem.js",
+        "src/core/domain/PlatformTarget.js"
       ],
       "matches": [
-        "*://*.instagram.com/*",
-        "*://*.facebook.com/*",
-        "*://*.reddit.com/*"
+        "*://*.instagram.com/*"
       ]
     },
     {
       "resources": [
+        "src/plugins/facebook/FacebookContentController.js",
+        "src/plugins/facebook/FacebookDetector.js",
+        "src/plugins/facebook/FacebookNormalizer.js",
+        "src/core/domain/MediaItem.js",
+        "src/core/domain/PlatformTarget.js",
+        "src/core/services/FilenameService.js"
+      ],
+      "matches": [
+        "*://*.facebook.com/*"
+      ]
+    },
+    {
+      "resources": [
+        "src/plugins/meta-shared/MetaNode.js",
+        "src/plugins/meta-shared/MetaCdn.js"
+      ],
+      "matches": [
+        "*://*.instagram.com/*",
+        "*://*.facebook.com/*"
+      ]
+    },
+    {
+      "resources": [
+        "assets/icons/icon32.png",
+        "src/content/inpage_overlay.css",
+        "src/content/bridge/MainWorldBridge.js",
+        "src/content/runtime/NavigationTracker.js",
+        "src/content/runtime/ContentRuntime.js",
+        "src/content/ui/MediaGrid.js",
+        "src/content/ui/OverlayModal.js"
+      ],
+      "matches": [
+        "*://*.instagram.com/*",
+        "*://*.facebook.com/*",
+        "*://*.reddit.com/*",
+        "*://*.redd.it/*"
+      ]
+    },
+    {
+      "resources": [
+        "src/plugins/reddit/RedditContentController.js",
+        "src/plugins/reddit/RedditDetector.js",
         "src/plugins/reddit/RedditScanner.js",
         "src/plugins/reddit/RedditNormalizer.js",
         "src/core/domain/MediaItem.js",
+        "src/core/domain/PlatformTarget.js",
         "src/core/services/FilenameService.js"
       ],
-      "matches": [ "*://*.reddit.com/*" ]
+      "matches": [
+        "*://*.reddit.com/*",
+        "*://*.redd.it/*"
+      ]
     }
   ],
   "action": {
