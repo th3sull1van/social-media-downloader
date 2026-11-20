@@ -33,6 +33,9 @@ export class DownloadManager {
     /** @type {Set<string>} */
     this.pendingBlobUrls = new Set();
 
+    /** @type {Set<string>} */
+    this._revokingBlobUrls = new Set();
+
     /** @type {ReturnType<typeof setTimeout> | null} */
     this.badgeClearTimer = null;
     this._restorePromise = null;
@@ -201,14 +204,18 @@ export class DownloadManager {
 
     try {
       if (typeof chrome !== 'undefined' && chrome.tabs) {
-        chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
-          if (!tabs) return;
-          tabs.forEach((tab) => {
-            if (tab.id) {
-              chrome.tabs.sendMessage(tab.id, payload).catch(() => {});
-            }
+        if (typeof this.activeJob.tabId === 'number') {
+          chrome.tabs.sendMessage(this.activeJob.tabId, payload).catch(() => {});
+        } else {
+          chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+            if (!tabs) return;
+            tabs.forEach((tab) => {
+              if (tab.id) {
+                chrome.tabs.sendMessage(tab.id, payload).catch(() => {});
+              }
+            });
           });
-        });
+        }
       }
     } catch (e) {}
   }
@@ -233,7 +240,8 @@ export class DownloadManager {
 
     const previous = this.downloadLedger.get(delta.id);
     const wasTracked = this.activeDownloadIds.has(delta.id) || !!previous;
-    if (wasTracked) {
+    const alreadyTerminal = !this.activeDownloadIds.has(delta.id) && previous?.state === state;
+    if (wasTracked && !alreadyTerminal) {
       const wasAccounted = previous?.accounted === true;
       this.downloadLedger.set(delta.id, { state, accounted: wasAccounted });
       this.activeDownloadIds.delete(delta.id);
@@ -267,12 +275,15 @@ export class DownloadManager {
     }
 
     const blobUrl = this.downloadBlobUrls.get(delta.id);
-    if (blobUrl) {
+    if (blobUrl && !this._revokingBlobUrls.has(blobUrl)) {
+      this._revokingBlobUrls.add(blobUrl);
       void ArchiveService.revokeBlobUrls([blobUrl]).then(() => {
         this.downloadBlobUrls.delete(delta.id);
         this.pendingBlobUrls.delete(blobUrl);
       }).catch((err) => {
         this.logger.warn('Failed to revoke completed download blob URL:', err);
+      }).finally(() => {
+        this._revokingBlobUrls.delete(blobUrl);
       });
     }
   }
@@ -287,9 +298,10 @@ export class DownloadManager {
    * @param {Object} [params.options]
    * @param {boolean} [params.options.deduplicate]
    * @param {boolean} [params.options.historicalDedup]
+   * @param {number} [params.tabId]
    * @returns {Promise<{ success: boolean, message?: string, error?: string }>}
    */
-  async startDownload({ platform, targetName, items, format = 'individual', options }) {
+  async startDownload({ platform, targetName, items, format = 'individual', options, tabId = undefined }) {
     await this.reconcileState();
     if (!items || !items.length) {
       return { success: false, error: 'No items provided' };
@@ -315,11 +327,11 @@ export class DownloadManager {
     const historicalDedup = deduplicate && (options && typeof options.historicalDedup === 'boolean' ? options.historicalDedup : settings.historicalDedup);
 
     if (format === 'zip') {
-      this.processZipDownload(plugin, platform, safeTargetName, items, { deduplicate, historicalDedup }).catch((err) => {
+      this.processZipDownload(plugin, platform, safeTargetName, items, { deduplicate, historicalDedup, tabId }).catch((err) => {
         this.logger.error('ZIP download error:', err);
       });
     } else {
-      this.processIndividualDownloads(plugin, platform, safeTargetName, items, { deduplicate, historicalDedup }).catch((err) => {
+      this.processIndividualDownloads(plugin, platform, safeTargetName, items, { deduplicate, historicalDedup, tabId }).catch((err) => {
         this.logger.error('Individual download error:', err);
       });
     }
@@ -358,18 +370,35 @@ export class DownloadManager {
    * @returns {string}
    */
   static uniquifyArchivePath(path, usedPaths) {
-    if (!usedPaths.has(path)) {
-      usedPaths.add(path);
-      return path;
+    const MAX_SEGMENT_UTF8_BYTES = 200;
+    const fitBasename = (dirPrefix, stemPart, suffixPart, extPart) => {
+      const tail = `${suffixPart}${extPart}`;
+      const tailBytes = FilenameService.utf8ByteLength(tail);
+      const maxStemBytes = Math.max(1, MAX_SEGMENT_UTF8_BYTES - tailBytes);
+      const fittedStem = FilenameService.utf8ByteLength(stemPart) > maxStemBytes
+        ? FilenameService.truncateSafe(stemPart, stemPart.length, maxStemBytes) || 'm'
+        : stemPart;
+      return `${dirPrefix}${fittedStem}${tail}`;
+    };
+
+    const lastSlash = path.lastIndexOf('/');
+    const dirPrefix = lastSlash >= 0 ? path.slice(0, lastSlash + 1) : '';
+    const baseName = lastSlash >= 0 ? path.slice(lastSlash + 1) : path;
+    const baseLastDot = baseName.lastIndexOf('.');
+    const hasExt = baseLastDot > 0 && baseLastDot < baseName.length - 1;
+    const stemPart = hasExt ? baseName.slice(0, baseLastDot) : baseName;
+    const extPart = hasExt ? baseName.slice(baseLastDot) : '';
+
+    const initial = fitBasename(dirPrefix, stemPart, '', extPart);
+    if (!usedPaths.has(initial)) {
+      usedPaths.add(initial);
+      return initial;
     }
-    const lastDot = path.lastIndexOf('.') > path.lastIndexOf('/') + 1 ? path.lastIndexOf('.') : -1;
-    const stem = lastDot > 0 ? path.slice(0, lastDot) : path;
-    const ext = lastDot > 0 ? path.slice(lastDot) : '';
     let n = 2;
-    let candidate = `${stem}_${n}${ext}`;
+    let candidate = fitBasename(dirPrefix, stemPart, `_${n}`, extPart);
     while (usedPaths.has(candidate)) {
       n++;
-      candidate = `${stem}_${n}${ext}`;
+      candidate = fitBasename(dirPrefix, stemPart, `_${n}`, extPart);
     }
     usedPaths.add(candidate);
     return candidate;
@@ -459,6 +488,10 @@ export class DownloadManager {
   downloadUrl(url, targetFilename, signal = undefined) {
     return new Promise((resolve, reject) => {
       signal?.throwIfAborted();
+      if (!url || typeof url !== 'string' || !/^(?:https?:|blob:)/i.test(url)) {
+        reject(new Error('Unsupported download URL protocol'));
+        return;
+      }
       if (typeof chrome === 'undefined' || !chrome.downloads) {
         reject(new Error('chrome.downloads unavailable'));
         return;
@@ -540,6 +573,7 @@ export class DownloadManager {
         reject(new Error('Download completion tracking unavailable'));
         return;
       }
+      /** @param {any} [error] */
       const finish = (error = null) => {
         chrome.downloads.onChanged.removeListener(onChanged);
         signal.removeEventListener('abort', onAbort);
@@ -578,8 +612,9 @@ export class DownloadManager {
    * @param {Object} [options]
    * @param {boolean} [options.deduplicate]
    * @param {boolean} [options.historicalDedup]
+   * @param {number} [options.tabId]
    */
-  async processIndividualDownloads(plugin, platform, targetName, items, { deduplicate = false, historicalDedup = false } = {}) {
+  async processIndividualDownloads(plugin, platform, targetName, items, { deduplicate = false, historicalDedup = false, tabId = undefined } = {}) {
     const total = items.length;
     const sessionSignatures = new Set();
     let skippedDuplicates = 0;
@@ -592,7 +627,8 @@ export class DownloadManager {
       platform,
       targetName,
       format: 'individual',
-      total
+      total,
+      tabId
     });
     const job = this.activeJob;
     this.abortController = new AbortController();
@@ -608,6 +644,14 @@ export class DownloadManager {
 
     // ponytail: one full payload at a time with dedup; incremental OPFS hashing if one file exceeds memory.
     const concurrency = deduplicate ? 1 : 6;
+    const HISTORICAL_FLUSH_BATCH_SIZE = 25;
+    /** @type {string[]} */
+    const pendingHistoricalSignatures = [];
+    const flushHistoricalSignatures = async () => {
+      if (!historicalDedup || pendingHistoricalSignatures.length === 0) return;
+      const batch = pendingHistoricalSignatures.splice(0, pendingHistoricalSignatures.length);
+      await StorageService.addHistoricalSignatures(batch, historyRevision);
+    };
     let index = 0;
 
     const worker = async () => {
@@ -633,7 +677,9 @@ export class DownloadManager {
                 bytes = new Uint8Array(await response.arrayBuffer());
               }
             } else {
-              const response = await fetch(item.downloadUrl || item.url, { mode: 'cors', signal });
+              const directUrl = item.downloadUrl || item.url;
+              if (!directUrl) throw new Error('Item has no download URL');
+              const response = await fetch(directUrl, { mode: 'cors', signal });
               if (!response.ok) throw new Error(`HTTP ${response.status}`);
               bytes = new Uint8Array(await response.arrayBuffer());
             }
@@ -653,7 +699,12 @@ export class DownloadManager {
               downloadId = await this.downloadGeneratedBlob(bytes, targetFilename, signal);
               await this.waitForDownloadCompletion(downloadId, signal);
               sessionSignatures.add(sig);
-              if (historicalDedup) await StorageService.addHistoricalSignatures([sig], historyRevision);
+              if (historicalDedup) {
+                pendingHistoricalSignatures.push(sig);
+                if (pendingHistoricalSignatures.length >= HISTORICAL_FLUSH_BATCH_SIZE) {
+                  await flushHistoricalSignatures();
+                }
+              }
               ok = true;
             } else {
               downloadId = await this.downloadItem(plugin, item, targetFilename, signal);
@@ -686,7 +737,9 @@ export class DownloadManager {
           job.updatedAt = Date.now();
           this.updateBadge(`${completed + skippedDuplicates}/${total}`);
           this.broadcastProgress();
-          if (downloadId != null && (ok || itemInterrupted)) this.accountDownload(downloadId, ok ? 'complete' : 'interrupted');
+          if (downloadId != null) {
+            this.accountDownload(downloadId, ok ? 'complete' : (itemInterrupted ? 'interrupted' : 'unknown'));
+          }
           this.persistState();
         }
 
@@ -699,7 +752,11 @@ export class DownloadManager {
       workers.push(worker());
     }
 
-    await Promise.all(workers);
+    try {
+      await Promise.all(workers);
+    } finally {
+      await flushHistoricalSignatures();
+    }
 
     if (signal.aborted) {
       if (this.activeJob !== job) return;
@@ -709,9 +766,10 @@ export class DownloadManager {
     }
 
     if (signal.aborted || this.activeJob !== job) return;
-    if (interrupted || (job.completed === 0 && skippedDuplicates === 0 && job.failed > 0)) {
+    if (interrupted || (job.completed === 0 && job.failed > 0)) {
       job.status = 'FAILED';
       if (interrupted) job.error = 'download_interrupted';
+      else if (skippedDuplicates > 0) job.error = 'All non-duplicate items failed to download.';
       await this.persistState();
       this.updateBadge('ERR', '#FF0000');
       this.broadcastProgress();
@@ -737,8 +795,9 @@ export class DownloadManager {
    * @param {Object} [options]
    * @param {boolean} [options.deduplicate]
    * @param {boolean} [options.historicalDedup]
+   * @param {number} [options.tabId]
    */
-  async processZipDownload(plugin, platform, targetName, items, { deduplicate = false, historicalDedup = false } = {}) {
+  async processZipDownload(plugin, platform, targetName, items, { deduplicate = false, historicalDedup = false, tabId = undefined } = {}) {
     const timestamp = FilenameService.getTimestamp();
     const zipFilename = `SMD/${platform}-${targetName}-${timestamp}.zip`;
     const sessionSignatures = new Set();
@@ -753,7 +812,8 @@ export class DownloadManager {
       targetName,
       format: 'zip',
       total: items.length,
-      targetFilename: zipFilename
+      targetFilename: zipFilename,
+      tabId
     });
     const job = this.activeJob;
     this.abortController = new AbortController();
@@ -785,12 +845,14 @@ export class DownloadManager {
       const concurrency = deduplicate ? 1 : 6;
       let index = 0;
       let sizeLimitHit = false;
+      /** @type {string | null} */
+      let fatalStorageReason = null;
       /** @type {Set<string>} */
       const usedArchivePaths = new Set();
 
       const worker = async () => {
         while (index < items.length) {
-          if (sizeLimitHit) break;
+          if (sizeLimitHit || fatalStorageReason) break;
           if (!job || signal.aborted) return;
 
           const currentIndex = index++;
@@ -798,10 +860,7 @@ export class DownloadManager {
 
           let ok = false;
           try {
-            const zipPath = DownloadManager.uniquifyArchivePath(
-              this.resolveArchivePath(plugin, item, targetName, currentIndex),
-              usedArchivePaths
-            );
+            const rawArchivePath = this.resolveArchivePath(plugin, item, targetName, currentIndex);
             let dataPayload = null;
             let streamSource = null;
             let bytesForSignature = null;
@@ -827,7 +886,9 @@ export class DownloadManager {
                 throw new Error(`Unsupported artifact kind: ${artifact?.kind || 'unknown'}`);
               }
             } else {
-              const response = await fetch(item.downloadUrl || item.url, { mode: 'cors', signal });
+              const directUrl = item.downloadUrl || item.url;
+              if (!directUrl) throw new Error('Item has no download URL');
+              const response = await fetch(directUrl, { mode: 'cors', signal });
               if (!response.ok) throw new Error(`HTTP ${response.status}`);
               if (deduplicate) {
                 dataPayload = await response.arrayBuffer();
@@ -853,10 +914,16 @@ export class DownloadManager {
             }
 
             if (streamSource || dataPayload) {
+              const zipPath = DownloadManager.uniquifyArchivePath(rawArchivePath, usedArchivePaths);
               const addRes = await ArchiveService.addFileStream(zipPath, streamSource || dataPayload, signal, sessionId);
               if (!addRes || !addRes.ok) {
+                usedArchivePaths.delete(zipPath);
                 if (addRes && addRes.reason === 'size_limit') {
                   sizeLimitHit = true;
+                  break;
+                }
+                if (addRes && (addRes.reason === 'opfs_quota_exceeded' || addRes.reason === 'opfs_unavailable')) {
+                  fatalStorageReason = addRes.reason;
                   break;
                 }
                 if (addRes && addRes.reason === 'cancelled') return;
@@ -894,15 +961,27 @@ export class DownloadManager {
       const cancelled = !job || signal.aborted;
       if (cancelled) return;
 
+      if (fatalStorageReason) {
+        throw Object.assign(new Error(fatalStorageReason), { code: fatalStorageReason });
+      }
+
       if (!sizeLimitHit && job.completed === 0 && skippedDuplicates === 0) {
         throw new Error('No media could be added to the ZIP archive (all items failed)');
       }
 
-      if (!sizeLimitHit && job.completed === 0 && skippedDuplicates > 0 && job.failed === 0) {
-        job.status = 'COMPLETED';
+      if (!sizeLimitHit && job.completed === 0 && skippedDuplicates > 0) {
+        if (job.failed === 0) {
+          job.status = 'COMPLETED';
+          await this.persistState();
+          this.updateBadge('✓', '#4BB543');
+          this.scheduleBadgeClear(job);
+          this.broadcastProgress();
+          return;
+        }
+        job.status = 'FAILED';
+        job.error = job.error || 'All non-duplicate items failed to download.';
         await this.persistState();
-        this.updateBadge('✓', '#4BB543');
-        this.scheduleBadgeClear(job);
+        this.updateBadge('ERR', '#FF0000');
         this.broadcastProgress();
         return;
       }
@@ -947,22 +1026,29 @@ export class DownloadManager {
         await StorageService.addHistoricalSignatures(newHistoricalSignatures, historyRevision);
       }
 
-      // Verify the final on-disk name. A competing download manager (IDM) can win
-      // the onDeterminingFilename race and rename the ZIP to the blob UUID. The
-      // download itself succeeds, so surface the interference instead of failing.
-      setTimeout(() => {
-        if (typeof chrome === 'undefined' || !chrome.downloads?.search) return;
-        chrome.downloads.search({ id: zipDownloadId }, (items) => {
-          const item = items?.[0];
-          if (item && !item.filename.endsWith(zipFilename.split('/').pop())) {
+      // Verify the final on-disk name immediately after download completion.
+      // A competing download manager (IDM) wins onDeterminingFilename before the
+      // file finishes writing, so no delayed MV3 timer is needed.
+      if (typeof chrome !== 'undefined' && chrome.downloads?.search) {
+        try {
+          const found = await new Promise((resolve) => {
+            chrome.downloads.search({ id: zipDownloadId }, (items) => {
+              void chrome.runtime?.lastError;
+              resolve(items);
+            });
+          });
+          const item = found?.[0];
+          const expectedBase = zipFilename.split('/').pop();
+          if (item?.filename && expectedBase && !item.filename.endsWith(expectedBase)) {
             this.logger.warn(`ZIP filename overridden by another download manager: "${item.filename}" (wanted "${zipFilename}")`);
-            if (job) {
+            if (job && this.activeJob === job) {
               job.filenameOverridden = true;
-              this.broadcastProgress();
             }
           }
-        });
-      }, 1000);
+        } catch (searchErr) {
+          this.logger.warn('ZIP filename verification failed:', searchErr);
+        }
+      }
 
       if (!signal.aborted && this.activeJob === job) {
         job.status = 'COMPLETED';

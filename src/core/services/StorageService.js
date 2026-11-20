@@ -10,6 +10,7 @@ export class StorageService {
   static _memoryStore = new Map();
   static historyRevision = 0;
   static historyWrites = Promise.resolve();
+  static settingsWrites = Promise.resolve();
 
   /** One bounded snapshot per job; clearing history invalidates existing snapshots. */
   static async getHistorySnapshot() {
@@ -89,23 +90,45 @@ export class StorageService {
 
   /**
    * Loads user settings from 'core.settings'.
-   * @returns {Promise<{ deduplicate: boolean, historicalDedup: boolean }>}
+   * @returns {Promise<{ deduplicate: boolean, historicalDedup: boolean, defaultFormat: 'individual' | 'zip' }>}
    */
   static async getSettings() {
-    const defaultSettings = { deduplicate: false, historicalDedup: false };
+    const defaultSettings = /** @type {{ deduplicate: boolean, historicalDedup: boolean, defaultFormat: 'individual' | 'zip' }} */ ({
+      deduplicate: false,
+      historicalDedup: false,
+      defaultFormat: 'individual'
+    });
     const saved = await StorageService.get('core.settings', defaultSettings);
-    return { ...defaultSettings, ...(saved || {}) };
+    const merged = { ...defaultSettings, ...(saved && typeof saved === 'object' ? saved : {}) };
+    return {
+      deduplicate: Boolean(merged.deduplicate),
+      historicalDedup: Boolean(merged.deduplicate && merged.historicalDedup),
+      defaultFormat: merged.defaultFormat === 'zip' ? 'zip' : 'individual'
+    };
   }
 
   /**
-   * Saves user settings to 'core.settings'.
-   * @param {Partial<{ deduplicate: boolean, historicalDedup: boolean }>} patch
+   * Saves user settings to 'core.settings' (serialized + key-allowlisted).
+   * @param {Partial<{ deduplicate: boolean, historicalDedup: boolean, defaultFormat: 'individual' | 'zip' }>} patch
    * @returns {Promise<boolean>}
    */
   static async saveSettings(patch) {
-    const current = await StorageService.getSettings();
-    const updated = { ...current, ...patch };
-    return StorageService.set('core.settings', updated);
+    const safePatch = {};
+    if (patch && typeof patch === 'object') {
+      if (typeof patch.deduplicate === 'boolean') safePatch.deduplicate = patch.deduplicate;
+      if (typeof patch.historicalDedup === 'boolean') safePatch.historicalDedup = patch.historicalDedup;
+      if (patch.defaultFormat === 'zip' || patch.defaultFormat === 'individual') {
+        safePatch.defaultFormat = patch.defaultFormat;
+      }
+    }
+    const operation = StorageService.settingsWrites.then(async () => {
+      const current = await StorageService.getSettings();
+      const updated = { ...current, ...safePatch };
+      if (!updated.deduplicate) updated.historicalDedup = false;
+      return StorageService.set('core.settings', updated);
+    });
+    StorageService.settingsWrites = operation.then(() => {}, () => {});
+    return operation;
   }
 
   /**

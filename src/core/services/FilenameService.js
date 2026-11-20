@@ -4,15 +4,51 @@
  */
 
 export class FilenameService {
+  static _encoder = typeof TextEncoder !== 'undefined' ? new TextEncoder() : null;
+
+  /**
+   * Computes UTF-8 byte length of a string.
+   * @param {string} str
+   * @returns {number}
+   */
+  static utf8ByteLength(str) {
+    if (!str) return 0;
+    if (FilenameService._encoder) return FilenameService._encoder.encode(str).length;
+    return str.length;
+  }
+
+  /**
+   * Truncates a string to at most `maxCodeUnits` UTF-16 code units and `maxBytes` UTF-8 bytes
+   * without splitting UTF-16 surrogate pairs.
+   * @param {string} str
+   * @param {number} maxCodeUnits
+   * @param {number} [maxBytes=Infinity]
+   * @returns {string}
+   */
+  static truncateSafe(str, maxCodeUnits, maxBytes = Infinity) {
+    if (!str) return '';
+    let out = '';
+    let bytes = 0;
+    for (const ch of Array.from(str)) {
+      if (out.length + ch.length > maxCodeUnits) break;
+      const chBytes = FilenameService.utf8ByteLength(ch);
+      if (bytes + chBytes > maxBytes) break;
+      out += ch;
+      bytes += chBytes;
+    }
+    return out;
+  }
+
   /**
    * Sanitizes a single filename or directory segment.
    * Removes illegal filesystem characters and path traversal tokens.
    * @param {string} name
    * @param {number} [maxLen=80]
    * @param {string} [fallback='media']
+   * @param {number} [maxBytes=180]
    * @returns {string}
    */
-  static sanitize(name, maxLen = 80, fallback = 'media') {
+  static sanitize(name, maxLen = 80, fallback = 'media', maxBytes = 180) {
     if (!name || typeof name !== 'string') return fallback;
 
     let clean = name
@@ -27,14 +63,21 @@ export class FilenameService {
       .replace(/^[\s._]+|[\s._]+$/g, '')
       .trim();
 
-    // Prevent Windows reserved DOS filenames (CON, PRN, AUX, NUL, COM1..9, LPT1..9)
+    if (clean.length > maxLen || FilenameService.utf8ByteLength(clean) > maxBytes) {
+      clean = FilenameService.truncateSafe(clean, maxLen, maxBytes).replace(/^[\s._]+|[\s._]+$/g, '');
+    }
+
+    // Prevent Windows reserved DOS filenames (CON, PRN, AUX, NUL, COM1..9, LPT1..9).
+    // Checked AFTER truncation so e.g. "CON_something" sliced to 3 chars cannot become "CON".
     const reservedNames = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
     if (reservedNames.test(clean)) {
       clean = `_${clean}`;
-    }
-
-    if (clean.length > maxLen) {
-      clean = clean.slice(0, maxLen).replace(/^[\s._]+|[\s._]+$/g, '');
+      if (clean.length > maxLen) {
+        clean = clean.slice(0, maxLen).replace(/[\s.]+$/g, '');
+      }
+      if (clean === '_' || reservedNames.test(clean)) {
+        clean = '';
+      }
     }
 
     return clean || fallback;
@@ -45,9 +88,10 @@ export class FilenameService {
    * @param {string} filename
    * @param {number} [maxLen=80]
    * @param {string} [fallback='media.jpg']
+   * @param {number} [maxBytes=180]
    * @returns {string}
    */
-  static sanitizeFilename(filename, maxLen = 80, fallback = 'media.jpg') {
+  static sanitizeFilename(filename, maxLen = 80, fallback = 'media.jpg', maxBytes = 180) {
     if (!filename || typeof filename !== 'string') return fallback;
     const lastDot = filename.lastIndexOf('.');
     let base = filename;
@@ -57,21 +101,24 @@ export class FilenameService {
       ext = filename.slice(lastDot + 1);
     }
     const limit = Math.max(1, Math.floor(Number(maxLen)) || 80);
-    let safeExt = ext ? FilenameService.sanitize(ext, 8, '').toLowerCase() : '';
+    let safeExt = ext ? FilenameService.sanitize(ext, 8, '', 16).toLowerCase() : '';
     if (safeExt && safeExt.length + 1 >= limit) {
       // A tiny caller-supplied limit cannot preserve a dot plus the whole
       // extension; keep the result bounded rather than exceeding maxLen.
       return safeExt.slice(0, limit);
     }
     const baseLimit = safeExt ? limit - safeExt.length - 1 : limit;
-    let safeBase = FilenameService.sanitize(base, Math.max(1, baseLimit), 'media').slice(0, baseLimit);
+    const extBytes = safeExt ? FilenameService.utf8ByteLength(safeExt) + 1 : 0;
+    const baseByteLimit = Math.max(1, maxBytes - extBytes);
+    let safeBase = FilenameService.sanitize(base, Math.max(1, baseLimit), 'media', baseByteLimit);
+    safeBase = FilenameService.truncateSafe(safeBase, baseLimit, baseByteLimit);
     // Windows reserves the name before the first dot, not only an exact
     // filename (CON.photos and CON.backup.jpg are both invalid).
     if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(safeBase.split('.')[0])) {
-      safeBase = `_${safeBase}`.slice(0, baseLimit);
+      safeBase = FilenameService.truncateSafe(`_${safeBase}`, baseLimit, baseByteLimit);
     }
     if (!safeBase) safeBase = 'm'.slice(0, baseLimit);
-    return safeExt ? `${safeBase}.${safeExt}`.slice(0, limit) : safeBase.slice(0, limit);
+    return safeExt ? `${safeBase}.${safeExt}` : safeBase;
   }
 
   /**
@@ -126,8 +173,9 @@ export class FilenameService {
     let result = pattern;
     for (const [key, val] of Object.entries(context)) {
       const safeVal = typeof val === 'string' ? FilenameService.sanitize(val, 60, '') : String(val ?? '');
-      const regex = new RegExp(`\\{${key}\\}`, 'g');
-      result = result.replace(regex, safeVal);
+      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`\\{${escapedKey}\\}`, 'g');
+      result = result.replace(regex, () => safeVal);
     }
 
     // Clean up empty token residues (e.g. "r__u_author")

@@ -4,7 +4,7 @@
  */
 
 /**
- * @typedef {"page" | "post" | "profile" | "album" | "collection" | "subreddit" | "story" | "unknown"} TargetType
+ * @typedef {"page" | "post" | "profile" | "album" | "collection" | "subreddit" | "story" | "feed" | "unknown"} TargetType
  */
 
 /**
@@ -31,7 +31,7 @@ export class PlatformTargetModel {
       throw new TypeError('PlatformTarget requires a platform string');
     }
 
-    const validTypes = ['page', 'post', 'profile', 'album', 'collection', 'subreddit', 'story', 'unknown'];
+    const validTypes = ['page', 'post', 'profile', 'album', 'collection', 'subreddit', 'story', 'feed', 'unknown'];
     const type = validTypes.includes(data.type) ? data.type : 'unknown';
 
     return {

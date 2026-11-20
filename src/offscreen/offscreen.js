@@ -102,7 +102,7 @@ function createEocdRecord(entryCount, cdSize, cdOffset) {
 
 const textEncoder = new TextEncoder();
 const MAX_ZIP_BYTES = 1024 * 1024 * 1024;
-const MAX_ZIP_ENTRIES = 0xFFFF;
+const MAX_ZIP_ENTRIES = 0xFFFE;
 const ZIP_DATA_DESCRIPTOR_BYTES = 16;
 const DOS_RESERVED_NAMES = new Set([
   'CON', 'PRN', 'AUX', 'NUL',
@@ -125,6 +125,26 @@ function sanitizeArchivePath(rawName) {
 
     const baseName = segment.split('.')[0].toUpperCase();
     if (DOS_RESERVED_NAMES.has(baseName)) segment = `_${segment}`;
+    // Cap per-segment UTF-8 byte length safely below common 255-byte filesystem
+    // limits while preserving file extensions and Unicode code points.
+    if (textEncoder.encode(segment).length > 200) {
+      const lastDot = segment.lastIndexOf('.');
+      const hasExt = lastDot > 0 && lastDot < segment.length - 1 && segment.length - lastDot <= 10;
+      const stem = hasExt ? segment.slice(0, lastDot) : segment;
+      const ext = hasExt ? segment.slice(lastDot) : '';
+      const extBytes = textEncoder.encode(ext).length;
+      const maxStemBytes = Math.max(1, 200 - extBytes);
+      let fitted = '';
+      let byteLen = 0;
+      for (const ch of Array.from(stem)) {
+        const chBytes = textEncoder.encode(ch).length;
+        if (byteLen + chBytes > maxStemBytes) break;
+        fitted += ch;
+        byteLen += chBytes;
+      }
+      segment = (fitted || 'f') + ext;
+    }
+    if (!segment) continue;
     safeSegments.push(segment);
   }
 
@@ -148,6 +168,7 @@ const state = {
   currentEntry: null,
   entrySequence: 0,
   currentOffset: 0,
+  centralDirBytes: 0,
   completed: 0,
   cancelled: false,
   lastPct: -1,
@@ -226,7 +247,7 @@ async function recoverResources(activeUrls) {
   if (!Array.isArray(activeUrls)) return { ok: false, reason: 'invalid_data' };
   const active = new Set(activeUrls);
   const root = await tempRoot();
-  for await (const [id, dir] of root.entries()) {
+  for await (const [id, dir] of /** @type {any} */ (root).entries()) {
     if (dir.kind !== 'directory' || !/^[a-f0-9-]{36}$/.test(id)) continue;
     let objectUrl;
     try {
@@ -268,6 +289,7 @@ async function closeAndCleanupZip() {
   state.writable = null;
   state.currentEntry = null;
   state.entries = [];
+  state.centralDirBytes = 0;
   state.tempDirHandle = null;
   state.zipFileHandle = null;
   state.sessionId = null;
@@ -280,6 +302,7 @@ async function resetState() {
   state.entries = [];
   state.currentEntry = null;
   state.currentOffset = 0;
+  state.centralDirBytes = 0;
   state.completed = 0;
   state.cancelled = false;
   state.lastPct = -1;
@@ -328,7 +351,7 @@ async function beginEntry(name) {
   const nameBytes = textEncoder.encode(sanitizedName);
   const { dosTime, dosDate } = getDosDateTime();
   const localHeader = createLocalHeader(nameBytes, dosTime, dosDate);
-  const minimumFinalSize = state.currentOffset + localHeader.byteLength + ZIP_DATA_DESCRIPTOR_BYTES + 46 + nameBytes.length + 22;
+  const minimumFinalSize = state.currentOffset + localHeader.byteLength + ZIP_DATA_DESCRIPTOR_BYTES + state.centralDirBytes + 46 + nameBytes.length + 22;
   if (minimumFinalSize > MAX_ZIP_BYTES) return { ok: false, reason: 'size_limit', jobBytes: state.currentOffset };
 
   const entryId = `${state.sessionId}_${++state.entrySequence}`;
@@ -364,7 +387,7 @@ async function writeChunk(entryId, dataB64) {
     return { ok: false, reason: 'invalid_data' };
   }
 
-  const projected = state.currentOffset + bytes.byteLength + ZIP_DATA_DESCRIPTOR_BYTES + 46 + entry.nameBytes.length + 22;
+  const projected = state.currentOffset + bytes.byteLength + ZIP_DATA_DESCRIPTOR_BYTES + state.centralDirBytes + 46 + entry.nameBytes.length + 22;
   if (projected > MAX_ZIP_BYTES || entry.size + bytes.byteLength > 0xFFFFFFFF) {
     return { ok: false, reason: 'size_limit', jobBytes: state.currentOffset };
   }
@@ -407,7 +430,7 @@ async function endEntry(entryId) {
 
   const crc32 = finalizeCrc32(entry.crcState);
   const descriptor = createDataDescriptor(crc32, entry.size);
-  const projected = state.currentOffset + descriptor.byteLength + 46 + entry.nameBytes.length + 22;
+  const projected = state.currentOffset + descriptor.byteLength + state.centralDirBytes + 46 + entry.nameBytes.length + 22;
   if (projected > MAX_ZIP_BYTES) {
     await abortEntry(entryId);
     return { ok: false, reason: 'size_limit', jobBytes: state.currentOffset };
@@ -415,6 +438,7 @@ async function endEntry(entryId) {
 
   try {
     await writeBytes(descriptor);
+    state.centralDirBytes += 46 + entry.nameBytes.length;
     state.entries.push({
       nameBytes: entry.nameBytes,
       crc32,
@@ -536,6 +560,7 @@ async function handleMessage(message) {
   }
 }
 
+/** @type {Promise<any>} */
 let messageQueue = Promise.resolve();
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message?.type?.startsWith('OFFSCREEN_')) return;

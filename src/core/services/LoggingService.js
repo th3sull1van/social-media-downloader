@@ -47,9 +47,10 @@ export class Logger {
   /**
    * Sanitizes objects and strings before logging to avoid leaking secrets.
    * @param {unknown} arg
+   * @param {WeakSet<object>} [seen]
    * @returns {unknown}
    */
-  static sanitize(arg) {
+  static sanitize(arg, seen = undefined) {
     if (!arg) return arg;
     // Error instances lose message/stack under JSON.stringify (non-enumerable props),
     // which made every logged failure appear as {} — un-diagnosable in production.
@@ -59,34 +60,41 @@ export class Logger {
         message: arg.message,
         code: /** @type {any} */ (arg).code,
         stack: typeof arg.stack === 'string' ? arg.stack.split('\n').slice(0, 3).join(' | ') : undefined
-      });
+      }, seen);
+    }
+    if (typeof arg === 'bigint') {
+      return arg.toString();
     }
     if (typeof arg === 'string') {
       return arg
-        .replace(/(fb_dtsg|csrftoken|token|bearer|auth|password)=([^&;\s]+)/gi, '$1=<REDACTED>')
-        .replace(/(Bearer\s+)[A-Za-z0-9_\-\.]+/gi, '$1<REDACTED>');
+        .replace(/([?&;,\s]|^)(fb_dtsg|csrftoken|sessionid|c_user|xs|datr|lsd|jazoest|_nc_ohc|oh|oe|token|bearer|auth|password|api_key|apikey)=([^&;\s"']+)/gi, '$1$2=<REDACTED>')
+        .replace(/"(fb_dtsg|csrftoken|sessionid|c_user|xs|datr|lsd|jazoest|_nc_ohc|oh|oe|token|authorization|cookie|password|secret|api_key|apikey)"\s*:\s*"[^"]*"/gi, '"$1":"<REDACTED>"')
+        .replace(/((?:Authorization\s*:\s*)?(?:Bearer|Basic|Digest|Token)\s+)[A-Za-z0-9_\-.+/=]+/gi, '$1<REDACTED>')
+        .replace(/((?:Set-)?Cookie\s*:\s*)[^\r\n]+/gi, '$1<REDACTED>');
     }
     if (typeof arg === 'object') {
-      try {
-        const copy = JSON.parse(JSON.stringify(arg));
-        const redactKeys = ['fb_dtsg', 'csrftoken', 'token', 'authorization', 'cookie', 'password', 'secret'];
-        const walk = (obj) => {
-          if (!obj || typeof obj !== 'object') return;
-          for (const k of Object.keys(obj)) {
-            if (redactKeys.some(rk => k.toLowerCase().includes(rk))) {
-              obj[k] = '<REDACTED>';
-            } else if (typeof obj[k] === 'object') {
-              walk(obj[k]);
-            } else if (typeof obj[k] === 'string') {
-              obj[k] = Logger.sanitize(obj[k]);
-            }
-          }
-        };
-        walk(copy);
-        return copy;
-      } catch (e) {
-        return '[Complex Object]';
+      const tracker = seen || new WeakSet();
+      if (tracker.has(arg)) return '[Circular]';
+      tracker.add(arg);
+      const redactSubstrings = [
+        'fb_dtsg', 'csrftoken', 'sessionid', 'c_user', 'datr', 'jazoest',
+        '_nc_ohc', 'token', 'authorization', 'cookie', 'password', 'secret',
+        'api_key', 'apikey'
+      ];
+      const redactExactKeys = new Set(['xs', 'lsd', 'oh', 'oe']);
+      if (Array.isArray(arg)) {
+        return arg.map((item) => Logger.sanitize(item, tracker));
       }
+      const out = {};
+      for (const k of Object.keys(arg)) {
+        const lower = k.toLowerCase();
+        if (redactExactKeys.has(lower) || redactSubstrings.some((rk) => lower.includes(rk))) {
+          out[k] = '<REDACTED>';
+        } else {
+          out[k] = Logger.sanitize(/** @type {any} */ (arg)[k], tracker);
+        }
+      }
+      return out;
     }
     return arg;
   }
@@ -94,7 +102,7 @@ export class Logger {
   _format(levelName, ...args) {
     const prefix = `[${new Date().toISOString()}][${levelName}][${this.namespace}]` +
       (this.traceId ? `[trace=${this.traceId}]` : '');
-    return [prefix, ...args.map(Logger.sanitize)];
+    return [prefix, ...args.map((arg) => Logger.sanitize(arg))];
   }
 
   error(...args) {

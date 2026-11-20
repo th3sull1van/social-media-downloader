@@ -74,7 +74,10 @@ function recoverTemporaryResources() {
       await ensureOffscreenDocument();
       const downloads = await chrome.downloads.search({ state: 'in_progress' });
       const prefix = `blob:${chrome.runtime.getURL('')}`;
-      const activeUrls = downloads.flatMap((item) => [item.url, item.finalUrl]).filter((url) => url?.startsWith(prefix));
+      const activeUrls = [
+        ...downloads.flatMap((item) => [item.url, item.finalUrl]).filter((url) => url?.startsWith(prefix)),
+        ...(downloadManager.pendingBlobUrls || [])
+      ];
       const result = await ArchiveService.sendToOffscreen({ type: 'OFFSCREEN_RECOVER_RESOURCES', activeUrls });
       if (!result?.ok) throw new Error(result?.reason || 'opfs_cleanup_failed');
     })().catch((error) => { resourceRecovery = null; throw error; });
@@ -105,13 +108,16 @@ if (typeof chrome !== 'undefined') {
       const tracked = downloadManager.downloadBlobUrls.has(delta.id);
       downloadManager.handleDownloadChanged(delta);
       if (!tracked && ['complete', 'interrupted'].includes(delta.state?.current)) {
-        // The URL->ID map is volatile; query the browser after a worker restart.
-        void prepareTemporaryResources().then(async () => {
+        // The URL->ID map is volatile across worker restarts. Inspect the download URL
+        // FIRST so unrelated third-party browser downloads never wake the offscreen document.
+        void (async () => {
           const [item] = await chrome.downloads.search({ id: delta.id });
           const prefix = `blob:${chrome.runtime.getURL('')}`;
           const urls = [item?.url, item?.finalUrl].filter((url) => url?.startsWith(prefix));
+          if (urls.length === 0) return;
+          await prepareTemporaryResources();
           await ArchiveService.revokeBlobUrls(urls);
-        }).catch((error) => downloadManager.logger.warn('Temporary download cleanup failed:', error));
+        })().catch((error) => downloadManager.logger.warn('Temporary download cleanup failed:', error));
       }
     });
   }
@@ -125,12 +131,49 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   switch (type) {
     case 'START_DOWNLOAD': {
-      const { platform, targetName, items, format, options } = message.payload || message;
-      prepareTemporaryResources().then(() => {
-        return downloadManager.startDownload({ platform, targetName, items, format, options });
-      }).then(sendResponse).catch((err) => {
-        sendResponse({ success: false, error: err.message });
+      const payload = message.payload || message;
+      const { platform, targetName, items, format, options } = payload;
+      const startParams = {
+        platform,
+        targetName,
+        items,
+        format,
+        options,
+        ...(typeof sender?.tab?.id === 'number' ? { tabId: sender.tab.id } : {})
+      };
+      prepareTemporaryResources().then(
+        () => downloadManager.startDownload(startParams),
+        async (err) => {
+          const isOpfsError = /^opfs_/i.test(String(err?.code || err?.message || ''));
+          if (isOpfsError && (format || 'individual') === 'individual') {
+            let effectiveDedup = typeof options?.deduplicate === 'boolean' ? options.deduplicate : false;
+            if (typeof options?.deduplicate !== 'boolean' && typeof StorageService?.getSettings === 'function') {
+              const saved = await StorageService.getSettings();
+              effectiveDedup = Boolean(saved?.deduplicate);
+            }
+            if (!effectiveDedup) {
+              return downloadManager.startDownload(startParams);
+            }
+          }
+          throw err;
+        }
+      ).then(sendResponse).catch((err) => {
+        sendResponse({ success: false, error: err?.message || 'Start download failed' });
       });
+      return true;
+    }
+
+    case 'SHOW_DOWNLOAD_IN_FOLDER': {
+      if (typeof message.downloadId === 'number' && typeof chrome.downloads?.show === 'function') {
+        try {
+          chrome.downloads.show(message.downloadId);
+          sendResponse({ success: true });
+        } catch (err) {
+          sendResponse({ success: false, error: err?.message || 'Failed to reveal download' });
+        }
+      } else {
+        sendResponse({ success: false, error: 'Download reveal unavailable' });
+      }
       return true;
     }
 
@@ -164,7 +207,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case 'GET_DOWNLOAD_STATUS':
     case 'GET_DOWNLOAD_STATE': {
-      downloadStateReady.then(() => ensureDownloadState()).then(() => sendResponse({ activeJob: downloadManager.activeJob }));
+      downloadStateReady.then(() => ensureDownloadState())
+        .then(() => sendResponse({ activeJob: downloadManager.activeJob }))
+        .catch((err) => sendResponse({ success: false, error: err?.message || 'Status lookup failed' }));
       return true;
     }
 
@@ -180,7 +225,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         success: true,
         info: {
           id: plugin.id,
+          displayName: plugin.displayName || plugin.id,
+          themeClass: plugin.themeClass || '',
           version: plugin.version,
+          mainWorldScript: plugin.mainWorldScript || null,
+          mediaHostSuffixes: Array.isArray(plugin.mediaHostSuffixes) ? [...plugin.mediaHostSuffixes] : [],
           capabilities: typeof plugin.getCapabilities === 'function' ? plugin.getCapabilities() : {},
           filters: typeof plugin.getFilters === 'function' ? plugin.getFilters() : []
         }
@@ -189,13 +238,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     case 'CANCEL_DOWNLOAD': {
-      downloadStateReady.then(() => ensureDownloadState()).then(() => downloadManager.cancelDownload()).then(() => {
-        sendResponse({ success: true });
-      });
+      downloadStateReady.then(() => ensureDownloadState())
+        .then(() => downloadManager.cancelDownload())
+        .then(() => sendResponse({ success: true }))
+        .catch((err) => sendResponse({ success: false, error: err?.message || 'Cancel failed' }));
       return true;
     }
 
     case 'ZIP_OFFSCREEN_PROGRESS': {
+      // Only accept progress patches from extension contexts (reject content scripts / foreign origins).
+      if (sender?.tab || (sender?.id && chrome.runtime?.id && sender.id !== chrome.runtime.id)) {
+        return;
+      }
       // The offscreen finishes with { status: 'PACKAGING_ZIP', zipPercent: 100 }
       // before the FINISH response is processed. That message can arrive AFTER
       // the job reached a terminal state (COMPLETED/FAILED/CANCELLED), so a blind
@@ -205,10 +259,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (downloadManager.activeJob && message.patch &&
           message.sessionId === downloadManager.activeJob.archiveSessionId &&
           ['QUEUED', 'DOWNLOADING', 'DOWNLOADING_BLOBS', 'PACKAGING_ZIP'].includes(downloadManager.activeJob.status)) {
-        // The manager owns per-item counters. Offscreen entry acknowledgements
-        // can arrive before/after worker increments and must not overwrite them.
-        const { completed, failed, ...patch } = message.patch;
-        Object.assign(downloadManager.activeJob, patch);
+        // The manager owns per-item counters and terminal statuses; allowlist offscreen progress keys only.
+        const rawPatch = message.patch;
+        /** @type {Record<string, any>} */
+        const safePatch = {};
+        if (rawPatch.status === 'DOWNLOADING_BLOBS' || rawPatch.status === 'PACKAGING_ZIP') {
+          safePatch.status = rawPatch.status;
+        }
+        if (typeof rawPatch.zipPercent === 'number' && Number.isFinite(rawPatch.zipPercent)) {
+          safePatch.zipPercent = rawPatch.zipPercent;
+        }
+        if (typeof rawPatch.jobBytes === 'number' && Number.isFinite(rawPatch.jobBytes)) {
+          safePatch.jobBytes = rawPatch.jobBytes;
+        }
+        Object.assign(downloadManager.activeJob, safePatch);
         downloadManager.updateBadge(`${downloadManager.activeJob.completed}/${downloadManager.activeJob.total}`);
         downloadManager.broadcastProgress();
       }
@@ -221,16 +285,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // (SPEC §54, AGENTS §27 / §22). A plugin returns { handled: true, response }
       // when it owns the type; otherwise the registry tries the next plugin.
       (async () => {
-        for (const plugin of defaultRegistry.list()) {
-          if (typeof plugin.handleMessage === 'function') {
-            const handled = await plugin.handleMessage(type, message);
-            if (handled && handled.handled) {
-              sendResponse(handled.response);
-              return;
+        try {
+          for (const plugin of defaultRegistry.list()) {
+            if (typeof plugin.handleMessage === 'function') {
+              const handled = await plugin.handleMessage(type, message);
+              if (handled && handled.handled) {
+                sendResponse(handled.response);
+                return;
+              }
             }
           }
+          sendResponse({ success: false, error: `No handler for message: ${type}` });
+        } catch (err) {
+          sendResponse({ success: false, error: err?.message || `Handler error for message: ${type}` });
         }
-        sendResponse({ success: false, error: `No handler for message: ${type}` });
       })();
       return true;
     }

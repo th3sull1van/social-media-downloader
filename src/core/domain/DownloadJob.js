@@ -26,6 +26,7 @@
  * @property {string=} archiveSessionId
  * @property {number=} zipPercent
  * @property {string=} error
+ * @property {number=} tabId
  * @property {number=} receiptDownloadId Last successful chrome download id (receipt "show in folder" anchor)
  * @property {boolean=} filenameOverridden Set when a competing download manager renamed the output
  * @property {number} createdAt
@@ -41,6 +42,7 @@ export class DownloadJobModel {
    * @param {DownloadFormat} [params.format]
    * @param {number} params.total
    * @param {string} [params.targetFilename]
+   * @param {number} [params.tabId]
    * @returns {DownloadJob}
    */
   static create({
@@ -48,7 +50,8 @@ export class DownloadJobModel {
     targetName,
     format = 'individual',
     total = 0,
-    targetFilename
+    targetFilename,
+    tabId
   }) {
     const now = Date.now();
     return {
@@ -56,6 +59,7 @@ export class DownloadJobModel {
       platform: String(platform || 'unknown').toLowerCase(),
       targetName: String(targetName || 'Media_Collection'),
       targetFilename: targetFilename || undefined,
+      ...(typeof tabId === 'number' ? { tabId } : {}),
       format: format === 'zip' ? 'zip' : 'individual',
       total: Math.max(0, total),
       completed: 0,
