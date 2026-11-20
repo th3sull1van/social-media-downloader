@@ -4,7 +4,7 @@
 import { PlatformTargetModel } from '../../core/domain/PlatformTarget.js';
 import { FilenameService } from '../../core/services/FilenameService.js';
 
-const FB_GENERIC_ROUTES = new Set([
+export const FB_GENERIC_ROUTES = new Set([
   'home.php', 'watch', 'gaming', 'marketplace', 'groups', 'events', 'saved',
   'memories', 'pages', 'ads', 'messages', 'notifications', 'friends', 'bookmarks',
   'settings', 'help', 'login', 'recover', 'stories', 'reels', 'share', 'photo',
@@ -99,6 +99,30 @@ export class FacebookDetector {
       }
     } catch (e) {}
     return '';
+  }
+
+  static isCollectionRoute(pathname) {
+    return /\/(?:media\/set|albums|photo|photos|photos_by|photos_of|photos_albums)(?:\/|$)/i.test(String(pathname || ''));
+  }
+
+  static getTargetKey(urlStr, baseOrigin = 'https://www.facebook.com') {
+    if (!urlStr) return '';
+    let parsed;
+    try { parsed = new URL(urlStr, baseOrigin); } catch { return ''; }
+    const pathname = parsed.pathname || '';
+    const profileId = pathname.match(/^\/profile\.php$/i)
+      ? parsed.searchParams.get('id')
+      : null;
+    if (profileId) return `profile:${profileId}`;
+    const parts = pathname.split('/').filter(Boolean);
+    if (/^(?:media|albums|photo|photos|photos_by|photos_of|photos_albums)$/i.test(parts[0] || '')) return '';
+    if (parts[0]?.toLowerCase() === 'pages') {
+      if (/^\d+$/.test(parts[2] || '')) return `profile:${parts[2]}`;
+      if (parts[1]) return `profile:${parts[1].toLowerCase()}`;
+    }
+    const reserved = new Set(['photos', 'photos_by', 'photos_of', 'photos_albums', 'media', 'albums', 'reels', 'videos']);
+    const profileSlug = parts.find((part) => !reserved.has(part.toLowerCase()));
+    return profileSlug ? `profile:${profileSlug.toLowerCase()}` : '';
   }
 
   static detectTarget(context = {}) {

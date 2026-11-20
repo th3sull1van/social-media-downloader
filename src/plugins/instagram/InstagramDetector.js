@@ -3,7 +3,24 @@
  */
 import { PlatformTargetModel } from '../../core/domain/PlatformTarget.js';
 
-const IG_NON_PROFILE_ROUTES = ['explore', 'reels', 'stories', 'direct', 'accounts', 'emails', 'your_activity', 'settings'];
+export const IG_NON_PROFILE_ROUTES = [
+  'p',
+  'reel',
+  'reels',
+  'stories',
+  'explore',
+  'direct',
+  'accounts',
+  'emails',
+  'your_activity',
+  'settings',
+  'live',
+  'tv',
+  'share',
+  'api',
+  'about',
+  'legal'
+];
 
 function isHostOnDomain(hostname, domain) {
   if (typeof hostname !== 'string') return false;
@@ -29,11 +46,40 @@ export class InstagramDetector {
   }
 
   /**
+   * Computes a stable target identity key for SPA navigation comparisons.
+   * @param {string} urlStr
+   * @returns {string}
+   */
+  static getTargetKey(urlStr) {
+    if (!urlStr) return '';
+    let pathname = '';
+    try {
+      pathname = new URL(urlStr).pathname;
+    } catch {
+      return '';
+    }
+    const parts = pathname.split('/').filter(Boolean);
+    if (!parts.length) return 'feed';
+    const first = parts[0].toLowerCase();
+    if (!IG_NON_PROFILE_ROUTES.includes(first)) {
+      return `profile:${first}`;
+    }
+    if (first === 'stories' && parts[1]) {
+      return `stories:${parts[1].toLowerCase()}`;
+    }
+    if ((first === 'p' || first === 'reel' || first === 'reels' || first === 'tv') && parts[1]) {
+      return `post:${parts[1]}`;
+    }
+    return `route:${first}`;
+  }
+
+  /**
    * Detects the platform target from current URL and document.
    * @param {Object} context
    * @returns {import('../../core/domain/PlatformTarget.js').PlatformTarget}
    */
   static detectTarget(context = {}) {
+    const doc = context.document || (typeof document !== 'undefined' ? document : null);
     let urlStr = context.url || (typeof window !== 'undefined' ? window.location.href : '');
     let pathname = '';
     try {
@@ -43,30 +89,33 @@ export class InstagramDetector {
     }
 
     const parts = pathname.split('/').filter(Boolean);
+    const firstPart = (parts[0] || '').toLowerCase();
     let username = '';
     let targetType = 'profile';
+    let shortcode = '';
 
-    if (parts.length > 0 && !IG_NON_PROFILE_ROUTES.includes(parts[0])) {
+    if (parts.length > 0 && !IG_NON_PROFILE_ROUTES.includes(firstPart)) {
       username = parts[0];
       targetType = 'profile';
-    } else if (parts.length >= 2 && parts[0] === 'stories' && parts[1]) {
+    } else if (parts.length >= 2 && firstPart === 'stories' && parts[1]) {
       username = parts[1];
       targetType = 'story';
-    } else if (parts.length >= 2 && (parts[0] === 'p' || parts[0] === 'reel')) {
+    } else if (parts.length >= 2 && (firstPart === 'p' || firstPart === 'reel' || firstPart === 'reels' || firstPart === 'tv')) {
+      shortcode = parts[1];
       username = parts[1];
       targetType = 'post';
     }
 
-    if (!username && typeof document !== 'undefined') {
-      const profileLink = document.querySelector('header a[href^="/"]');
+    if (!username && doc) {
+      const profileLink = doc.querySelector('header a[href^="/"]');
       if (profileLink) {
         const u = profileLink.getAttribute('href')?.replace(/\//g, '');
-        if (u && !IG_NON_PROFILE_ROUTES.includes(u)) {
+        if (u && !IG_NON_PROFILE_ROUTES.includes(u.toLowerCase())) {
           username = u;
         }
       }
-      if (!username && document.title) {
-        const m = document.title.match(/\(@([A-Za-z0-9_.]+)\)/);
+      if (!username && doc.title) {
+        const m = doc.title.match(/\(@([A-Za-z0-9_.]+)\)/);
         if (m && m[1]) {
           username = m[1];
         }
@@ -79,7 +128,7 @@ export class InstagramDetector {
       id: username || undefined,
       name: username || 'Instagram_Profile',
       url: urlStr,
-      metadata: { username }
+      metadata: { username, shortcode }
     });
   }
 }

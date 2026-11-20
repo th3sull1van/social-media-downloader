@@ -14,7 +14,11 @@ import { DownloadArtifactModel } from '../../core/domain/DownloadArtifact.js';
 
 export class RedditPlugin {
   static id = 'reddit';
+  static displayName = 'Reddit';
+  static themeClass = 'reddit-theme';
   static version = '1.2.2';
+  static mainWorldScript = null;
+  static mediaHostSuffixes = ['reddit.com', 'redd.it', 'redditmedia.com', 'redditstatic.com', 'redgifs.com', 'imgur.com'];
 
   static matches(context) {
     return RedditDetector.matches(context);
@@ -66,13 +70,32 @@ export class RedditPlugin {
   static async resolveMedia(item, context = {}) {
     if (item.metadata?.baseUrl) {
       const streams = await RedditVideoMuxer.resolveStreams(item.metadata.baseUrl, item.metadata.fallbackUrl, context.signal);
-      const muxedBlob = await RedditVideoMuxer.downloadMuxedVideo(streams.videoUrl, streams.audioUrl, undefined, context.signal);
+      let muxedBlob;
+      try {
+        muxedBlob = await RedditVideoMuxer.downloadMuxedVideo(streams.videoUrl, streams.audioUrl, undefined, context.signal);
+      } catch (err) {
+        if (/fragmented|multi-mdat/i.test(String(err?.message || '')) && Array.isArray(streams.audioFallbacks) && streams.audioFallbacks.length > 0) {
+          let recovered = null;
+          for (const altAudio of streams.audioFallbacks) {
+            try {
+              recovered = await RedditVideoMuxer.downloadMuxedVideo(streams.videoUrl, altAudio, undefined, context.signal);
+              break;
+            } catch (altErr) {
+              if (context.signal?.aborted) throw altErr;
+            }
+          }
+          if (!recovered) throw err;
+          muxedBlob = recovered;
+        } else {
+          throw err;
+        }
+      }
       const filename = RedditNaming.resolveRelativePath(item, undefined, true);
       return DownloadArtifactModel.generated(muxedBlob, filename, 'video/mp4');
     }
 
     if (item.metadata?.isRedGifs || item.sourceType === 'redgifs') {
-      const rgData = await RedGifsResolver.resolve(item.url);
+      const rgData = await RedGifsResolver.resolve(item.url, context.signal);
       const filename = RedditNaming.resolveRelativePath(item, undefined, true);
       return DownloadArtifactModel.direct(rgData.url, filename);
     }

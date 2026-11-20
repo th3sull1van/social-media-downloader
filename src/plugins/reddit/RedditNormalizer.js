@@ -7,7 +7,25 @@ import { FilenameService } from '../../core/services/FilenameService.js';
 
 export class RedditNormalizer {
   /**
+   * True when the URL hostname genuinely belongs to redgifs.com.
+   * Prevents substring spoofing like `https://evil.example/?q=redgifs.com`.
+   * @param {string} rawUrl
+   * @returns {boolean}
+   */
+  static isRedGifsHost(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string') return false;
+    try {
+      const host = new URL(rawUrl).hostname.toLowerCase().replace(/\.+$/, '');
+      return host === 'redgifs.com' || host.endsWith('.redgifs.com');
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Replaces preview.redd.it with uncompressed i.redd.it full-resolution original URLs.
+   * Preserves HMAC query strings (`?s=...`) on external-preview.redd.it and non-upgraded
+   * preview URLs because stripping them yields HTTP 403 from Reddit's Fastly CDN.
    * @param {string} url
    * @returns {string}
    */
@@ -15,16 +33,20 @@ export class RedditNormalizer {
     if (!url || typeof url !== 'string') return '';
     url = url.replace(/&amp;/g, '&');
 
-    if (url.includes('external-preview.redd.it') || url.includes('styles.redditmedia.com')) {
+    if (url.includes('styles.redditmedia.com')) {
       return url.split('?')[0];
     }
 
+    if (url.includes('external-preview.redd.it')) {
+      return url;
+    }
+
     if (url.includes('preview.redd.it')) {
-      const match = url.match(/([a-zA-Z0-9]{5,})\.(jpg|jpeg|png|gif|webp)(?:\?|$)/i);
+      const match = url.match(/(?:\/(?:[a-zA-Z0-9_-]+-v0-)?)([a-zA-Z0-9_-]{5,})\.(jpg|jpeg|png|gif|webp)(?:\?|$)/i);
       if (match) {
         return `https://i.redd.it/${match[1]}.${match[2]}`;
       }
-      return url.split('?')[0];
+      return url;
     }
 
     return url;
@@ -147,7 +169,7 @@ export class RedditNormalizer {
     const cleanUrl = RedditNormalizer.cleanMediaUrl(rawUrl);
     const mediaId = RedditNormalizer.extractMediaIdentifier(raw);
     const isVideo = raw.type === 'video' || !!raw.baseUrl || raw.isRedGifs || raw.type === 'redgifs';
-    const isRedGifs = raw.isRedGifs || raw.type === 'redgifs' || (rawUrl && rawUrl.includes('redgifs.com'));
+    const isRedGifs = raw.isRedGifs || raw.type === 'redgifs' || RedditNormalizer.isRedGifsHost(rawUrl);
     const isGallery = postInfo.isGallery || postInfo.postType === 'gallery' || raw.isGallery;
 
     const ext = raw.ext || (isVideo ? 'mp4' : (cleanUrl.match(/\.(png|gif|webp|jpeg|jpg)/i)?.[1] || 'jpg'));

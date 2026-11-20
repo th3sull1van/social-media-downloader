@@ -10,26 +10,26 @@
   if (window.__SMD_IG_INJECTED__) return;
   window.__SMD_IG_INJECTED__ = true;
 
-  // Verified GraphQL Doc IDs from Instagram Web / Relay (Updated with 2026-10 capture)
+  // Verified GraphQL Doc IDs from Instagram Web / Relay (Updated with 2026-11 capture)
   const DOC_IDS = {
-    IG_ProfilePageContent: '28717443601247930',
-    IG_ProfilePosts: '29156678094015645',
-    IG_ProfilePostsTabContent_connection: '28544666141895803',
+    IG_ProfilePageContent: '40158838120366999',
+    IG_ProfilePosts: '29682302384688964',
+    IG_ProfilePostsTabContent_connection: '29246820014972723',
     IG_ProfileStoryHighlightsTray: '26970053832668570',
     IG_StoriesHighlightsPage: '28325328583775973',
     IG_StoriesHighlightsPagePagination: '28338439489156504',
-    IG_StoriesV3ReelPageStandalone: '28449850404637481'
+    IG_StoriesV3ReelPageStandalone: '28739385832429456'
   };
 
   // Known fallback Doc IDs for backwards-compatibility with replay captures and rollout variants
   const FALLBACK_DOC_IDS = {
-    PolarisProfilePageContentQuery: ['28717443601247930', '28036671149327607', '28191674790485375'],
-    PolarisProfilePostsQuery: ['29156678094015645', '28379418928391013', '26519258537772635'],
-    PolarisProfilePostsTabContentQuery_connection: ['28544666141895803', '28975909992013618', '27672504985785333'],
+    PolarisProfilePageContentQuery: ['40158838120366999', '28717443601247930', '28036671149327607', '28191674790485375'],
+    PolarisProfilePostsQuery: ['29682302384688964', '29156678094015645', '28379418928391013', '26519258537772635'],
+    PolarisProfilePostsTabContentQuery_connection: ['29246820014972723', '28544666141895803', '28975909992013618', '27672504985785333'],
     PolarisProfileStoryHighlightsTrayContentQuery: ['26970053832668570', '38168009559465141'],
-    PolarisStoriesV3HighlightsPageQuery: ['28325328583775973', '28730445686541844', '28449850404637481'],
+    PolarisStoriesV3HighlightsPageQuery: ['28325328583775973', '28730445686541844'],
     PolarisStoriesV3HighlightsPagePaginationQuery: ['28338439489156504'],
-    PolarisStoriesV3ReelPageStandaloneQuery: ['28449850404637481']
+    PolarisStoriesV3ReelPageStandaloneQuery: ['28739385832429456', '28449850404637481']
   };
 
   function resolveDocId(friendlyName, defaultDocId) {
@@ -120,12 +120,12 @@
     }
 
     if (!session.fb_dtsg) {
-      const dtsgInput = document.querySelector('input[name="fb_dtsg"]');
+      const dtsgInput = /** @type {HTMLInputElement | null} */ (document.querySelector('input[name="fb_dtsg"]'));
       if (dtsgInput?.value) session.fb_dtsg = dtsgInput.value;
     }
 
     if (!session.lsd) {
-      const lsdInput = document.querySelector('input[name="lsd"]');
+      const lsdInput = /** @type {HTMLInputElement | null} */ (document.querySelector('input[name="lsd"]'));
       if (lsdInput?.value) session.lsd = lsdInput.value;
     }
 
@@ -206,6 +206,14 @@
           });
 
           if (response.ok) {
+            const contentType = response.headers?.get?.('content-type') || '';
+            if (/text\/html/i.test(contentType)) {
+              const authErr = Object.assign(new Error('GraphQL returned HTML (authentication required)'), {
+                code: 'AUTHENTICATION_REQUIRED',
+                fatal: true
+              });
+              throw authErr;
+            }
             const data = await response.json();
             if (data?.errors?.length && (!data.data || Object.keys(data.data).length === 0)) {
               throw new Error(`GraphQL query error: ${data.errors[0]?.message || 'Unknown error'}`);
@@ -214,6 +222,18 @@
           }
 
           console.warn(`[SMD IG Injected] Query ${friendlyName} (${activeDocId}) returned HTTP ${response.status} on attempt ${attempt + 1}.`);
+          if (response.status === 429) {
+            throw Object.assign(new Error('GraphQL rate limited: HTTP 429'), {
+              code: 'RATE_LIMITED',
+              fatal: true
+            });
+          }
+          if (response.status === 401 || response.status === 403) {
+            throw Object.assign(new Error(`GraphQL authentication failed: HTTP ${response.status}`), {
+              code: 'AUTHENTICATION_REQUIRED',
+              fatal: true
+            });
+          }
           if (attempt < retries) {
             await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
             refreshSessionTokens();
@@ -222,10 +242,13 @@
           }
         } catch (e) {
           lastError = e;
+          if (e?.fatal) {
+            throw e;
+          }
           if (e.message && (e.message.includes('Request differs') || e.message.includes('query error') || e.message.includes('400') || e.message.includes('404'))) {
             break;
           }
-          console.warn(`[SMD IG Injected] Query ${friendlyName} (${activeDocId}) exception on attempt ${attempt + 1}:`, e);
+          console.warn(`[SMD IG Injected] Query ${friendlyName} (${activeDocId}) exception on attempt ${attempt + 1}:`, e?.message || 'unknown');
           if (attempt < retries) {
             await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
             refreshSessionTokens();
@@ -272,7 +295,6 @@
             mediaCount: user.edge_owner_to_timeline_media?.count || 0,
             followerCount: user.edge_followed_by?.count || 0
           };
-          console.log(`[SMD IG Injected] Target numeric user ID resolved: ${targetUserId}`);
         }
       }
     } catch (e) {
@@ -297,9 +319,10 @@
                     text.match(/"props":\{"id":"(\d+)"[^}]*"profilePage/) ||
                     text.match(/"container_id":"(\d+)"/) ||
                     text.match(/"target_id":"(\d+)"/);
-          if (m && m[1] && m[1] !== '0' && m[1] !== session.userId) {
+          const matchesTargetUsername = lowerText.includes(`"username":"${targetLower}"`) ||
+                                        lowerText.includes(`"username": "${targetLower}"`);
+          if (m && m[1] && m[1] !== '0' && (m[1] !== session.userId || matchesTargetUsername)) {
             targetUserId = m[1];
-            console.log(`[SMD IG Injected] Target numeric user ID resolved from page script: ${targetUserId}`);
             break;
           }
         }
@@ -339,7 +362,6 @@
         const json = await performGraphQLQuery(DOC_IDS.IG_ProfilePageContent, 'PolarisProfilePageContentQuery', variables);
         const user = json.data?.user;
         if (user?.hd_profile_pic_url_info?.url) {
-          console.log(`[SMD IG Injected] True 1080x1080 HD profile picture obtained:`, user.hd_profile_pic_url_info.url);
           return {
             ...(fallbackInfo || {}),
             id: targetUserId,
@@ -351,7 +373,7 @@
           };
         }
       } catch (e) {
-        console.warn('[SMD IG Injected] PolarisProfilePageContentQuery fallback:', e);
+        console.warn('[SMD IG Injected] PolarisProfilePageContentQuery fallback:', e?.message || 'error');
       }
     }
 
@@ -364,7 +386,6 @@
           const m = text.match(/"hd_profile_pic_url_info":\{"url":"([^"]+)"/);
           if (m && m[1]) {
             const rawHdUrl = m[1].replace(/\\u0026/g, '&').replace(/\\\//g, '/');
-            console.log('[SMD IG Injected] 1080p avatar harvested from inline script:', rawHdUrl);
             return {
               ...(fallbackInfo || { username, id: targetUserId || 'profile' }),
               id: targetUserId || fallbackInfo?.id || undefined,
@@ -386,7 +407,7 @@
           domAvatar = ogImg;
         }
         if (!domAvatar) {
-          const headerImg = document.querySelector('header img, main header img, img[alt*="profile"], img[alt*="perfil"]');
+          const headerImg = /** @type {HTMLImageElement | null} */ (document.querySelector('header img, main header img, img[alt*="profile"], img[alt*="perfil"]'));
           if (headerImg?.src && !headerImg.src.startsWith('data:')) {
             domAvatar = headerImg.src;
           }
@@ -416,15 +437,15 @@
 
   async function fetchAllPosts(username, maxCount = 5000, onBatch = null, generation = undefined) {
     generation = generation ?? beginScan();
+    /** @type {any[] & { scanStatus?: string }} */
     const allRawNodes = [];
     let endCursor = null;
+    const seenCursors = new Set();
     let hasNextPage = true;
     let pageCount = 0;
     let hadFailure = false;
     let pageSize = 33;
     const FALLBACK_PAGE_SIZE = 12;
-
-    console.log(`[SMD IG Injected] Starting paginated post scan for @${username}...`);
 
     while (hasNextPage && allRawNodes.length < maxCount && scanIsCurrent(generation)) {
       pageCount++;
@@ -469,6 +490,8 @@
               username,
               __relay_internal__pv__PolarisMultiCaptionCarouselEnabledrelayprovider: true,
               __relay_internal__pv__PolarisShortDramaEnabledrelayprovider: false,
+              __relay_internal__pv__PolarisSEOIsCrawlerrelayprovider: false,
+              __relay_internal__pv__PolarisThreadsStyleCommentsEnabledrelayprovider: false,
               __relay_internal__pv__PolarisReelsRecoDebugOverlayEnabledrelayprovider: false
             };
             queryRes = await performGraphQLQuery(DOC_IDS.IG_ProfilePostsTabContent_connection, 'PolarisProfilePostsTabContentQuery_connection', connVars);
@@ -512,18 +535,35 @@
                        queryRes?.data?.user?.edge_owner_to_timeline_media;
 
       if (!timeline || !Array.isArray(timeline.edges)) {
-        console.warn('[SMD IG Injected] No timeline edges found in response:', queryRes);
+        console.warn('[SMD IG Injected] No timeline edges found in response.');
         hadFailure = true;
         break;
       }
-      if (queryRes.errors?.length) hadFailure = true;
-
       const pageEdges = timeline.edges;
       const batchNodes = [];
+      let brokenEdge = pageEdges.length === 0 && Boolean(queryRes.errors?.length);
       for (const edge of pageEdges) {
-        const node = edge.node || edge;
+        const node = edge?.node || edge;
+        if (!node || typeof node !== 'object' || !(node.id || node.pk)) {
+          brokenEdge = true;
+          continue;
+        }
+        const hasMedia = Boolean(
+          node.image_versions2?.candidates?.length ||
+          node.video_versions?.length ||
+          node.carousel_media?.length ||
+          node.display_url
+        );
+        if (!hasMedia && queryRes.errors?.length) {
+          brokenEdge = true;
+        }
         allRawNodes.push(node);
         batchNodes.push(node);
+      }
+      if (brokenEdge) {
+        hadFailure = true;
+      } else if (queryRes.errors?.length) {
+        console.warn('[SMD IG Injected] Non-fatal GraphQL field warning on timeline page:', queryRes.errors[0]?.message);
       }
 
       console.log(`[SMD IG Injected] Page ${pageCount} parsed ${batchNodes.length} nodes (Total so far: ${allRawNodes.length}).`);
@@ -534,7 +574,8 @@
       }
 
       const pageInfo = timeline.page_info;
-      if (pageInfo && pageInfo.has_next_page && pageInfo.end_cursor) {
+      if (pageInfo && pageInfo.has_next_page && pageInfo.end_cursor && pageEdges.length > 0 && !seenCursors.has(pageInfo.end_cursor)) {
+        seenCursors.add(pageInfo.end_cursor);
         endCursor = pageInfo.end_cursor;
         hasNextPage = true;
         if (pageEdges.length < pageSize && pageSize !== FALLBACK_PAGE_SIZE) {
@@ -644,12 +685,14 @@
   async function fetchHighlights(userId, onBatch = null, generation = undefined) {
     generation = generation ?? beginScan();
     if (!userId) {
+      /** @type {any[] & { scanStatus?: string }} */
       const empty = [];
       empty.scanStatus = 'empty';
       return empty;
     }
     refreshSessionTokens();
 
+    /** @type {any[] & { scanStatus?: string }} */
     const allHighlightItems = [];
     let hadFailure = false;
     try {
@@ -667,7 +710,9 @@
 
       const highlightsData = trayRes.data?.highlights;
       const edges = highlightsData?.edges;
-      if (trayRes.errors?.length || !Array.isArray(edges)) throw new Error('instagram_highlights_tray_failed');
+      if (!Array.isArray(edges) || (trayRes.errors?.length && (edges.length === 0 || edges.some(e => !e?.node?.id)))) {
+        throw new Error('instagram_highlights_tray_failed');
+      }
 
       if (!edges.length) {
         console.info('[SMD IG Injected] No highlight albums found.');
@@ -679,7 +724,7 @@
       const highlightIds = edges.map(e => e.node?.id).filter(Boolean);
       const titleFor = (hId) => {
         const matchingEdge = edges.find(e => e.node?.id === hId);
-        return (matchingEdge?.node?.title) || 'Destaques';
+        return (matchingEdge?.node?.title) || 'Highlights';
       };
 
       // Match the three-reel window observed in PolarisStoriesV3HighlightsPageQuery.
@@ -696,8 +741,16 @@
               __relay_internal__pv__PolarisCommunityNoteStoriesLabelEnabledrelayprovider: true
             });
           const reelEdges = result.data?.xdt_api__v1__feed__reels_media__connection?.edges;
-          if (!result.errors?.length && Array.isArray(reelEdges)) {
-            reelsById = Object.fromEntries(reelEdges.filter(edge => edge.node?.id).map(edge => [edge.node.id, edge.node]));
+          if (Array.isArray(reelEdges)) {
+            const candidate = Object.fromEntries(reelEdges.filter(edge => edge?.node?.id).map(edge => [edge.node.id, edge.node]));
+            const hasBrokenItem = Boolean(result.errors?.length) && batchIds.some(id =>
+              !Array.isArray(candidate[id]?.items) || candidate[id].items.some(it =>
+                !it || (!(it.image_versions2?.candidates?.length) && !(it.video_versions?.length) && !it.display_url)
+              )
+            );
+            if (!hasBrokenItem) {
+              reelsById = candidate;
+            }
           }
         } catch (err) {
           hadFailure = true;
@@ -780,9 +833,15 @@
   window.addEventListener('message', async (event) => {
     if (event.isTrusted === false || event.source !== window || !event.data || event.data.source !== 'SMD_CONTENT') return;
     const { type, requestId, payload } = event.data;
-    // Echo the session nonce back: the content script drops responses without it (F-14).
+    // Lock and echo the session nonce back: the content script drops responses without it (F-14).
     const nonce = event.data.nonce;
-    if (nonce) session.nonce = nonce;
+    if (!nonce) return;
+    if (!session.nonce) session.nonce = nonce;
+    else if (nonce !== session.nonce) return;
+
+    const targetOrigin = (typeof window !== 'undefined' && window.location?.origin && window.location.origin !== 'null')
+      ? window.location.origin
+      : '*';
 
     const reply = (res) => {
       window.postMessage({
@@ -790,11 +849,11 @@
         nonce,
         requestId,
         ...res
-      }, '*');
+      }, targetOrigin);
     };
 
     const postBatch = (source, payloadData) => {
-      window.postMessage({ source, nonce, payload: { ...payloadData, requestId, generation: payload?.generation } }, '*');
+      window.postMessage({ source, nonce, payload: { ...payloadData, requestId, generation: payload?.generation } }, targetOrigin);
     };
 
     switch (type) {
@@ -803,9 +862,13 @@
         break;
       }
       case 'FETCH_IG_PROFILE': {
-        const generation = beginScan(payload?.generation);
-        const profile = await fetchProfile(payload?.username, generation);
-        reply({ success: true, payload: { profile } });
+        try {
+          const generation = beginScan(payload?.generation);
+          const profile = await fetchProfile(payload?.username, generation);
+          reply({ success: true, payload: { profile } });
+        } catch (error) {
+          reply({ success: false, status: 'network_failure', error: error?.message || 'instagram_profile_failed' });
+        }
         break;
       }
       case 'FETCH_IG_POSTS': {
@@ -855,25 +918,28 @@
     }
   });
 
-  // Intercept SPA navigation in Main World to abort active scans and notify Content Script
+  // Intercept SPA navigation in Main World to notify Content Script (cancellation is gated by target change)
   try {
     const origPush = history.pushState.bind(history);
     const origReplace = history.replaceState.bind(history);
+    const navOrigin = () => (typeof window !== 'undefined' && window.location?.origin && window.location.origin !== 'null')
+      ? window.location.origin
+      : '*';
     history.pushState = function (...args) {
       const r = origPush.apply(this, args);
       try {
-        isScanCancelled = true;
-        scanGeneration++;
-        window.postMessage({ source: 'SMD_IG_NAVIGATION_CHANGED', nonce: session.nonce, url: window.location.href }, '*');
+        if (session.nonce) {
+          window.postMessage({ source: 'SMD_IG_NAVIGATION_CHANGED', nonce: session.nonce, url: window.location.href }, navOrigin());
+        }
       } catch (e) {}
       return r;
     };
     history.replaceState = function (...args) {
       const r = origReplace.apply(this, args);
       try {
-        isScanCancelled = true;
-        scanGeneration++;
-        window.postMessage({ source: 'SMD_IG_NAVIGATION_CHANGED', nonce: session.nonce, url: window.location.href }, '*');
+        if (session.nonce) {
+          window.postMessage({ source: 'SMD_IG_NAVIGATION_CHANGED', nonce: session.nonce, url: window.location.href }, navOrigin());
+        }
       } catch (e) {}
       return r;
     };

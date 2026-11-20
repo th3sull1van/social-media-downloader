@@ -14,26 +14,28 @@ export class FacebookNormalizer {
    * `viewer_image` (the on-screen render, often downscaled to fit a container),
    * `image` (frequently the original/full render), `thumbnail_image` (small), and
    * sometimes an `images[]` array of explicit resolutions. Signed URLs carry an HMAC
-   * over their params (oh/_nc_*), so a downscaled `ctp` can NEVER be upgraded by
-   * rewriting the URL — doing so yields HTTP 403. The only safe way to get max
-   * resolution is to pick the already-signed URL of the largest render the payload
-   * provides (see AGENTS.md §49 / MetaCdn upgradeUrl contract).
+   * over their params (oh/_nc_*): `stp` and the CDN URL path can NEVER be altered
+   * without yielding HTTP 403, whereas a downscaled `ctp` CAN safely be replaced
+   * with `cstp` when `cstp` is present (see MetaCdn upgradeUrl contract). Even with
+   * `cstp -> ctp` upgrade, preferring the already-signed URL of the largest render
+   * the payload provides yields full resolution reliably.
    *
    * @param {any} photo
+   * @param {(url: string) => boolean} [isAllowedUrl]
    * @returns {{ uri: string, width: number, height: number } | null}
    */
-  static selectBestRender(photo) {
+  static selectBestRender(photo, isAllowedUrl = (u) => /fbcdn\.net/i.test(u)) {
     /** @type {Array<{ uri: string, width: number, height: number }>} */
     const candidates = [];
     for (const field of ['viewer_image', 'image']) {
       const v = photo[field];
-      if (v && v.uri && /fbcdn\.net/i.test(v.uri)) {
+      if (v && v.uri && isAllowedUrl(v.uri)) {
         candidates.push({ uri: v.uri, width: Number(v.width) || 0, height: Number(v.height) || 0 });
       }
     }
     if (Array.isArray(photo.images)) {
       for (const im of photo.images) {
-        if (im && im.uri && /fbcdn\.net/i.test(im.uri)) {
+        if (im && im.uri && isAllowedUrl(im.uri)) {
           candidates.push({ uri: im.uri, width: Number(im.width) || 0, height: Number(im.height) || 0 });
         }
       }

@@ -9,7 +9,11 @@ import { CapabilitiesModel } from '../../core/domain/Capabilities.js';
 
 export class FacebookPlugin {
   static id = 'facebook';
+  static displayName = 'Facebook';
+  static themeClass = 'fb-theme';
   static version = '1.2.2';
+  static mainWorldScript = 'src/plugins/facebook/main-world/injected.js';
+  static mediaHostSuffixes = ['fbcdn.net', 'facebook.com'];
 
   static matches(context) {
     return FacebookDetector.matches(context);
@@ -27,7 +31,7 @@ export class FacebookPlugin {
       media: {
         image: true,
         gallery: true,
-        video: true
+        video: false
       },
       resolution: {
         direct: true,
@@ -64,8 +68,7 @@ export class FacebookPlugin {
   static getFilters() {
     return [
       { id: 'all', labelKey: 'tabAll' },
-      { id: 'image', labelKey: 'tabPhotos' },
-      { id: 'video', labelKey: 'tabVideos' }
+      { id: 'image', labelKey: 'tabPhotos' }
     ];
   }
 

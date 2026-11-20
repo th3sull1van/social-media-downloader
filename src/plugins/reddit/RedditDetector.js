@@ -26,7 +26,14 @@ export class RedditDetector {
     let id = '';
 
     if (urlStr) {
-      if (urlStr.includes('/user/') || urlStr.includes('/u/')) {
+      if (urlStr.includes('/comments/') || urlStr.includes('/gallery/')) {
+        const m = urlStr.match(/\/(?:comments|gallery)\/([a-zA-Z0-9]+)/);
+        if (m && m[1]) {
+          targetType = 'post';
+          targetName = `Post_${m[1]}`;
+          id = m[1];
+        }
+      } else if (urlStr.includes('/user/') || urlStr.includes('/u/')) {
         const m = urlStr.match(/\/(?:user|u)\/([^/?#]+)/);
         if (m && m[1]) {
           targetType = 'profile';
@@ -38,13 +45,6 @@ export class RedditDetector {
         if (m && m[1]) {
           targetType = 'subreddit';
           targetName = `r/${m[1]}`;
-          id = m[1];
-        }
-      } else if (urlStr.includes('/comments/') || urlStr.includes('/gallery/')) {
-        const m = urlStr.match(/\/(?:comments|gallery)\/([a-zA-Z0-9]+)/);
-        if (m && m[1]) {
-          targetType = 'post';
-          targetName = `Post_${m[1]}`;
           id = m[1];
         }
       }

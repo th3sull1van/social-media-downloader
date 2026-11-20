@@ -37,8 +37,7 @@ export class MetaCdn {
         if (cstp) {
           const maxArea = Number(cstp[1]) * Number(cstp[2]);
           if (!ctp || Number(ctp[1]) * Number(ctp[2]) < maxArea) {
-            if (ctp) parsed.searchParams.set('ctp', `s${cstp[1]}x${cstp[2]}`);
-            else parsed.searchParams.append('ctp', `s${cstp[1]}x${cstp[2]}`);
+            parsed.searchParams.set('ctp', `s${cstp[1]}x${cstp[2]}`);
             return parsed.toString();
           }
           return url;

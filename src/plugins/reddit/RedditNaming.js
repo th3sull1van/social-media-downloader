@@ -12,7 +12,8 @@ export class RedditNaming {
    */
   static getOriginalFilename(item) {
     const mediaId = /** @type {any} */ (item.metadata)?.mediaId || RedditNormalizer.extractMediaIdentifier(item);
-    const ext = item.extension || (item.type === 'video' ? 'mp4' : 'jpg');
+    const fallbackExt = item.type === 'video' ? 'mp4' : 'jpg';
+    const ext = FilenameService.sanitize(String(item.extension || fallbackExt), 10, fallbackExt).toLowerCase();
     return `${FilenameService.sanitize(mediaId, 60, 'media')}.${ext}`;
   }
 

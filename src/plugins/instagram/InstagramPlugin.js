@@ -6,11 +6,14 @@ import { InstagramDetector } from './InstagramDetector.js';
 import { InstagramNormalizer } from './InstagramNormalizer.js';
 import { InstagramNaming } from './InstagramNaming.js';
 import { CapabilitiesModel } from '../../core/domain/Capabilities.js';
-import { ScanResultModel } from '../../core/domain/ScanResult.js';
 
 export class InstagramPlugin {
   static id = 'instagram';
+  static displayName = 'Instagram';
+  static themeClass = '';
   static version = '1.2.2';
+  static mainWorldScript = 'src/plugins/instagram/main-world/injected.js';
+  static mediaHostSuffixes = ['instagram.com', 'cdninstagram.com', 'fbcdn.net'];
 
   /**
    * Matches whether context belongs to Instagram.

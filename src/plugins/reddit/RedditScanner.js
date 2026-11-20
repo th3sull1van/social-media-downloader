@@ -29,6 +29,29 @@ export class RedditScanner {
       /(?:profileIcon|communityIcon)/i.test(url);
   }
 
+  static isDirectImageCandidate(rawUrl) {
+    if (!rawUrl || typeof rawUrl !== 'string') return false;
+    if (RedditScanner.isIconOrStyleAsset(rawUrl)) return false;
+    let parsed;
+    try {
+      parsed = new URL(rawUrl, 'https://www.reddit.com');
+    } catch {
+      return false;
+    }
+    if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+    if (host === 'v.redd.it' || host === 'instagram.com' || host.endsWith('.instagram.com') || host === 'facebook.com' || host.endsWith('.facebook.com')) {
+      return false;
+    }
+    if (host === 'imgur.com' && /^\/(?:a|gallery)\//i.test(parsed.pathname)) {
+      return false;
+    }
+    if (['i.redd.it', 'preview.redd.it', 'external-preview.redd.it', 'i.imgur.com'].includes(host)) {
+      return true;
+    }
+    return false;
+  }
+
   /**
    * Extracts media from a shreddit-post DOM element.
    * @param {{ getAttribute: (name: string) => string | null, hasAttribute: (name: string) => boolean, querySelector: (sel: string) => any, querySelectorAll: (sel: string) => any[] }} postEl
@@ -89,11 +112,14 @@ export class RedditScanner {
     }
 
     // 3. RedGifs Detection
-    if (postData.mediaItems.length === 0 && (domain.includes('redgifs') || contentHref.includes('redgifs.com'))) {
+    if (postData.mediaItems.length === 0 && (domain === 'redgifs.com' || domain.endsWith('.redgifs.com') || RedditNormalizer.isRedGifsHost(contentHref))) {
       postData.postType = 'redgifs';
+      const thumbImg = postEl.querySelector?.('img[src], shreddit-embed img');
+      const thumbSrc = thumbImg?.getAttribute?.('src') || '';
       postData.mediaItems = [{
         type: 'redgifs',
         url: contentHref,
+        previewUrl: RedditScanner.isIconOrStyleAsset(thumbSrc) ? '' : thumbSrc,
         ext: 'mp4',
         title: postData.title,
         index: 1,
@@ -104,14 +130,14 @@ export class RedditScanner {
     // 4. Single Image Detection (attribute lookup first, DOM fallback only if needed)
     if (postData.mediaItems.length === 0) {
       let src = '';
-      if (contentHref && !RedditScanner.isIconOrStyleAsset(contentHref) && (contentHref.includes('redd.it') || contentHref.includes('imgur.com') || /\.(jpg|jpeg|png|gif|webp)/i.test(contentHref))) {
+      if (RedditScanner.isDirectImageCandidate(contentHref)) {
         src = contentHref;
       } else {
         const img = postEl.querySelector?.('img[src*="redd.it"], img[src*="redditmedia.com"], [slot="post-media-container"] img');
         src = img?.getAttribute('src') || '';
       }
 
-      if (src && !RedditScanner.isIconOrStyleAsset(src) && (src.includes('redd.it') || src.includes('imgur.com') || /\.(jpg|jpeg|png|gif|webp)/i.test(src))) {
+      if (RedditScanner.isDirectImageCandidate(src)) {
         postData.mediaItems = [{
           type: 'image',
           url: RedditNormalizer.cleanMediaUrl(src),
@@ -129,7 +155,7 @@ export class RedditScanner {
   static extractGalleryFromDom(postEl) {
     const items = [];
     const imgs = postEl.querySelectorAll('gallery-carousel img, faceplate-carousel img, ul[slot="gallery-items"] img, [slot="post-media-container"] img');
-    imgs.forEach((img, idx) => {
+    imgs.forEach((img) => {
       const src = img.getAttribute('src') || img.getAttribute('data-src');
       // Skip decorative subreddit/community/user icons that leak into the query.
       if (src && !RedditScanner.isIconOrStyleAsset(src)) {
@@ -137,11 +163,14 @@ export class RedditScanner {
           type: 'image',
           url: RedditNormalizer.cleanMediaUrl(src),
           previewUrl: src,
-          index: idx + 1,
+          index: items.length + 1,
           isGallery: true
         });
       }
     });
+    for (const item of items) {
+      item.total = items.length;
+    }
     return items;
   }
 
@@ -216,22 +245,29 @@ export class RedditScanner {
   static parseApiPostObject(postData) {
     if (!postData) return [];
     const results = [];
+    const mediaPost = (!postData.is_gallery && !postData.media_metadata && !postData.is_video &&
+      !postData.media?.reddit_video && !postData.secure_media?.reddit_video &&
+      Array.isArray(postData.crosspost_parent_list) && postData.crosspost_parent_list[0])
+      ? postData.crosspost_parent_list[0]
+      : postData;
+
     const postInfo = {
       id: postData.id,
-      title: postData.title || '',
-      author: postData.author || '',
-      subreddit: postData.subreddit || '',
+      title: postData.title || mediaPost.title || '',
+      author: postData.author || mediaPost.author || '',
+      subreddit: postData.subreddit || mediaPost.subreddit || '',
       score: postData.score || 0,
-      isGallery: !!postData.is_gallery || !!postData.gallery_data
+      isGallery: !!mediaPost.is_gallery || !!mediaPost.gallery_data
     };
 
     // 1. Gallery
-    if (postData.is_gallery && postData.media_metadata) {
-      const galleryItems = postData.gallery_data?.items || [];
-      galleryItems.forEach((gItem, idx) => {
-        const meta = postData.media_metadata[gItem.media_id];
-        if (meta) {
-          const ext = meta.m ? meta.m.split('/').pop() : 'jpg';
+    if (mediaPost.is_gallery && mediaPost.media_metadata) {
+      const galleryItems = mediaPost.gallery_data?.items || [];
+      galleryItems.forEach((gItem) => {
+        const meta = mediaPost.media_metadata[gItem.media_id];
+        if (meta && meta.status !== 'failed') {
+          const rawExt = meta.m ? String(meta.m).split('/').pop().toLowerCase() : 'jpg';
+          const ext = rawExt === 'jpeg' ? 'jpg' : rawExt;
           const highRes = `https://i.redd.it/${gItem.media_id}.${ext}`;
           const previewCandidates = meta.p || [];
           const midPreview = previewCandidates[Math.min(2, previewCandidates.length - 1)]?.u || meta.s?.u;
@@ -241,21 +277,31 @@ export class RedditScanner {
             url: highRes,
             previewUrl: preview,
             ext,
-            index: idx + 1,
+            index: results.length + 1,
             total: galleryItems.length,
             isGallery: true
           }, postInfo));
         }
       });
+      for (const item of results) {
+        if (item.metadata) item.metadata.total = results.length;
+      }
       return results;
     }
 
-    // 2. Reddit Video
-    if (postData.is_video && postData.media?.reddit_video) {
-      const rVideo = postData.media.reddit_video;
-      const fallbackUrl = rVideo.fallback_url || '';
-      const baseUrl = fallbackUrl.replace(/\/DASH_[^\/?#]+.*$/, '');
-      const thumbUrl = (postData.thumbnail && /^https?:\/\//i.test(postData.thumbnail)) ? postData.thumbnail : '';
+    // 2. Reddit Video (also handle v.redd.it links where is_video is omitted)
+    const rVideo = mediaPost.media?.reddit_video || mediaPost.secure_media?.reddit_video;
+    const vReddMatch = !rVideo && typeof mediaPost.url === 'string'
+      ? mediaPost.url.match(/^https?:\/\/v\.redd\.it\/([a-zA-Z0-9_-]+)/i)
+      : null;
+    if ((rVideo && (mediaPost.is_video || rVideo.fallback_url)) || vReddMatch) {
+      const fallbackUrl = rVideo?.fallback_url || `https://v.redd.it/${vReddMatch[1]}/DASH_720.mp4`;
+      const baseUrl = rVideo?.fallback_url
+        ? fallbackUrl.replace(/\/DASH_[^\/?#]+.*$/, '')
+        : `https://v.redd.it/${vReddMatch[1]}`;
+      const thumbUrl = (postData.thumbnail && /^https?:\/\//i.test(postData.thumbnail))
+        ? postData.thumbnail
+        : (mediaPost.preview?.images?.[0]?.source?.url || postData.preview?.images?.[0]?.source?.url || '').replace(/&amp;/g, '&');
       results.push(RedditNormalizer.normalizeItem({
         id: postData.id,
         type: 'video',
@@ -271,12 +317,14 @@ export class RedditScanner {
     }
 
     // 3. RedGifs embed
-    if (postData.url && postData.url.includes('redgifs.com')) {
-      const thumbUrl = (postData.thumbnail && /^https?:\/\//i.test(postData.thumbnail)) ? postData.thumbnail : '';
+    if (mediaPost.url && RedditNormalizer.isRedGifsHost(mediaPost.url)) {
+      const thumbUrl = (postData.thumbnail && /^https?:\/\//i.test(postData.thumbnail))
+        ? postData.thumbnail
+        : (mediaPost.preview?.images?.[0]?.source?.url || postData.preview?.images?.[0]?.source?.url || '').replace(/&amp;/g, '&');
       results.push(RedditNormalizer.normalizeItem({
         id: postData.id,
         type: 'redgifs',
-        url: postData.url,
+        url: mediaPost.url,
         isRedGifs: true,
         previewUrl: thumbUrl,
         ext: 'mp4',
@@ -287,9 +335,9 @@ export class RedditScanner {
     }
 
     // 4. Direct Image
-    if (postData.url && !RedditScanner.isIconOrStyleAsset(postData.url) && (postData.url.includes('redd.it') || postData.url.includes('imgur.com') || /\.(jpg|jpeg|png|gif|webp)/i.test(postData.url))) {
-      const cleanUrl = RedditNormalizer.cleanMediaUrl(postData.url);
-      const previewImgs = postData.preview?.images?.[0]?.resolutions || [];
+    if (mediaPost.url && RedditScanner.isDirectImageCandidate(mediaPost.url)) {
+      const cleanUrl = RedditNormalizer.cleanMediaUrl(mediaPost.url);
+      const previewImgs = mediaPost.preview?.images?.[0]?.resolutions || postData.preview?.images?.[0]?.resolutions || [];
       const midPreview = previewImgs[Math.min(2, previewImgs.length - 1)]?.url;
       const thumbUrl = (midPreview ? midPreview.replace(/&amp;/g, '&') : '') ||
         ((postData.thumbnail && /^https?:\/\//i.test(postData.thumbnail)) ? postData.thumbnail : '') ||
@@ -320,8 +368,10 @@ export class RedditScanner {
     const limit = options.limit || 500;
     const allItems = [];
     const seenPostIds = new Set();
+    const seenCursors = new Set();
     let after = null;
     let totalPosts = 0;
+    let submittedOk = false;
     let hadNetworkFailure = false;
 
     const processChildren = (children) => {
@@ -343,22 +393,27 @@ export class RedditScanner {
           hadNetworkFailure = true;
           break;
         }
+        submittedOk = true;
         const json = await res.json();
         const children = json.data?.children || [];
         if (children.length === 0) break;
+        const beforeCount = totalPosts;
         processChildren(children);
-        after = json.data?.after;
+        const nextAfter = json.data?.after;
+        if (!nextAfter || seenCursors.has(nextAfter) || totalPosts === beforeCount) break;
+        seenCursors.add(nextAfter);
+        after = nextAfter;
       } catch {
         hadNetworkFailure = true;
         break;
       }
-      if (!after) break;
       await new Promise(r => setTimeout(r, 400));
     }
 
     // Reddit's profile listing can omit posts that remain available through
     // the author search endpoint. This dual-source discovery provides complete coverage.
     let searchAfter = null;
+    const seenSearchCursors = new Set();
     let searchPages = 0;
     while (totalPosts < limit && searchPages < 3) {
       searchPages++;
@@ -373,17 +428,19 @@ export class RedditScanner {
         const searchChildren = searchJson.data?.children || [];
         if (searchChildren.length === 0) break;
         processChildren(searchChildren);
-        searchAfter = searchJson.data?.after;
+        const nextSearchAfter = searchJson.data?.after;
+        if (!nextSearchAfter || seenSearchCursors.has(nextSearchAfter)) break;
+        seenSearchCursors.add(nextSearchAfter);
+        searchAfter = nextSearchAfter;
       } catch {
         hadNetworkFailure = true;
         break;
       }
-      if (!searchAfter) break;
       await new Promise(r => setTimeout(r, 400));
     }
 
     const status = hadNetworkFailure
-      ? (allItems.length > 0 ? 'partial' : 'network_failure')
+      ? (allItems.length > 0 ? 'partial' : (submittedOk ? 'empty' : 'network_failure'))
       : (allItems.length > 0 ? 'success' : 'empty');
     return {
       mediaItems: allItems,
@@ -406,12 +463,13 @@ export class RedditScanner {
     const sort = ['hot', 'new', 'top'].includes(options.sort) ? options.sort : 'hot';
     const allItems = [];
     const seenPostIds = new Set();
+    const seenCursors = new Set();
     let after = null;
     let totalPosts = 0;
     let hadNetworkFailure = false;
 
     while (totalPosts < limit) {
-      const url = `https://www.reddit.com/r/${encodeURIComponent(subreddit)}/${sort}.json?limit=100&raw_json=1${after ? `&after=${after}` : ''}`;
+      const url = `https://www.reddit.com/r/${encodeURIComponent(subreddit)}/${sort}.json?limit=100&raw_json=1${after ? `&after=${encodeURIComponent(after)}` : ''}`;
       let children;
       let json;
       try {
@@ -428,6 +486,7 @@ export class RedditScanner {
       }
       if (children.length === 0) break;
 
+      const beforeCount = totalPosts;
       for (const child of children) {
         const postId = String(child?.data?.id || '').replace(/^t3_/, '');
         if (!postId || seenPostIds.has(postId)) continue;
@@ -436,8 +495,10 @@ export class RedditScanner {
         allItems.push(...RedditScanner.parseApiPostObject(child.data));
       }
 
-      after = json.data?.after;
-      if (!after) break;
+      const nextAfter = json.data?.after;
+      if (!nextAfter || seenCursors.has(nextAfter) || totalPosts === beforeCount) break;
+      seenCursors.add(nextAfter);
+      after = nextAfter;
       await new Promise(r => setTimeout(r, 400));
     }
 

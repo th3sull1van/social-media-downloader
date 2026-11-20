@@ -4,6 +4,53 @@
  */
 
 export class RedditVideoMuxer {
+  static _activeMuxes = 0;
+  static _maxConcurrentMuxes = 2;
+  /** @type {Array<{ grant: () => void }>} */
+  static _muxWaiters = [];
+
+  static async _withMuxSlot(fn, signal = undefined) {
+    signal?.throwIfAborted();
+    if (RedditVideoMuxer._activeMuxes < RedditVideoMuxer._maxConcurrentMuxes) {
+      RedditVideoMuxer._activeMuxes++;
+    } else {
+      await new Promise((resolve, reject) => {
+        let settled = false;
+        const onAbort = () => {
+          if (settled) return;
+          settled = true;
+          const idx = RedditVideoMuxer._muxWaiters.indexOf(waiter);
+          if (idx !== -1) RedditVideoMuxer._muxWaiters.splice(idx, 1);
+          reject(signal.reason || new DOMException('Aborted', 'AbortError'));
+        };
+        const waiter = {
+          grant() {
+            if (settled) return;
+            settled = true;
+            signal?.removeEventListener('abort', onAbort);
+            resolve(undefined);
+          }
+        };
+        RedditVideoMuxer._muxWaiters.push(waiter);
+        signal?.addEventListener('abort', onAbort, { once: true });
+      });
+    }
+
+    try {
+      signal?.throwIfAborted();
+      return await fn();
+    } finally {
+      // Atomic slot handoff: if a waiter is queued, transfer the active slot directly
+      // without decrementing _activeMuxes so a concurrent caller cannot barge past the cap.
+      const next = RedditVideoMuxer._muxWaiters.shift();
+      if (next) {
+        next.grant();
+      } else {
+        RedditVideoMuxer._activeMuxes = Math.max(0, RedditVideoMuxer._activeMuxes - 1);
+      }
+    }
+  }
+
   static async checkUrlExists(url, signal = undefined) {
     try {
       const res = await fetch(url, { method: 'HEAD', cache: 'no-cache', signal });
@@ -18,39 +65,38 @@ export class RedditVideoMuxer {
    * Discovers highest resolution video stream and companion audio stream.
    * @param {string} baseUrl
    * @param {string} [fallbackUrl]
-   * @returns {Promise<{ videoUrl: string | null, audioUrl: string | null, hasAudio: boolean }>}
+   * @returns {Promise<{ videoUrl: string | null, audioUrl: string | null, audioFallbacks: string[], hasAudio: boolean }>}
    */
   static async resolveStreams(baseUrl, fallbackUrl, signal = undefined) {
     const base = baseUrl.replace(/\/DASH_[^\/?#]+.*$/, '').replace(/\/?$/, '/');
     const videoResolutions = ['DASH_1080.mp4', 'DASH_720.mp4', 'DASH_480.mp4', 'DASH_360.mp4', 'DASH_240.mp4'];
-    const audioCandidates = ['DASH_AUDIO_128.mp4', 'DASH_audio.mp4', 'DASH_AUDIO_64.mp4', 'DASH_AUDIO_32.mp4'];
+    const audioCandidates = ['DASH_AUDIO_128.mp4', 'DASH_audio.mp4', 'DASH_AUDIO_64.mp4', 'DASH_AUDIO_32.mp4', 'CMAF_AUDIO_128.mp4', 'CMAF_AUDIO_64.mp4'];
 
-    let bestVideoUrl = null;
-    let audioUrl = null;
+    // Probe video and audio candidates in parallel instead of up to 11 sequential round-trips.
+    const [videoChecks, audioChecks] = await Promise.all([
+      Promise.all(videoResolutions.map(async (res) => {
+        const candidate = base + res;
+        return (await RedditVideoMuxer.checkUrlExists(candidate, signal)) ? candidate : null;
+      })),
+      Promise.all(audioCandidates.map(async (aud) => {
+        const candidate = base + aud;
+        return (await RedditVideoMuxer.checkUrlExists(candidate, signal)) ? candidate : null;
+      }))
+    ]);
+    signal?.throwIfAborted();
 
-    for (const res of videoResolutions) {
-      const candidate = base + res;
-      if (await RedditVideoMuxer.checkUrlExists(candidate, signal)) {
-        bestVideoUrl = candidate;
-        break;
-      }
-    }
-
+    let bestVideoUrl = videoChecks.find(Boolean) || null;
     if (!bestVideoUrl && fallbackUrl) {
       bestVideoUrl = fallbackUrl.replace(/\?.*$/, '');
     }
 
-    for (const aud of audioCandidates) {
-      const candidate = base + aud;
-      if (await RedditVideoMuxer.checkUrlExists(candidate, signal)) {
-        audioUrl = candidate;
-        break;
-      }
-    }
+    const availableAudio = audioChecks.filter(Boolean);
+    const audioUrl = availableAudio[0] || null;
 
     return {
       videoUrl: bestVideoUrl,
-      audioUrl: audioUrl,
+      audioUrl,
+      audioFallbacks: availableAudio.slice(1),
       hasAudio: !!audioUrl
     };
   }
@@ -144,31 +190,37 @@ export class RedditVideoMuxer {
    * @returns {Promise<Blob>}
    */
   static async downloadMuxedVideo(videoUrl, audioUrl, onProgress, signal = undefined) {
-    if (!audioUrl) {
-      if (onProgress) onProgress(10, 'Downloading video...');
-      const videoBuffer = await RedditVideoMuxer.fetchStreamWithProgress(videoUrl, onProgress, 10, 85, signal);
-      if (onProgress) onProgress(100, 'Ready!');
-      return new Blob([videoBuffer], { type: 'video/mp4' });
+    if (!videoUrl) {
+      throw new Error('Unable to resolve Reddit video stream URL');
     }
+    return RedditVideoMuxer._withMuxSlot(async () => {
+      signal?.throwIfAborted();
+      if (!audioUrl) {
+        if (onProgress) onProgress(10, 'Downloading video...');
+        const videoBuffer = await RedditVideoMuxer.fetchStreamWithProgress(videoUrl, onProgress, 10, 85, signal);
+        if (onProgress) onProgress(100, 'Ready!');
+        return new Blob([videoBuffer], { type: 'video/mp4' });
+      }
 
-    if (onProgress) onProgress(5, 'Downloading video track...');
-    const videoBuffer = await RedditVideoMuxer.fetchStreamWithProgress(videoUrl, onProgress, 5, 55, signal);
+      if (onProgress) onProgress(5, 'Downloading video track...');
+      const videoBuffer = await RedditVideoMuxer.fetchStreamWithProgress(videoUrl, onProgress, 5, 55, signal);
 
-    if (onProgress) onProgress(60, 'Downloading audio track...');
-    const audioBuffer = await RedditVideoMuxer.fetchStreamWithProgress(audioUrl, onProgress, 60, 30, signal);
+      if (onProgress) onProgress(60, 'Downloading audio track...');
+      const audioBuffer = await RedditVideoMuxer.fetchStreamWithProgress(audioUrl, onProgress, 60, 30, signal);
 
-    signal?.throwIfAborted();
-    if (onProgress) onProgress(90, 'Multiplexing tracks...');
+      signal?.throwIfAborted();
+      if (onProgress) onProgress(90, 'Multiplexing tracks...');
 
-    try {
-      const mergedBlob = await RedditVideoMuxer.mergeMp4Streams(videoBuffer, audioBuffer, true);
-      if (onProgress) onProgress(100, 'Completed!');
-      return mergedBlob;
-    } catch (err) {
-      // Surface the mux failure instead of silently returning a video-only blob with
-      // no audio (that masked a structural bug: broken chunk-offset tables).
-      throw new Error(`Failed to mux video and audio: ${err?.message || err}`);
-    }
+      try {
+        const mergedBlob = await RedditVideoMuxer.mergeMp4Streams(videoBuffer, audioBuffer, true);
+        if (onProgress) onProgress(100, 'Completed!');
+        return mergedBlob;
+      } catch (err) {
+        // Surface the mux failure instead of silently returning a video-only blob with
+        // no audio (that masked a structural bug: broken chunk-offset tables).
+        throw new Error(`Failed to mux video and audio: ${err?.message || err}`);
+      }
+    }, signal);
   }
 
   /**
@@ -199,6 +251,9 @@ export class RedditVideoMuxer {
     }
     if (!audioWasProvided) return new Blob([videoArrayBuffer], { type: 'video/mp4' });
     if (!audioBoxes.moov || !audioBoxes.mdat) throw new Error('Invalid audio MP4 structure');
+    if (videoBoxes.moofCount > 0 || audioBoxes.moofCount > 0 || videoBoxes.mdatCount !== 1 || audioBoxes.mdatCount !== 1) {
+      throw new Error('Unsupported fragmented or multi-mdat MP4 stream');
+    }
 
     const audioTrak = RedditVideoMuxer.findBoxDeep(audioBytes, audioBoxes.moov.start + 8, audioBoxes.moov.end, 'trak');
     if (!audioTrak) throw new Error('Invalid audio MP4 track');
@@ -235,36 +290,37 @@ export class RedditVideoMuxer {
     RedditVideoMuxer.patchChunkOffsets(moov, 8, 8 + videoMoovLen, deltaVideo);
     RedditVideoMuxer.patchChunkOffsets(moov, audioTrakOffset, audioTrakOffset + audioTrakLen, deltaAudio);
 
-    // Avoid audio/video track id collision.
-    const videoTrackId = RedditVideoMuxer.readTrackId(moov, 8, 8 + videoMoovLen);
-    const newAudioId = videoTrackId === 1 ? 2 : 1;
+    // Rescale audio tkhd.duration and elst.segment_duration from the audio mvhd.timescale
+    // into the video mvhd.timescale (ISO/IEC 14496-12 §8.3.2.3 & §8.6.6.3).
+    const videoTimescale = RedditVideoMuxer.readMvhdTimescale(moov, 8, 8 + videoMoovLen);
+    const audioTimescale = RedditVideoMuxer.readMvhdTimescale(audioBytes, audioBoxes.moov.start + 8, audioBoxes.moov.end);
+    if (videoTimescale > 0 && audioTimescale > 0 && videoTimescale !== audioTimescale) {
+      RedditVideoMuxer.rescaleTrackMovieTimescale(moov, audioTrakOffset, audioTrakOffset + audioTrakLen, audioTimescale, videoTimescale);
+    }
+
+    // Avoid audio/video track id collision across any number of tracks in video moov.
+    const maxVideoTrackId = RedditVideoMuxer.readMaxTrackId(moov, 8, 8 + videoMoovLen);
+    const newAudioId = maxVideoTrackId + 1;
     RedditVideoMuxer.renumberTrack(moov, audioTrakOffset, audioTrakOffset + audioTrakLen, newAudioId);
-    RedditVideoMuxer.bumpNextTrackId(moov, 8, 8 + videoMoovLen, Math.max(videoTrackId, newAudioId) + 1);
+    RedditVideoMuxer.bumpNextTrackId(moov, 8, 8 + videoMoovLen, newAudioId + 1);
 
-    const out = new Uint8Array(
-      ftypLen + moovLen + 8 + videoMdatContent.length + 8 + audioMdatContent.length
+    const videoMdatHdr = new Uint8Array(8);
+    new DataView(videoMdatHdr.buffer).setUint32(0, videoMdatContent.length + 8);
+    videoMdatHdr.set([109, 100, 97, 116], 4); // 'mdat'
+
+    const audioMdatHdr = new Uint8Array(8);
+    new DataView(audioMdatHdr.buffer).setUint32(0, audioMdatContent.length + 8);
+    audioMdatHdr.set([109, 100, 97, 116], 4); // 'mdat'
+
+    return new Blob(
+      [ftyp, moov, videoMdatHdr, videoMdatContent, audioMdatHdr, audioMdatContent],
+      { type: 'video/mp4' }
     );
-    const outView = new DataView(out.buffer);
-    let p = 0;
-    out.set(ftyp, p); p += ftypLen;
-    out.set(moov, p); p += moovLen;
-
-    outView.setUint32(p, videoMdatContent.length + 8);
-    out.set([109, 100, 97, 116], p + 4); // 'mdat'
-    p += 8;
-    out.set(videoMdatContent, p); p += videoMdatContent.length;
-
-    outView.setUint32(p, audioMdatContent.length + 8);
-    out.set([109, 100, 97, 116], p + 4);
-    p += 8;
-    out.set(audioMdatContent, p);
-
-    return new Blob([out], { type: 'video/mp4' });
   }
 
-  /** Box types that contain nested boxes (used when walking the tree for stco/tkhd/mvhd). */
+  /** Box types that contain nested boxes (used when walking the tree for stco/tkhd/mvhd/elst). */
   static get CONTAINER_BOXES() {
-    return new Set(['moov', 'trak', 'mdia', 'minf', 'dinf', 'stbl', 'edts', 'udta', 'mvex', 'tref', 'nmhd', 'gmhd']);
+    return new Set(['moov', 'trak', 'mdia', 'minf', 'stbl', 'edts']);
   }
 
   static readBoxType(bytes, at) {
@@ -287,7 +343,11 @@ export class RedditVideoMuxer {
         const count = boxView.getUint32(12);
         if (count > Math.floor((size - 16) / 4)) { offset += size; continue; }
         for (let i = 0; i < count; i++) {
-          boxView.setUint32(16 + i * 4, boxView.getUint32(16 + i * 4) + delta);
+          const updated = boxView.getUint32(16 + i * 4) + delta;
+          if (updated < 0 || updated > 0xFFFFFFFF) {
+            throw new Error('MP4 stco chunk offset overflow');
+          }
+          boxView.setUint32(16 + i * 4, updated);
         }
       } else if (type === 'co64') {
         if (size < 16) { offset += size; continue; }
@@ -295,7 +355,11 @@ export class RedditVideoMuxer {
         const count = boxView.getUint32(12);
         if (count > Math.floor((size - 16) / 8)) { offset += size; continue; }
         for (let i = 0; i < count; i++) {
-          boxView.setBigUint64(16 + i * 8, boxView.getBigUint64(16 + i * 8) + BigInt(delta));
+          const updated = boxView.getBigUint64(16 + i * 8) + BigInt(delta);
+          if (updated < 0n) {
+            throw new Error('MP4 co64 chunk offset underflow');
+          }
+          boxView.setBigUint64(16 + i * 8, updated);
         }
       } else if (RedditVideoMuxer.CONTAINER_BOXES.has(type)) {
         RedditVideoMuxer.patchChunkOffsets(bytes, offset + 8, offset + size, delta);
@@ -328,6 +392,23 @@ export class RedditVideoMuxer {
     return RedditVideoMuxer.readTkhdTrackId(bytes, tkhd.start, tkhd.end);
   }
 
+  static readMaxTrackId(bytes, start, end) {
+    let maxId = 0;
+    let offset = start;
+    while (offset + 8 <= end) {
+      const hdrView = new DataView(bytes.buffer, bytes.byteOffset + offset, Math.min(8, end - offset));
+      const size = hdrView.getUint32(0);
+      const type = RedditVideoMuxer.readBoxType(bytes, offset + 4);
+      if (size < 8 || offset + size > end) break;
+      if (type === 'trak') {
+        const id = RedditVideoMuxer.readTrackId(bytes, offset + 8, offset + size);
+        if (id > maxId) maxId = id;
+      }
+      offset += size;
+    }
+    return maxId || RedditVideoMuxer.readTrackId(bytes, start, end);
+  }
+
   static readTkhdTrackId(bytes, tkhdStart, tkhdEnd = bytes.length) {
     if (tkhdStart < 0 || tkhdStart + 12 > tkhdEnd || tkhdEnd > bytes.length) return 0;
     const version = bytes[tkhdStart + 8] & 0xff;
@@ -348,6 +429,56 @@ export class RedditVideoMuxer {
     view.setUint32(trackIdOffset, newId >>> 0);
   }
 
+  /** Reads mvhd.timescale (version 0: offset 20; version 1: offset 28 from box start). */
+  static readMvhdTimescale(bytes, start, end) {
+    const mvhd = RedditVideoMuxer.findBoxDeep(bytes, start, end, 'mvhd');
+    if (!mvhd || mvhd.end < mvhd.start + 12) return 0;
+    const version = bytes[mvhd.start + 8] & 0xff;
+    const offset = version === 1 ? 28 : 20;
+    if (mvhd.start + offset + 4 > mvhd.end) return 0;
+    return new DataView(bytes.buffer, bytes.byteOffset + mvhd.start, mvhd.end - mvhd.start).getUint32(offset);
+  }
+
+  /** Rescales movie-timescale durations in tkhd and elst inside a trak box. */
+  static rescaleTrackMovieTimescale(bytes, start, end, fromScale, toScale) {
+    if (!fromScale || !toScale || fromScale === toScale) return;
+    const tkhd = RedditVideoMuxer.findBoxDeep(bytes, start, end, 'tkhd');
+    if (tkhd && tkhd.end >= tkhd.start + 12) {
+      const version = bytes[tkhd.start + 8] & 0xff;
+      const view = new DataView(bytes.buffer, bytes.byteOffset + tkhd.start, tkhd.end - tkhd.start);
+      if (version === 1 && tkhd.start + 44 <= tkhd.end) {
+        const dur = view.getBigUint64(36);
+        if (dur !== 0xFFFFFFFFFFFFFFFFn) {
+          view.setBigUint64(36, (dur * BigInt(toScale) + BigInt(Math.floor(fromScale / 2))) / BigInt(fromScale));
+        }
+      } else if (version === 0 && tkhd.start + 32 <= tkhd.end) {
+        const dur = view.getUint32(28);
+        if (dur !== 0xFFFFFFFF) {
+          const rescaled = Math.min(0xFFFFFFFE, Math.round((dur * toScale) / fromScale));
+          view.setUint32(28, rescaled >>> 0);
+        }
+      }
+    }
+    const elst = RedditVideoMuxer.findBoxDeep(bytes, start, end, 'elst');
+    if (elst && elst.end >= elst.start + 16) {
+      const version = bytes[elst.start + 8] & 0xff;
+      const view = new DataView(bytes.buffer, bytes.byteOffset + elst.start, elst.end - elst.start);
+      const count = view.getUint32(12);
+      const entrySize = version === 1 ? 20 : 12;
+      for (let i = 0; i < count; i++) {
+        const entryOff = 16 + i * entrySize;
+        if (elst.start + entryOff + entrySize > elst.end) break;
+        if (version === 1) {
+          const segDur = view.getBigUint64(entryOff);
+          view.setBigUint64(entryOff, (segDur * BigInt(toScale) + BigInt(Math.floor(fromScale / 2))) / BigInt(fromScale));
+        } else {
+          const segDur = view.getUint32(entryOff);
+          view.setUint32(entryOff, Math.min(0xFFFFFFFE, Math.round((segDur * toScale) / fromScale)) >>> 0);
+        }
+      }
+    }
+  }
+
   /** Keeps mvhd.next_track_ID ahead of the highest assigned id. */
   static bumpNextTrackId(bytes, start, end, nextId) {
     const mvhd = RedditVideoMuxer.findBoxDeep(bytes, start, end, 'mvhd');
@@ -362,13 +493,17 @@ export class RedditVideoMuxer {
   static parseMp4Boxes(bytes) {
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     let offset = 0;
-    const boxes = {};
+    const boxes = { moofCount: 0, mdatCount: 0 };
 
     while (offset + 8 <= bytes.length) {
-      const size = view.getUint32(offset);
+      const rawSize = view.getUint32(offset);
       const type = String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7]);
+      if (rawSize === 1) break;
+      const size = rawSize === 0 ? bytes.length - offset : rawSize;
       if (size < 8 || offset + size > bytes.length) break;
 
+      if (type === 'moof') boxes.moofCount++;
+      if (type === 'mdat') boxes.mdatCount++;
       boxes[type] = { start: offset, end: offset + size, size };
       offset += size;
     }
